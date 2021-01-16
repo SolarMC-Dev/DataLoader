@@ -19,6 +19,7 @@
 
 package gg.solarmc.loader.credits;
 
+import gg.solarmc.loader.SolarPlayer;
 import gg.solarmc.loader.Transaction;
 
 import java.math.BigDecimal;
@@ -26,6 +27,8 @@ import java.math.BigDecimal;
 public class Credits {
 
 	private volatile BigDecimal balance;
+
+	private SolarPlayer linkedPlayer; //not implemented
 
 	Credits(BigDecimal balance) {
 		this.balance = balance;
@@ -39,4 +42,14 @@ public class Credits {
 		return null;
 	}
 
+	/**
+	 * Deposits a value of currency
+	 * @param transaction
+	 * @param depositAmount
+	 * @return
+	 */
+
+	DepositResult depositBalance(Transaction transaction, BigDecimal depositAmount) {
+		return null;
+	}
 }

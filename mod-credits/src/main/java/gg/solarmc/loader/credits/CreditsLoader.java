@@ -19,7 +19,7 @@
 
 package gg.solarmc.loader.credits;
 
-import gg.solarmc.loader.DataLoader;
+import gg.solarmc.loader.data.DataLoader;
 import gg.solarmc.loader.Transaction;
 
 import java.math.BigDecimal;

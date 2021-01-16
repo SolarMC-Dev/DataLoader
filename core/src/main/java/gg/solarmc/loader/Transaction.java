@@ -19,6 +19,8 @@
 
 package gg.solarmc.loader;
 
+import gg.solarmc.loader.data.DataLoader;
+
 /**
  * Broad concept of a transaction. <br>
  * <br>
@@ -28,9 +30,11 @@ package gg.solarmc.loader;
  */
 public interface Transaction {
 
+
 	/**
 	 * Hints that only read only operations will be performed
 	 *
 	 */
+
 	void markReadOnly();
 }

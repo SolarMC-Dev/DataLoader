@@ -26,4 +26,5 @@ public class WithdrawResult extends EconomyResult {
 	WithdrawResult(BigDecimal newBalance, boolean success) {
 		super(newBalance, success);
 	}
+
 }

@@ -67,6 +67,12 @@
 		<module>mod-prefs</module>
 		<module>mod-kitpvp</module>
 		<module>mod-credits</module>
+        <module>loader-core-impl</module>
+		<module>core-impl</module>
+        <module>core-implementation</module>
+		<module>core-implement</module>
+		<module>core-impl</module>
+		<module>core-implementation</module>
 	</modules>
 
 	<dependencyManagement>

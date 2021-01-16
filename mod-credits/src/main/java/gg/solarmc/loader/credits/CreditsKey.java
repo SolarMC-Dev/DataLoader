@@ -19,8 +19,8 @@
 
 package gg.solarmc.loader.credits;
 
-import gg.solarmc.loader.DataKey;
-import gg.solarmc.loader.DataLoader;
+import gg.solarmc.loader.data.DataKey;
+import gg.solarmc.loader.data.DataLoader;
 import space.arim.omnibus.util.concurrent.FactoryOfTheFuture;
 
 import java.nio.file.Path;

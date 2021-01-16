@@ -19,11 +19,12 @@
 
 package gg.solarmc.loader.credits;
 
+import gg.solarmc.loader.data.DataObject;
 import gg.solarmc.loader.Transaction;
 
 import java.math.BigDecimal;
 
-public class Credits {
+public class Credits implements DataObject {
 
 	private volatile BigDecimal balance;
 
@@ -35,8 +36,31 @@ public class Credits {
 		return balance;
 	}
 
+	/**
+	 * Withdraw a value of currency
+	 * @param transaction represents the Transaction
+	 * @param withdrawAmount represents the amount being removed
+	 * @return Result of the withdraw to the balance
+	 *
+	 * Result is failable
+	 */
+
 	WithdrawResult withdrawBalance(Transaction transaction, BigDecimal withdrawAmount) {
 		return null;
 	}
+
+	/**
+	 * Deposits a value of currency
+	 * @param transaction
+	 * @param depositAmount
+	 * @return Result of the deposit to the balance
+	 *
+	 * Result cannot fail
+	 */
+
+	DepositResult depositBalance(Transaction transaction, BigDecimal depositAmount) {
+		return null;
+	}
+
 
 }

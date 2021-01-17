@@ -19,8 +19,7 @@
 
 package gg.solarmc.loader.credits;
 
-import gg.solarmc.loader.DataObject;
-import gg.solarmc.loader.SolarPlayer;
+import gg.solarmc.loader.data.DataObject;
 import gg.solarmc.loader.Transaction;
 
 import java.math.BigDecimal;
@@ -31,11 +30,6 @@ public class Credits implements DataObject {
 
 	Credits(BigDecimal balance) {
 		this.balance = balance;
-	}
-
-	@Override
-	public SolarPlayer getBoundPlayer() {
-		return null;
 	}
 
 	BigDecimal currentBalance() {

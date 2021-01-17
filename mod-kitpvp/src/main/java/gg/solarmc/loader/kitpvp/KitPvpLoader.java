@@ -1,6 +1,6 @@
 package gg.solarmc.loader.kitpvp;
 
-import gg.solarmc.loader.DataLoader;
+import gg.solarmc.loader.data.DataLoader;
 import gg.solarmc.loader.Transaction;
 
 import java.math.BigDecimal;

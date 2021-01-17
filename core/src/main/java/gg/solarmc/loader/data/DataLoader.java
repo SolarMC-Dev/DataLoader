@@ -17,7 +17,9 @@
  * and navigate to version 3 of the GNU Affero General Public License.
  */
 
-package gg.solarmc.loader;
+package gg.solarmc.loader.data;
+
+import gg.solarmc.loader.Transaction;
 
 public interface DataLoader<D> {
 

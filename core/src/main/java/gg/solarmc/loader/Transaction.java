@@ -19,7 +19,7 @@
 
 package gg.solarmc.loader;
 
-import java.sql.Connection;
+import gg.solarmc.loader.data.DataLoader;
 
 /**
  * Broad concept of a transaction. <br>

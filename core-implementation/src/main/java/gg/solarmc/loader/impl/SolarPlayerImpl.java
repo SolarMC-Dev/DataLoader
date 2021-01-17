@@ -1,6 +1,6 @@
 package gg.solarmc.loader.impl;
 
-import gg.solarmc.loader.DataKey;
+import gg.solarmc.loader.data.DataKey;
 import gg.solarmc.loader.SolarPlayer;
 
 import java.util.Map;

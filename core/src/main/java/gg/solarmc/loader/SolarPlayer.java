@@ -19,6 +19,8 @@
 
 package gg.solarmc.loader;
 
+import gg.solarmc.loader.data.DataKey;
+
 import java.util.UUID;
 
 public interface SolarPlayer {

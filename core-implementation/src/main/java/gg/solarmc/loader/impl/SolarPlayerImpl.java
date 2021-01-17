@@ -35,6 +35,6 @@ public class SolarPlayerImpl implements SolarPlayer {
     }
 
     public static class SolarPlayerImplBuilder {
-
+        //figure this out
     }
 }

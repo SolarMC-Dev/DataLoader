@@ -21,8 +21,6 @@ package gg.solarmc.loader;
 
 import java.util.UUID;
 
-//Perhaps this should be a concrete class? I don't understand why this needs to be an interface as it would
-//only be confusing to have multiple implementations of a SolarPlayer if the SolarPlayer contains
 public interface SolarPlayer {
 
 	/**

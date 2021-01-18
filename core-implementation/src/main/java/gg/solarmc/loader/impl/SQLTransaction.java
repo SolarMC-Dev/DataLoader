@@ -1,6 +1,9 @@
 package gg.solarmc.loader.impl;
 
 import gg.solarmc.loader.Transaction;
+import org.jooq.DSLContext;
+import org.jooq.SQLDialect;
+import org.jooq.impl.DSL;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -29,6 +32,10 @@ public class SQLTransaction implements Transaction, AutoCloseable {
     /*
      * Useful for data module implementors
      */
+
+    public DSLContext jooq() {
+        return DSL.using(connection, SQLDialect.MARIADB);
+    }
 
     public RuntimeException rethrow(SQLException cause) {
         return new UncheckedSQLException(cause);

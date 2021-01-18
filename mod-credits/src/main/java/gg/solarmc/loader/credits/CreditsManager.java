@@ -19,33 +19,29 @@
 
 package gg.solarmc.loader.credits;
 
-import gg.solarmc.loader.data.DataLoader;
 import gg.solarmc.loader.Transaction;
+import gg.solarmc.loader.data.DataManager;
 import gg.solarmc.loader.impl.SQLTransaction;
 
-import java.math.BigDecimal;
+import java.util.List;
 
-import static gg.solarmc.loader.schema.tables.Credits.CREDITS;
+import static gg.solarmc.loader.schema.tables.CreditsWithNames.CREDITS_WITH_NAMES;
 
-class CreditsLoader implements DataLoader<Credits> {
+public class CreditsManager implements DataManager {
 
-	@Override
-	public Credits createDefaultData(Transaction transaction, int userId) {
-		BigDecimal defaultBalance = BigDecimal.ZERO; // TODO: Configurable default balance
+	CreditsManager() {}
+
+	public List<TopBalanceEntry> getTopBalances(Transaction transaction, int limit) {
 		var jooq = ((SQLTransaction) transaction).jooq();
-		jooq.insertInto(CREDITS)
-				.columns(CREDITS.USER_ID, CREDITS.BALANCE).values(userId, defaultBalance)
-				.execute();
-		return new Credits(userId, defaultBalance);
-	}
 
-	@Override
-	public Credits loadData(Transaction transaction, int userId) {
-		var jooq = ((SQLTransaction) transaction).jooq();
-		BigDecimal balance = jooq.select(CREDITS.BALANCE).from(CREDITS)
-				.where(CREDITS.USER_ID.eq(userId))
-				.fetchOne((rowRecord) -> rowRecord.get(CREDITS.BALANCE));
-		return new Credits(userId, balance);
+		return jooq.select().from(CREDITS_WITH_NAMES)
+				.orderBy(CREDITS_WITH_NAMES.BALANCE.desc()).limit(limit)
+				.fetch((rowRecord) -> {
+					return new TopBalanceEntry(
+							rowRecord.get(CREDITS_WITH_NAMES.USER_ID),
+							rowRecord.get(CREDITS_WITH_NAMES.USERNAME),
+							rowRecord.get(CREDITS_WITH_NAMES.BALANCE));
+				});
 	}
 
 }

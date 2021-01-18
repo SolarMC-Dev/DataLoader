@@ -20,6 +20,6 @@ public class KitPvp implements DataObject {
         this.ownedKits = kits;
     }
 
-    public
+
 
 }

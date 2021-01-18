@@ -73,7 +73,8 @@
 		<module>mod-credits</module>
 		<module>mod-prefs</module>
 		<module>mod-kitpvp</module>
-	</modules>
+        <module>core-schema</module>
+    </modules>
 
 	<dependencyManagement>
 		<dependencies>
@@ -93,6 +94,17 @@
 				<version>${dazzleconf.version}</version>
 			</dependency>
 			<!-- Self Dependencies -->
+			<dependency>
+				<groupId>gg.solarmc.loader</groupId>
+				<artifactId>loader-core-schema</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>gg.solarmc.loader</groupId>
+				<artifactId>loader-core-implementation</artifactId>
+				<version>${project.version}</version>
+				<scope>provided</scope>
+			</dependency>
 			<dependency>
 				<groupId>gg.solarmc.loader</groupId>
 				<artifactId>loader-core</artifactId>

@@ -11,12 +11,12 @@ class SolarPlayerImpl implements SolarPlayer {
 
     private final Map<DataKey<?, ?>, DataObject> storedData;
     private final int userID;
-    private final UUID mcUUID;
+    private final UUID mcUuid;
 
-    SolarPlayerImpl(Map<DataKey<?, ?>, DataObject> storedData, int userID, UUID mcUUID) {
+    SolarPlayerImpl(Map<DataKey<?, ?>, DataObject> storedData, int userID, UUID mcUuid) {
         this.storedData = Map.copyOf(storedData);
         this.userID = userID;
-        this.mcUUID = mcUUID;
+        this.mcUuid = mcUuid;
     }
 
     @Override
@@ -26,14 +26,14 @@ class SolarPlayerImpl implements SolarPlayer {
 
     @Override
     public UUID getMinecraftUUID() {
-        return mcUUID;
+        return mcUuid;
     }
 
     @Override
     public <D extends DataObject> D getData(DataKey<D, ?> key) {
         @SuppressWarnings("unchecked")
         D data = (D) storedData.get(key);
-        assert data != null : key;
+        assert data != null : "No data loaded at " + key;
         return data;
     }
 

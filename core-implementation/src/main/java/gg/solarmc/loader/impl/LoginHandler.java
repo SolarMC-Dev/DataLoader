@@ -22,6 +22,7 @@ package gg.solarmc.loader.impl;
 import gg.solarmc.loader.SolarPlayer;
 import gg.solarmc.loader.data.DataKey;
 import gg.solarmc.loader.data.DataObject;
+import gg.solarmc.uuidutil.UUIDUtil;
 import space.arim.omnibus.util.concurrent.CentralisedFuture;
 
 import java.sql.SQLException;
@@ -29,6 +30,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+
+import static gg.solarmc.loader.schema.tables.UserIds.USER_IDS;
 
 public class LoginHandler {
 
@@ -50,21 +53,26 @@ public class LoginHandler {
 		});
 	}
 
-	private SolarPlayer runLogin(UUID mcUUID) throws SQLException {
+	private SolarPlayer runLogin(UUID mcUuid) throws SQLException {
 		Map<DataKey<?, ?>, DataObject> storedData = new HashMap<>();
-		int userId = 0;
+		byte[] mcUuidBytes = UUIDUtil.toByteArray(mcUuid);
+		int userId;
 		try (SQLTransaction transaction = transactionManager.openTransaction()) {
-			// if user exists
-			if (true) {
-				// New user
-				for (DataGroup<?, ?> group : groups) {
-					storedData.put(group.key(), group.loader().createDefaultData());
-				}
-			} else {
-				// Existing user
+			transaction.markReadOnly();
+
+			var idRecord = transaction.jooq()
+					.select(USER_IDS.ID).from(USER_IDS)
+					.where(USER_IDS.UUID.eq(mcUuidBytes)).fetchOne();
+			if (idRecord == null) {
+				throw new IllegalStateException("User ID does not exist for " + mcUuid);
 			}
+			userId = idRecord.get(USER_IDS.ID);
+			for (DataGroup<?, ?> group : groups) {
+				storedData.put(group.key(), group.loader().loadData(transaction, userId));
+			}
+			// It is okay that the transaction is not committed, because data loading is read-only
 		}
-		return new SolarPlayerImpl(storedData, userId, mcUUID);
+		return new SolarPlayerImpl(storedData, userId, mcUuid);
 	}
 
 }

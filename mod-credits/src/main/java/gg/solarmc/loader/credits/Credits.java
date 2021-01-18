@@ -21,46 +21,81 @@ package gg.solarmc.loader.credits;
 
 import gg.solarmc.loader.data.DataObject;
 import gg.solarmc.loader.Transaction;
+import gg.solarmc.loader.impl.SQLTransaction;
+import gg.solarmc.loader.schema.tables.records.CreditsRecord;
 
 import java.math.BigDecimal;
 
+import static gg.solarmc.loader.schema.tables.Credits.*;
+
 public class Credits implements DataObject {
 
-	private volatile BigDecimal balance;
+	private final int userId;
+	private volatile BigDecimal currentBalance;
 
-	Credits(BigDecimal balance) {
-		this.balance = balance;
-	}
-
-	BigDecimal currentBalance() {
-		return balance;
-	}
-
-	/**
-	 * Withdraw a value of currency
-	 * @param transaction represents the Transaction
-	 * @param withdrawAmount represents the amount being removed
-	 * @return Result of the withdraw to the balance
-	 *
-	 * Result is failable
-	 */
-
-	WithdrawResult withdrawBalance(Transaction transaction, BigDecimal withdrawAmount) {
-		return null;
+	Credits(int userId, BigDecimal currentBalance) {
+		this.userId = userId;
+		this.currentBalance = currentBalance;
 	}
 
 	/**
-	 * Deposits a value of currency
-	 * @param transaction
-	 * @param depositAmount
-	 * @return Result of the deposit to the balance
+	 * The user's cached current balance. Should not be relied upon for correctness; see {@link DataObject}
 	 *
-	 * Result cannot fail
+	 * @return the cached current balance
 	 */
-
-	DepositResult depositBalance(Transaction transaction, BigDecimal depositAmount) {
-		return null;
+	public BigDecimal currentBalance() {
+		return currentBalance;
 	}
 
+	private CreditsRecord getBalance(Transaction transaction) {
+		var jooq = ((SQLTransaction) transaction).jooq();
+		CreditsRecord creditsRecord = jooq.fetchOne(CREDITS, CREDITS.USER_ID.eq(userId));
+		assert creditsRecord != null : "User data disappeared";
+		return creditsRecord;
+	}
+
+	/**
+	 * Withdraws from the user's account. Only succeeds if the user has enough balance.
+	 *
+	 * @param transaction the transaction
+	 * @param withdrawAmount the amount withdrawn
+	 * @return a withdraw result indicating success or failure, as well as the new balance
+	 * @throws IllegalArgumentException if {@code withdrawAmount} is negative or zero
+	 */
+	public WithdrawResult withdrawBalance(Transaction transaction, BigDecimal withdrawAmount) {
+		if (withdrawAmount.compareTo(BigDecimal.ZERO) <= 0) {
+			throw new IllegalArgumentException("withdrawAmount must be positive");
+		}
+		CreditsRecord creditsRecord = getBalance(transaction);
+		BigDecimal existingBalance = creditsRecord.getBalance();
+		BigDecimal newBalance = existingBalance.subtract(withdrawAmount);
+		if (newBalance.compareTo(BigDecimal.ZERO) < 0) {
+			return new WithdrawResult(existingBalance, false);
+		}
+		creditsRecord.setBalance(newBalance);
+		creditsRecord.store(CREDITS.BALANCE);
+		currentBalance = newBalance;
+		return new WithdrawResult(newBalance, true);
+	}
+
+	/**
+	 * Deposits into the user's account. Cannot fail
+	 * @param transaction the transaction
+	 * @param depositAmount the amount to deposit
+	 * @return a deposit result indicating the new balance
+	 * @throws IllegalArgumentException if {@code depositAmount} is negative or zero
+	 */
+	public DepositResult depositBalance(Transaction transaction, BigDecimal depositAmount) {
+		if (depositAmount.compareTo(BigDecimal.ZERO) <= 0) {
+			throw new IllegalArgumentException("depositAmount must be positive");
+		}
+		CreditsRecord creditsRecord = getBalance(transaction);
+		BigDecimal existingBalance = creditsRecord.getBalance();
+		BigDecimal newBalance = existingBalance.add(depositAmount);
+		creditsRecord.setBalance(newBalance);
+		creditsRecord.store(CREDITS.BALANCE);
+		currentBalance = newBalance;
+		return new DepositResult(newBalance);
+	}
 
 }

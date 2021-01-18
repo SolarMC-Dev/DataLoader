@@ -26,15 +26,17 @@ public interface DataLoader<D> {
 	/**
 	 * Performs the initial data loader for a new user.
 	 *
+	 * @param transaction the enclosing transaction
+	 * @param userId the new user's ID
 	 * @return the data object with default values
 	 */
-	D createDefaultData();
+	D createDefaultData(Transaction transaction, int userId);
 
 	/**
-	 * Performs the initial data load for a specific user ID.
+	 * Performs the initial data load for a specific user
 	 *
 	 * @param transaction the enclosing transaction
-	 * @param userId the user ID
+	 * @param userId the user's ID
 	 * @return the loaded data
 	 */
 	D loadData(Transaction transaction, int userId);

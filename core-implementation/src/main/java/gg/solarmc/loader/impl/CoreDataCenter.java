@@ -26,6 +26,7 @@ import space.arim.omnibus.util.concurrent.CentralisedFuture;
 
 import java.sql.SQLException;
 import java.util.Map;
+import java.util.Objects;
 
 class CoreDataCenter implements DataCenter {
 
@@ -39,9 +40,20 @@ class CoreDataCenter implements DataCenter {
 
 	@Override
 	public CentralisedFuture<?> runTransact(TransactionRunner runner) {
+		Objects.requireNonNull(runner, "runner");
 		return transactionManager.runAsync(() -> {
 			try (SQLTransaction transaction = transactionManager.openTransaction()) {
-				runner.runTransactUsing(transaction);
+
+				try {
+					runner.runTransactUsing(transaction);
+				} catch (RuntimeException ex) {
+					try {
+						transaction.getConnection().rollback();
+					} catch (SQLException suppressed) { ex.addSuppressed(suppressed); }
+					throw ex;
+				}
+				transaction.getConnection().commit();
+
 			} catch (SQLException ex) {
 				throw new UncheckedSQLException(ex);
 			}
@@ -50,9 +62,22 @@ class CoreDataCenter implements DataCenter {
 
 	@Override
 	public <R> CentralisedFuture<R> transact(TransactionActor<R> actor) {
+		Objects.requireNonNull(actor, "actor");
 		return transactionManager.supplyAsync(() -> {
 			try (SQLTransaction transaction = transactionManager.openTransaction()) {
-				return actor.transactUsing(transaction);
+
+				R value;
+				try {
+					value = actor.transactUsing(transaction);
+				} catch (RuntimeException ex) {
+					try {
+						transaction.getConnection().rollback();
+					} catch (SQLException suppressed) { ex.addSuppressed(suppressed); }
+					throw ex;
+				}
+				transaction.getConnection().commit();
+				return value;
+
 			} catch (SQLException ex) {
 				throw new UncheckedSQLException(ex);
 			}

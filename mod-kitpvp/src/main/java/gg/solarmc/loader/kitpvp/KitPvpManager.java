@@ -17,25 +17,10 @@
  * and navigate to version 3 of the GNU Affero General Public License.
  */
 
-package gg.solarmc.loader.credits;
+package gg.solarmc.loader.kitpvp;
 
-import gg.solarmc.loader.data.DataKey;
-import gg.solarmc.loader.data.DataKeyInitializationContext;
-import gg.solarmc.loader.data.DataLoader;
 import gg.solarmc.loader.data.DataManager;
-import space.arim.omnibus.util.concurrent.FactoryOfTheFuture;
 
-import java.nio.file.Path;
+public class KitPvpManager implements DataManager {
 
-public class CreditsKey implements DataKey<Credits, CreditsManager> {
-
-	@Override
-	public DataLoader<Credits> createLoader(CreditsManager dataManager, DataKeyInitializationContext context) {
-		return new CreditsLoader();
-	}
-
-	@Override
-	public CreditsManager createDataManager(DataKeyInitializationContext context) {
-		return null;
-	}
 }

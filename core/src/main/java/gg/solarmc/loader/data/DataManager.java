@@ -27,4 +27,7 @@ package gg.solarmc.loader.data;
  * data manager might provide a method to find the top balances.
  */
 public interface DataManager extends AutoCloseable {
+
+	@Override
+	default void close() throws Exception { }
 }

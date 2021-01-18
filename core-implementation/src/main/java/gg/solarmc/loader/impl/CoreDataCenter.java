@@ -30,19 +30,19 @@ import java.util.Objects;
 
 class CoreDataCenter implements DataCenter {
 
-	private final TransactionManager transactionManager;
+	private final TransactionSource transactionSource;
 	private final Map<DataKey<?, ?>, DataGroup<?, ?>> groups;
 
-	CoreDataCenter(TransactionManager transactionManager, Map<DataKey<?, ?>, DataGroup<?, ?>> groups) {
-		this.transactionManager = transactionManager;
+	CoreDataCenter(TransactionSource transactionSource, Map<DataKey<?, ?>, DataGroup<?, ?>> groups) {
+		this.transactionSource = transactionSource;
 		this.groups = Map.copyOf(groups);
 	}
 
 	@Override
 	public CentralisedFuture<?> runTransact(TransactionRunner runner) {
 		Objects.requireNonNull(runner, "runner");
-		return transactionManager.runAsync(() -> {
-			try (SQLTransaction transaction = transactionManager.openTransaction()) {
+		return transactionSource.runAsync(() -> {
+			try (SQLTransaction transaction = transactionSource.openTransaction()) {
 
 				try {
 					runner.runTransactUsing(transaction);
@@ -63,8 +63,8 @@ class CoreDataCenter implements DataCenter {
 	@Override
 	public <R> CentralisedFuture<R> transact(TransactionActor<R> actor) {
 		Objects.requireNonNull(actor, "actor");
-		return transactionManager.supplyAsync(() -> {
-			try (SQLTransaction transaction = transactionManager.openTransaction()) {
+		return transactionSource.supplyAsync(() -> {
+			try (SQLTransaction transaction = transactionSource.openTransaction()) {
 
 				R value;
 				try {

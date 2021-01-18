@@ -80,13 +80,13 @@ public class DataCenterLauncher {
 				new DataKeyInitializationContextImpl(omnibus, futuresFactory, folder)).loadGroups();
 		Set<DataGroup<?, ?>> groupsSet = Set.copyOf(groupsMap.values());
 
-		TransactionManager transactionManager = new TransactionManager(futuresFactory, executor, dataSource);
+		TransactionSource transactionSource = new TransactionSource(futuresFactory, executor, dataSource);
 
-		DataCenter dataCenter = new CoreDataCenter(transactionManager, groupsMap);
+		DataCenter dataCenter = new CoreDataCenter(transactionSource, groupsMap);
 		omnibus.getRegistry().register(DataCenter.class, RegistryPriorities.LOWEST, dataCenter, "Main DataCenter");
 
 		return new OperationalSolarDataControl(
-				new LoginHandler(transactionManager, groupsSet),
+				new LoginHandler(transactionSource, groupsSet),
 				new DataCenterLifecycle(executor, dataSource, groupsSet));
 	}
 

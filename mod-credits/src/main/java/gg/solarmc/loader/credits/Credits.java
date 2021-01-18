@@ -50,6 +50,7 @@ public class Credits implements DataObject {
 	private CreditsRecord getBalance(Transaction transaction) {
 		var jooq = ((SQLTransaction) transaction).jooq();
 		CreditsRecord creditsRecord = jooq.fetchOne(CREDITS, CREDITS.USER_ID.eq(userId));
+
 		assert creditsRecord != null : "User data disappeared";
 		return creditsRecord;
 	}

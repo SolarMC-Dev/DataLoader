@@ -17,23 +17,14 @@
  * and navigate to version 3 of the GNU Affero General Public License.
  */
 
-package gg.solarmc.loader;
-
-import gg.solarmc.loader.data.DataLoader;
+package gg.solarmc.loader.data;
 
 /**
- * Broad concept of a transaction. <br>
+ * Marker interface for data managers. A data manager is not associated with any
+ * specific player. One such data manager exists for its data key. <br>
  * <br>
- * A {@link DataLoader} implementations will likely have to operate on the presumption
- * of a more specific subclass.
- *
+ * Data managers aggregate data for all players. For example, an economy system's
+ * data manager might provide a method to find the top balances.
  */
-public interface Transaction {
-
-	/**
-	 * Hints that only read only operations will be performed
-	 *
-	 */
-	void markReadOnly();
-
+public interface DataManager extends AutoCloseable {
 }

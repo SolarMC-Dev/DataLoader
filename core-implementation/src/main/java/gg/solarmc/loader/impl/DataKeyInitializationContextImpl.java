@@ -17,36 +17,38 @@
  * and navigate to version 3 of the GNU Affero General Public License.
  */
 
-package gg.solarmc.loader.credits;
+package gg.solarmc.loader.impl;
 
-import java.math.BigDecimal;
+import gg.solarmc.loader.data.DataKeyInitializationContext;
+import space.arim.omnibus.Omnibus;
+import space.arim.omnibus.util.concurrent.FactoryOfTheFuture;
 
-public class WithdrawResult extends EconomyResult {
+import java.nio.file.Path;
 
-	private final boolean success;
+class DataKeyInitializationContextImpl implements DataKeyInitializationContext {
 
-	WithdrawResult(BigDecimal newBalance, boolean success) {
-		super(newBalance);
-		this.success = success;
-	}
+	private final Omnibus omnibus;
+	private final FactoryOfTheFuture futuresFactory;
+	private final Path configFolder;
 
-	public boolean isSuccessful() {
-		return success;
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
-		if (!super.equals(o)) return false;
-		WithdrawResult that = (WithdrawResult) o;
-		return success == that.success;
+	DataKeyInitializationContextImpl(Omnibus omnibus, FactoryOfTheFuture futuresFactory, Path configFolder) {
+		this.omnibus = omnibus;
+		this.futuresFactory = futuresFactory;
+		this.configFolder = configFolder;
 	}
 
 	@Override
-	public int hashCode() {
-		int result = super.hashCode();
-		result = 31 * result + (success ? 1 : 0);
-		return result;
+	public Omnibus omnibus() {
+		return omnibus;
+	}
+
+	@Override
+	public FactoryOfTheFuture futuresFactory() {
+		return futuresFactory;
+	}
+
+	@Override
+	public Path configFolder() {
+		return configFolder;
 	}
 }

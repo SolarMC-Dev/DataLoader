@@ -31,9 +31,7 @@ public interface DataLoader<D> {
 	D createDefaultData();
 
 	/**
-	 * Performs the initial data load for a specific user ID. Usually this is used
-	 * to load cachable, read-only data. Writable data should use transaction/future
-	 * based methods on the data object.
+	 * Performs the initial data load for a specific user ID.
 	 *
 	 * @param transaction the enclosing transaction
 	 * @param userId the user ID

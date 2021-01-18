@@ -17,23 +17,29 @@
  * and navigate to version 3 of the GNU Affero General Public License.
  */
 
-package gg.solarmc.loader;
+package gg.solarmc.loader.impl;
 
-import gg.solarmc.loader.data.DataLoader;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
-/**
- * Broad concept of a transaction. <br>
- * <br>
- * A {@link DataLoader} implementations will likely have to operate on the presumption
- * of a more specific subclass.
- *
- */
-public interface Transaction {
+class ConnectionProperties {
 
-	/**
-	 * Hints that only read only operations will be performed
-	 *
-	 */
-	void markReadOnly();
+	private final char urlPropertyPrefix;
+	private final char urlPropertySeparator;
 
+	ConnectionProperties(char urlPropertyPrefix, char urlPropertySeparator) {
+		this.urlPropertyPrefix = urlPropertyPrefix;
+		this.urlPropertySeparator = urlPropertySeparator;
+	}
+
+	String formatProperties(Map<String, Object> properties) {
+		if (properties.isEmpty()) {
+			return "";
+		}
+		List<String> connectProps = new ArrayList<>(properties.size());
+		properties.forEach((key, value) -> connectProps.add(key + "=" + value));
+
+		return urlPropertyPrefix + String.join(Character.toString(urlPropertySeparator), connectProps);
+	}
 }

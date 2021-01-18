@@ -24,18 +24,25 @@ import java.math.BigDecimal;
 public class EconomyResult {
 
 	private final BigDecimal newBalance;
-	private final boolean success;
 
-	EconomyResult(BigDecimal newBalance, boolean success) {
+	EconomyResult(BigDecimal newBalance) {
 		this.newBalance = newBalance;
-		this.success = success;
 	}
 
 	public BigDecimal newBalance() {
 		return newBalance;
 	}
 
-	public boolean isSuccess() {
-		return success;
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		EconomyResult that = (EconomyResult) o;
+		return newBalance.equals(that.newBalance);
+	}
+
+	@Override
+	public int hashCode() {
+		return newBalance.hashCode();
 	}
 }

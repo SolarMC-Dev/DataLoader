@@ -17,34 +17,28 @@
  * and navigate to version 3 of the GNU Affero General Public License.
  */
 
-package gg.solarmc.loader;
+package gg.solarmc.loader.impl;
 
-import space.arim.omnibus.util.concurrent.CentralisedFuture;
+public class OperationalSolarDataControl implements AutoCloseable {
 
-public interface TransactionManager {
+	private final LoginHandler loginHandler;
+	private final DataCenterLifecycle lifecycle;
 
-	CentralisedFuture<?> runTransact(TransactionRunner runner);
-
-	/**
-	 * Transactor which does not return a result
-	 *
-	 */
-	@FunctionalInterface
-	interface TransactionRunner {
-
-		void runTransactUsing(Transaction transaction);
+	public OperationalSolarDataControl(LoginHandler loginHandler, DataCenterLifecycle lifecycle) {
+		this.loginHandler = loginHandler;
+		this.lifecycle = lifecycle;
 	}
 
-	<R> CentralisedFuture<R> transact(TransactionActor<R> actor);
+	public LoginHandler loginHandler() {
+		return loginHandler;
+	}
 
-	/**
-	 * Transactor returning a result
-	 *
-	 * @param <R> the result type
-	 */
-	@FunctionalInterface
-	interface TransactionActor<R> {
-
-		R transactUsing(Transaction transaction);
+	@Override
+	public void close() {
+		try {
+			lifecycle.close();
+		} catch (Exception ex) {
+			throw new RuntimeException("Failed to shut down properly", ex);
+		}
 	}
 }

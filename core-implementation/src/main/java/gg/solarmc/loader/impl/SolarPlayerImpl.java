@@ -2,39 +2,39 @@ package gg.solarmc.loader.impl;
 
 import gg.solarmc.loader.data.DataKey;
 import gg.solarmc.loader.SolarPlayer;
+import gg.solarmc.loader.data.DataObject;
 
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
-public class SolarPlayerImpl implements SolarPlayer {
+class SolarPlayerImpl implements SolarPlayer {
 
-    private final Map<DataKey<?>,?> storedData = new ConcurrentHashMap<>();
+    private final Map<DataKey<?, ?>, DataObject> storedData;
     private final int userID;
+    private final UUID mcUUID;
 
-    public SolarPlayerImpl(int userID) {
+    SolarPlayerImpl(Map<DataKey<?, ?>, DataObject> storedData, int userID, UUID mcUUID) {
+        this.storedData = Map.copyOf(storedData);
         this.userID = userID;
+        this.mcUUID = mcUUID;
     }
 
     @Override
     public int getUserID() {
-        return 0; //implement
+        return userID;
     }
 
     @Override
     public UUID getMinecraftUUID() {
-
-        //TODO implement
-
-        return null;
+        return mcUUID;
     }
 
     @Override
-    public <D> D getData(DataKey<D> key) {
-        return (D) storedData.get(key);
+    public <D extends DataObject> D getData(DataKey<D, ?> key) {
+        @SuppressWarnings("unchecked")
+        D data = (D) storedData.get(key);
+        assert data != null : key;
+        return data;
     }
 
-    public static class SolarPlayerImplBuilder {
-        //figure this out
-    }
 }

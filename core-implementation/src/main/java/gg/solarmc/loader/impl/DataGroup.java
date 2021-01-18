@@ -17,23 +17,34 @@
  * and navigate to version 3 of the GNU Affero General Public License.
  */
 
-package gg.solarmc.loader;
+package gg.solarmc.loader.impl;
 
+import gg.solarmc.loader.data.DataKey;
 import gg.solarmc.loader.data.DataLoader;
+import gg.solarmc.loader.data.DataManager;
+import gg.solarmc.loader.data.DataObject;
 
-/**
- * Broad concept of a transaction. <br>
- * <br>
- * A {@link DataLoader} implementations will likely have to operate on the presumption
- * of a more specific subclass.
- *
- */
-public interface Transaction {
+class DataGroup<D extends DataObject, M extends DataManager> {
 
-	/**
-	 * Hints that only read only operations will be performed
-	 *
-	 */
-	void markReadOnly();
+	private final DataKey<D, ?> key;
+	private final M manager;
+	private final DataLoader<D> loader;
 
+	DataGroup(DataKey<D, ?> key, M manager, DataLoader<D> loader) {
+		this.key = key;
+		this.manager = manager;
+		this.loader = loader;
+	}
+
+	DataKey<D, ?> key() {
+		return key;
+	}
+
+	M manager() {
+		return manager;
+	}
+
+	DataLoader<D> loader() {
+		return loader;
+	}
 }

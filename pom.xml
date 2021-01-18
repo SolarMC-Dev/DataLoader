@@ -20,6 +20,12 @@
 		<omnibus.version>1.0.0-RC6</omnibus.version>
 		<slf4j.version>1.7.30</slf4j.version>
 		<junit.version>5.7.0</junit.version>
+
+		<!-- On 2.7.0 due to CONJ-847. When 2.7.2 is released, bump this -->
+		<mariadb-connector.version>2.7.0</mariadb-connector.version>
+		<mariadb4j.version>2.4.0</mariadb4j.version>
+
+		<dazzleconf.version>1.1.0</dazzleconf.version>
 	</properties>
 
 	<licenses>
@@ -63,16 +69,10 @@
 
 	<modules>
 		<module>core</module>
+		<module>core-implementation</module>
 		<module>mod-credits</module>
 		<module>mod-prefs</module>
 		<module>mod-kitpvp</module>
-		<module>mod-credits</module>
-        <module>loader-core-impl</module>
-		<module>core-impl</module>
-        <module>core-implementation</module>
-		<module>core-implement</module>
-		<module>core-impl</module>
-		<module>core-implementation</module>
 	</modules>
 
 	<dependencyManagement>
@@ -86,6 +86,11 @@
 				<groupId>org.slf4j</groupId>
 				<artifactId>slf4j-api</artifactId>
 				<version>${slf4j.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>space.arim.dazzleconf</groupId>
+				<artifactId>dazzleconf-ext-snakeyaml</artifactId>
+				<version>${dazzleconf.version}</version>
 			</dependency>
 			<!-- Self Dependencies -->
 			<dependency>

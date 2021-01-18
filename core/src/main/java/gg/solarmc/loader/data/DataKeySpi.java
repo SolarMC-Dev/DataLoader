@@ -17,23 +17,19 @@
  * and navigate to version 3 of the GNU Affero General Public License.
  */
 
-package gg.solarmc.loader;
-
-import gg.solarmc.loader.data.DataLoader;
+package gg.solarmc.loader.data;
 
 /**
- * Broad concept of a transaction. <br>
- * <br>
- * A {@link DataLoader} implementations will likely have to operate on the presumption
- * of a more specific subclass.
+ * Interface of which instances are loaded via the service loader.
  *
  */
-public interface Transaction {
+public interface DataKeySpi {
 
 	/**
-	 * Hints that only read only operations will be performed
+	 * Gets all the keys which are to be registered and available
 	 *
+	 * @return the data keys
 	 */
-	void markReadOnly();
+	Iterable<DataKey<?, ?>> getKeys();
 
 }

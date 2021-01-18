@@ -22,10 +22,6 @@ package gg.solarmc.loader.credits;
 import gg.solarmc.loader.data.DataKey;
 import gg.solarmc.loader.data.DataKeyInitializationContext;
 import gg.solarmc.loader.data.DataLoader;
-import gg.solarmc.loader.data.DataManager;
-import space.arim.omnibus.util.concurrent.FactoryOfTheFuture;
-
-import java.nio.file.Path;
 
 public class CreditsKey implements DataKey<Credits, CreditsManager> {
 

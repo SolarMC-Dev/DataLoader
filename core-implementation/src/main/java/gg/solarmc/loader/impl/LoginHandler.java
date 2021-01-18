@@ -35,16 +35,16 @@ import static gg.solarmc.loader.schema.tables.UserIds.USER_IDS;
 
 public class LoginHandler {
 
-	private final TransactionManager transactionManager;
+	private final TransactionSource transactionSource;
 	private final Set<DataGroup<?, ?>> groups;
 
-	LoginHandler(TransactionManager transactionManager, Set<DataGroup<?, ?>> groups) {
-		this.transactionManager = transactionManager;
+	LoginHandler(TransactionSource transactionSource, Set<DataGroup<?, ?>> groups) {
+		this.transactionSource = transactionSource;
 		this.groups = Set.copyOf(groups);
 	}
 
 	public CentralisedFuture<SolarPlayer> login(UUID mcUUID) {
-		return transactionManager.supplyAsync(() -> {
+		return transactionSource.supplyAsync(() -> {
 			try {
 				return runLogin(mcUUID);
 			} catch (SQLException ex) {
@@ -57,7 +57,7 @@ public class LoginHandler {
 		Map<DataKey<?, ?>, DataObject> storedData = new HashMap<>();
 		byte[] mcUuidBytes = UUIDUtil.toByteArray(mcUuid);
 		int userId;
-		try (SQLTransaction transaction = transactionManager.openTransaction()) {
+		try (SQLTransaction transaction = transactionSource.openTransaction()) {
 			transaction.markReadOnly();
 
 			var idRecord = transaction.jooq()

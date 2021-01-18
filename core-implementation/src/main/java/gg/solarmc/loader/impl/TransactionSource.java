@@ -27,13 +27,16 @@ import java.sql.SQLException;
 import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 
-class TransactionManager {
+/**
+ * Produces {@link SQLTransaction}s as well as allows for Async Futures to be produced using the contained executor.
+ */
+class TransactionSource {
 
 	private final FactoryOfTheFuture futuresFactory;
 	private final Executor executor;
 	private final DataSource dataSource;
 
-	TransactionManager(FactoryOfTheFuture futuresFactory, Executor executor, DataSource dataSource) {
+	TransactionSource(FactoryOfTheFuture futuresFactory, Executor executor, DataSource dataSource) {
 		this.futuresFactory = futuresFactory;
 		this.executor = executor;
 		this.dataSource = dataSource;

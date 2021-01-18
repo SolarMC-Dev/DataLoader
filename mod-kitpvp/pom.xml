@@ -16,5 +16,14 @@
 			<groupId>gg.solarmc.loader</groupId>
 			<artifactId>loader-core</artifactId>
 		</dependency>
+        <dependency>
+            <groupId>gg.solarmc.loader</groupId>
+            <artifactId>loader-core-schema</artifactId>
+        </dependency>
+		<dependency>
+			<groupId>gg.solarmc.loader</groupId>
+			<artifactId>loader-core-implementation</artifactId>
+			<scope>compile</scope>
+		</dependency>
 	</dependencies>
 </project>

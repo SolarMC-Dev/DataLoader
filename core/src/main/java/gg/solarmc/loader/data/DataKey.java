@@ -19,18 +19,16 @@
 
 package gg.solarmc.loader.data;
 
-import gg.solarmc.loader.data.DataLoader;
-import space.arim.omnibus.util.concurrent.FactoryOfTheFuture;
-
-import java.nio.file.Path;
-
 /**
  * A key used to retrieve certain player data
  *
  * @param <D> the data object type
+ * @param <M> the data manager type
  */
-public interface DataKey<D> {
+public interface DataKey<D extends DataObject, M extends DataManager> {
 
-	DataLoader<D> createLoader(FactoryOfTheFuture futuresFactory, Path configFolder);
+	DataLoader<D> createLoader(M dataManager, DataKeyInitializationContext context);
+
+	M createDataManager(DataKeyInitializationContext context);
 
 }

@@ -20,6 +20,7 @@
 package gg.solarmc.loader;
 
 import gg.solarmc.loader.data.DataKey;
+import gg.solarmc.loader.data.DataObject;
 
 import java.util.UUID;
 
@@ -42,5 +43,12 @@ public interface SolarPlayer {
 	 */
 	UUID getMinecraftUUID();
 
-	<D> D getData(DataKey<D> key);
+	/**
+	 * Gets a container of data attached to this player.
+	 *
+	 * @param key the data key
+	 * @param <D> the data object type
+	 * @return the data object
+	 */
+	<D extends DataObject> D getData(DataKey<D, ?> key);
 }

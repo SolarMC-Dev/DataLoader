@@ -17,23 +17,19 @@
  * and navigate to version 3 of the GNU Affero General Public License.
  */
 
-package gg.solarmc.loader;
+package gg.solarmc.loader.impl;
 
-import gg.solarmc.loader.data.DataLoader;
+public class UncheckedSQLException extends RuntimeException {
 
-/**
- * Broad concept of a transaction. <br>
- * <br>
- * A {@link DataLoader} implementations will likely have to operate on the presumption
- * of a more specific subclass.
- *
- */
-public interface Transaction {
+	public UncheckedSQLException(String message) {
+		super(message);
+	}
 
-	/**
-	 * Hints that only read only operations will be performed
-	 *
-	 */
-	void markReadOnly();
+	public UncheckedSQLException(String message, Throwable cause) {
+		super(message, cause);
+	}
 
+	public UncheckedSQLException(Throwable cause) {
+		super(cause);
+	}
 }

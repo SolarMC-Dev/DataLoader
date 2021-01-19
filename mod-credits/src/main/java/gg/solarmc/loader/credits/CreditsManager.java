@@ -22,14 +22,39 @@ package gg.solarmc.loader.credits;
 import gg.solarmc.loader.Transaction;
 import gg.solarmc.loader.data.DataManager;
 import gg.solarmc.loader.impl.SQLTransaction;
+import gg.solarmc.loader.impl.SolarDataConfig;
+import space.arim.dazzleconf.ConfigurationOptions;
+import space.arim.dazzleconf.error.InvalidConfigException;
+import space.arim.dazzleconf.ext.snakeyaml.SnakeYamlConfigurationFactory;
+import space.arim.dazzleconf.ext.snakeyaml.SnakeYamlOptions;
+import space.arim.dazzleconf.helper.ConfigurationHelper;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Path;
 import java.util.List;
 
 import static gg.solarmc.loader.schema.tables.CreditsWithNames.CREDITS_WITH_NAMES;
 
 public class CreditsManager implements DataManager {
 
-	CreditsManager() {}
+	private CreditsConfig configuration;
+
+	public CreditsManager(Path path) {
+		loadConfig(path);
+	}
+
+	private CreditsConfig loadConfig(Path path) {
+		try {
+			return new ConfigurationHelper<>(path, "credits.yml",
+					new SnakeYamlConfigurationFactory<>(CreditsConfig.class, ConfigurationOptions.defaults(),
+							new SnakeYamlOptions.Builder().useCommentingWriter(true).build())).reloadConfigData();
+		} catch (IOException ex) {
+			throw new UncheckedIOException(ex);
+		} catch (InvalidConfigException ex) {
+			throw new RuntimeException("Fix the configuration and restart", ex);
+		}
+	}
 
 	public List<TopBalanceEntry> getTopBalances(Transaction transaction, int limit) {
 		var jooq = ((SQLTransaction) transaction).jooq();
@@ -43,5 +68,7 @@ public class CreditsManager implements DataManager {
 							rowRecord.get(CREDITS_WITH_NAMES.BALANCE));
 				});
 	}
+
+	public CreditsConfig getConfiguration() { return configuration; }
 
 }

@@ -29,14 +29,19 @@ import static gg.solarmc.loader.schema.tables.Credits.CREDITS;
 
 class CreditsLoader implements DataLoader<Credits> {
 
+	private final BigDecimal defaultBigDecimalBalance;
+
+	public CreditsLoader(CreditsConfig configuration) {
+		defaultBigDecimalBalance = BigDecimal.valueOf(configuration.defaultBalance());
+	}
+
 	@Override
 	public Credits createDefaultData(Transaction transaction, int userId) {
-		BigDecimal defaultBalance = BigDecimal.ZERO; // TODO: Configurable default balance
 		var jooq = ((SQLTransaction) transaction).jooq();
 		jooq.insertInto(CREDITS)
-				.columns(CREDITS.USER_ID, CREDITS.BALANCE).values(userId, defaultBalance)
+				.columns(CREDITS.USER_ID, CREDITS.BALANCE).values(userId, defaultBigDecimalBalance)
 				.execute();
-		return new Credits(userId, defaultBalance);
+		return new Credits(userId, defaultBigDecimalBalance);
 	}
 
 	@Override

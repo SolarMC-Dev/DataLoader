@@ -27,6 +27,9 @@ import org.jooq.impl.DSL;
 import java.sql.Connection;
 import java.sql.SQLException;
 
+/**
+ * Implementation of transaction. Produced in {@link TransactionSource}
+ */
 public class SQLTransaction implements Transaction, AutoCloseable {
 
     private final Connection connection;

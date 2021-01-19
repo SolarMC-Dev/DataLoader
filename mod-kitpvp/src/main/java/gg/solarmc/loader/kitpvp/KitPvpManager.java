@@ -20,7 +20,59 @@
 package gg.solarmc.loader.kitpvp;
 
 import gg.solarmc.loader.data.DataManager;
+import gg.solarmc.loader.kitpvp.kit.Kit;
+
+import java.util.Set;
 
 public class KitPvpManager implements DataManager {
+
+    private Set<Kit> existingKits;
+
+    public KitPvpManager() {
+
+    }
+
+    /**
+     * Verifies if a kit exists based off of it's id number.
+     * @param kitID represents kit ID
+     * @return Whether kit exists or not
+     */
+    public boolean verifyKitID(int kitID) {
+        return existingKits.stream().anyMatch(k -> k.getId() == kitID);
+    }
+
+    /**
+     * Gets the numerical ID of a kit from a string if it exists
+     * @param string represents the string name of a kit
+     * @return kit ID if it exists.
+     */
+    public int getKitIDFromString(String string) {
+        for (Kit kit : existingKits) {
+            if (kit.getName().equals(string)) {
+                return kit.getId();
+            }
+        }
+
+        throw new IllegalStateException("Kit does not exist locally!");
+    }
+
+    /**
+     * Gets a kit from a numerical ID
+     * @param id represents the id of a kit
+     * @return kit if it exists
+     */
+    public Kit getKitFromID(int id) {
+        for (Kit kit : existingKits) {
+            if (kit.getId() == id) {
+                return kit;
+            }
+        }
+
+        throw new IllegalStateException("Kit does not exist locally!");
+    }
+
+    public boolean createKit() {
+        return false;
+    }
 
 }

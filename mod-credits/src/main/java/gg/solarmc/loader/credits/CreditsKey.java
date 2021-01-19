@@ -27,11 +27,13 @@ public class CreditsKey implements DataKey<Credits, CreditsManager> {
 
 	@Override
 	public DataLoader<Credits> createLoader(CreditsManager dataManager, DataKeyInitializationContext context) {
-		return new CreditsLoader();
+		return new CreditsLoader(dataManager.getConfiguration());
 	}
 
 	@Override
 	public CreditsManager createDataManager(DataKeyInitializationContext context) {
-		return null;
+		return new CreditsManager(context.configFolder());
 	}
+
+
 }

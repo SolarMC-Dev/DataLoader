@@ -39,18 +39,20 @@ import java.sql.SQLException;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 public class DataCenterLauncher {
 
 	private final Path folder;
 	private final FactoryOfTheFuture futuresFactory;
 	private final Omnibus omnibus;
+	private final ExecutorServiceFactory executorServiceFactory;
 
-	public DataCenterLauncher(Path folder, FactoryOfTheFuture futuresFactory, Omnibus omnibus) {
+	public DataCenterLauncher(Path folder, FactoryOfTheFuture futuresFactory,
+							  Omnibus omnibus, ExecutorServiceFactory executorServiceFactory) {
 		this.folder = folder;
 		this.futuresFactory = futuresFactory;
 		this.omnibus = omnibus;
+		this.executorServiceFactory = executorServiceFactory;
 	}
 
 	private SolarDataConfig loadConfig() {
@@ -75,7 +77,7 @@ public class DataCenterLauncher {
 				.load();
 		flyway.migrate();
 
-		ExecutorService executor = Executors.newFixedThreadPool(dataSource.getMaximumPoolSize());
+		ExecutorService executor = executorServiceFactory.newFixedThreadPool(dataSource.getMaximumPoolSize());
 
 		TransactionSource transactionSource = new TransactionSource(futuresFactory, executor, dataSource);
 

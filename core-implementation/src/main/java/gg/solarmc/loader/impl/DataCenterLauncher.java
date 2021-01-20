@@ -35,6 +35,7 @@ import space.arim.omnibus.util.concurrent.FactoryOfTheFuture;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
+import java.sql.SQLException;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -76,11 +77,18 @@ public class DataCenterLauncher {
 
 		ExecutorService executor = Executors.newFixedThreadPool(dataSource.getMaximumPoolSize());
 
-		Map<DataKey<?, ?>, DataGroup<?, ?>> groupsMap = new DataGroupLoader(
-				new DataKeyInitializationContextImpl(omnibus, futuresFactory, folder)).loadGroups();
-		Set<DataGroup<?, ?>> groupsSet = Set.copyOf(groupsMap.values());
-
 		TransactionSource transactionSource = new TransactionSource(futuresFactory, executor, dataSource);
+
+		Map<DataKey<?, ?>, DataGroup<?, ?>> groupsMap;
+		try (SQLTransaction transaction = transactionSource.openTransaction()) {
+			transaction.markReadOnly();
+
+			groupsMap = new DataGroupLoader(
+					new DataKeyInitializationContextImpl(omnibus, futuresFactory, folder, transaction)).loadGroups();
+		} catch (SQLException ex) {
+			throw new UncheckedSQLException(ex);
+		}
+		Set<DataGroup<?, ?>> groupsSet = Set.copyOf(groupsMap.values());
 
 		DataCenter dataCenter = new CoreDataCenter(transactionSource, groupsMap);
 		omnibus.getRegistry().register(DataCenter.class, RegistryPriorities.LOWEST, dataCenter, "Main DataCenter");

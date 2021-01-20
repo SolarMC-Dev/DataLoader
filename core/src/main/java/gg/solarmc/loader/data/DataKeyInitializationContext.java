@@ -19,6 +19,7 @@
 
 package gg.solarmc.loader.data;
 
+import gg.solarmc.loader.Transaction;
 import space.arim.omnibus.Omnibus;
 import space.arim.omnibus.util.concurrent.FactoryOfTheFuture;
 
@@ -35,4 +36,12 @@ public interface DataKeyInitializationContext {
 	FactoryOfTheFuture futuresFactory();
 
 	Path configFolder();
+
+	/**
+	 * A transaction usable for loading initial cached values
+	 *
+	 * @return a transaction for loading purposes
+	 */
+	Transaction transaction();
+
 }

@@ -19,6 +19,7 @@
 
 package gg.solarmc.loader.impl;
 
+import gg.solarmc.loader.Transaction;
 import gg.solarmc.loader.data.DataKeyInitializationContext;
 import space.arim.omnibus.Omnibus;
 import space.arim.omnibus.util.concurrent.FactoryOfTheFuture;
@@ -30,11 +31,14 @@ class DataKeyInitializationContextImpl implements DataKeyInitializationContext {
 	private final Omnibus omnibus;
 	private final FactoryOfTheFuture futuresFactory;
 	private final Path configFolder;
+	private final Transaction transaction;
 
-	DataKeyInitializationContextImpl(Omnibus omnibus, FactoryOfTheFuture futuresFactory, Path configFolder) {
+	DataKeyInitializationContextImpl(Omnibus omnibus, FactoryOfTheFuture futuresFactory,
+									 Path configFolder, Transaction transaction) {
 		this.omnibus = omnibus;
 		this.futuresFactory = futuresFactory;
 		this.configFolder = configFolder;
+		this.transaction = transaction;
 	}
 
 	@Override
@@ -50,5 +54,10 @@ class DataKeyInitializationContextImpl implements DataKeyInitializationContext {
 	@Override
 	public Path configFolder() {
 		return configFolder;
+	}
+
+	@Override
+	public Transaction transaction() {
+		return transaction;
 	}
 }

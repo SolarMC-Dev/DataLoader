@@ -47,10 +47,20 @@ CREATE TABLE prefs_flags (
   FOREIGN KEY (user_id) REFERENCES user_ids (id) ON DELETE CASCADE
 );
 
-CREATE TABLE prefs_blockedusers (
+CREATE TABLE friends_blocked_users (
   user_id INT NOT NULL,
   blocked_user_id INT NOT NULL,
   FOREIGN KEY (user_id) REFERENCES user_ids (id) ON DELETE CASCADE,
   FOREIGN KEY (blocked_user_id) REFERENCES user_ids (id) ON DELETE CASCADE,
-  INDEX (user_id)
+  INDEX (user_id),
+  UNIQUE (user_id,blocked_user_id)
+);
+
+CREATE TABLE friends_friended_users (
+  user_id INT NOT NULL,
+  friend_user_id INT NOT NULL,
+  FOREIGN KEY (user_id) REFERENCES user_ids (id) ON DELETE CASCADE,
+  FOREIGN KEY (friend_user_id) REFERENCES user_ids (id) ON DELETE CASCADE,
+  INDEX (user_id),
+  UNIQUE (user_id,friend_user_id)
 );

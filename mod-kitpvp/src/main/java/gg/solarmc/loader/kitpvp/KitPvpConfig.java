@@ -21,16 +21,5 @@
 
 package gg.solarmc.loader.kitpvp;
 
-import java.util.List;
-
-public class RemoveKitResult extends KitResult {
-
-    private final boolean success;
-
-    RemoveKitResult(List<Integer> unlockedKits, boolean success) {
-        super(unlockedKits);
-        this.success = success;
-    }
-
-    public boolean isSuccess() { return success; }
+public interface KitPvpConfig {
 }

@@ -21,12 +21,9 @@
 
 package gg.solarmc.loader.kitpvp;
 
-import java.math.BigDecimal;
-
 public class StatisticResult {
 
     private final Integer newStat;
-
     StatisticResult(Integer newStat) {
         this.newStat = newStat;
     }

@@ -19,11 +19,22 @@
  *
  */
 
-package gg.solarmc.loader.kitpvp.kit;
+package gg.solarmc.loader.kitpvp;
 
-public class KitItemPair {
+import gg.solarmc.loader.kitpvp.Kit;
 
-    //public KitItemPair(int slot, ItemStack stack) {
+import java.util.Set;
 
-    //}
+/**
+ * does not return a list - aurium
+ */
+public class ListKitsResult {
+
+    private final Set<Kit> resultingKits;
+    ListKitsResult(Set<Kit> blah) {
+        this.resultingKits = blah;
+    }
+
+    public Set<Kit> getResultingKits() { return resultingKits; }
+
 }

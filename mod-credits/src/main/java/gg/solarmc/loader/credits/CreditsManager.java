@@ -38,22 +38,10 @@ import static gg.solarmc.loader.schema.tables.CreditsWithNames.CREDITS_WITH_NAME
 
 public class CreditsManager implements DataManager {
 
-	private CreditsConfig configuration;
+	private final CreditsConfig configuration;
 
-	public CreditsManager(Path path) {
-		loadConfig(path);
-	}
-
-	private CreditsConfig loadConfig(Path path) {
-		try {
-			return new ConfigurationHelper<>(path, "credits.yml",
-					new SnakeYamlConfigurationFactory<>(CreditsConfig.class, ConfigurationOptions.defaults(),
-							new SnakeYamlOptions.Builder().useCommentingWriter(true).build())).reloadConfigData();
-		} catch (IOException ex) {
-			throw new UncheckedIOException(ex);
-		} catch (InvalidConfigException ex) {
-			throw new RuntimeException("Fix the configuration and restart", ex);
-		}
+	public CreditsManager(CreditsConfig config) {
+		this.configuration = config;
 	}
 
 	public List<TopBalanceEntry> getTopBalances(Transaction transaction, int limit) {

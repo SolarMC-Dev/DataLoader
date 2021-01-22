@@ -19,36 +19,25 @@
  *
  */
 
-package gg.solarmc.loader.credits;
+package gg.solarmc.loader.kitpvp;
 
-import java.math.BigDecimal;
+import gg.solarmc.loader.kitpvp.KitItem;
 
-public class WithdrawResult extends EconomyResult {
+public class KitPair {
 
-	private final boolean success;
+    public KitItem<?> getItem() {
+        return item;
+    }
 
-	WithdrawResult(BigDecimal newBalance, boolean success) {
-		super(newBalance);
-		this.success = success;
-	}
+    public Byte getSlot() {
+        return slot;
+    }
 
-	public boolean isSuccessful() {
-		return success;
-	}
+    private final Byte slot;
+    private final KitItem<?> item;
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
-		if (!super.equals(o)) return false;
-		WithdrawResult that = (WithdrawResult) o;
-		return success == that.success;
-	}
-
-	@Override
-	public int hashCode() {
-		int result = super.hashCode();
-		result = 31 * result + (success ? 1 : 0);
-		return result;
-	}
+    KitPair(Byte slot, KitItem<?> item) {
+        this.item = item;
+        this.slot = slot;
+    }
 }

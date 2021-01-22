@@ -19,35 +19,15 @@
  *
  */
 
-package gg.solarmc.loader.kitpvp.kit;
-
-import java.util.Set;
+package gg.solarmc.loader.kitpvp;
 
 /**
- * Represents a kit, please fill out later
+ * SPI that handles serialization of KitItem implementation to byte and back.
  */
-public class Kit {
+public interface ItemSerializer {
 
-    private final int id;
-    private final String name;
-    private final Set<KitItemPair> contents;
+    byte[] serialize(KitItem<?> item);
 
-    public Kit(int id, String name, Set<KitItemPair> contents) {
-        this.id = id;
-        this.name = name;
-        this.contents = contents;
-    }
-
-    public int getId() {
-        return this.id;
-    }
-
-    public String getName() {
-        return this.name;
-    }
-
-    public Set<KitItemPair> getContents() {
-        return this.contents;
-    }
+    KitItem<?> deserialize(byte[] serialized);
 
 }

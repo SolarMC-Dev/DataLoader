@@ -21,33 +21,16 @@
 
 package gg.solarmc.loader.kitpvp;
 
-import java.util.Collection;
-import java.util.List;
-
 public class KitResult {
+    //if this were c#, i'd have to do a constructor and a private bool Success {get;set;} but noooooooooooooooooooooooooo
 
-    private final Collection<Integer> unlockedKits;
     private final boolean success;
 
-    KitResult(Collection<Integer> unlockedKits, boolean success) {
-        this.unlockedKits = unlockedKits;
+    KitResult(boolean success) {
         this.success = success;
     }
 
-    /**
-     * Gets unlocked kits
-     * @return unlocked kits as kit IDs
-     */
-    public Collection<Integer> getUnlockedKits() {
-        return unlockedKits;
-    }
-
-    /**
-     * Gets if it is a success (can return false if player has kit already or does not have kit already)
-     * @return whether action was successful or not
-     */
     public boolean isSuccess() {
         return success;
     }
-
 }

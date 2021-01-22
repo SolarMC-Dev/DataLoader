@@ -22,13 +22,12 @@ package gg.solarmc.loader.kitpvp;
 import gg.solarmc.loader.Transaction;
 import gg.solarmc.loader.data.DataObject;
 import gg.solarmc.loader.impl.SQLTransaction;
-import gg.solarmc.loader.kitpvp.kit.Kit;
 import gg.solarmc.loader.schema.tables.records.KitpvpKitsOwnershipRecord;
 import gg.solarmc.loader.schema.tables.records.KitpvpStatisticsRecord;
 import org.jooq.DSLContext;
 import org.jooq.Result;
 
-import java.util.List;
+import java.util.HashSet;
 import java.util.Set;
 
 import static gg.solarmc.loader.schema.tables.KitpvpStatistics.*;
@@ -43,17 +42,30 @@ public class KitPvp implements DataObject {
     private final int userID;
     private final KitPvpManager manager;
 
-    private final Set<Integer> ownedKits;
-
-    public KitPvp(int userID, Integer kills, Integer deaths, Integer assists, Set<Integer> kits, KitPvpManager manager) {
+    public KitPvp(int userID, Integer kills, Integer deaths, Integer assists, KitPvpManager manager) {
         this.userID = userID;
 
         this.kills = kills;
         this.deaths = deaths;
         this.assists = assists;
-        this.ownedKits = kits;
 
         this.manager = manager;
+    }
+
+    private KitpvpStatisticsRecord getStatistics(Transaction transaction) {
+        DSLContext context = ((SQLTransaction) transaction).jooq();
+
+        KitpvpStatisticsRecord record = context.fetchOne(KITPVP_STATISTICS,KITPVP_STATISTICS.USER_ID.eq(userID));
+        assert record != null : "Data is missing!";
+
+        return record;
+    }
+
+    private Result<KitpvpKitsOwnershipRecord> getOwnedKits(Transaction transaction) {
+        DSLContext context = ((SQLTransaction) transaction).jooq();
+
+        //cannot be null, is a list
+        return context.fetch(KITPVP_KITS_OWNERSHIP,KITPVP_KITS_OWNERSHIP.USER_ID.eq(userID)); //return all entries where id = this.id
     }
 
     /**
@@ -78,22 +90,6 @@ public class KitPvp implements DataObject {
      */
     public Integer currentAssists() {
         return assists;
-    }
-
-    private KitpvpStatisticsRecord getStatistics(Transaction transaction) {
-        DSLContext context = ((SQLTransaction) transaction).jooq();
-
-        KitpvpStatisticsRecord record = context.fetchOne(KITPVP_STATISTICS,KITPVP_STATISTICS.USER_ID.eq(userID));
-        assert record != null : "Data is missing!";
-
-        return record;
-    }
-
-    private Result<KitpvpKitsOwnershipRecord> getOwnedKits(Transaction transaction) {
-        DSLContext context = ((SQLTransaction) transaction).jooq();
-
-        //cannot be null, is a list
-        return context.fetch(KITPVP_KITS_OWNERSHIP,KITPVP_KITS_OWNERSHIP.USER_ID.eq(userID));
     }
 
     /**
@@ -163,51 +159,59 @@ public class KitPvp implements DataObject {
         return new StatisticResult(newValue);
     }
 
+    //TODO verify if the record-counting part of this (res != 0) is accurate or needs to be flipped
+
     /**
-     * Adds an existing kit to the player's kit list based on ID
+     * Adds an existing kit to the player's kit list
      * @param transaction represents the transaction
-     * @param kitID represents the kit to add (by ID)
-     * @return resulting kits the player owns by ID
+     * @param kit represents the kit to add
+     * @return whether the action was successful or not
      */
-    public KitResult addKit(Transaction transaction, int kitID) {
-        if (!manager.verifyKitID(kitID)) {
-            throw new IllegalArgumentException("Kit does not exist locally!");
+    public KitResult addKit(Transaction transaction, Kit kit) {
+        var jooq = ((SQLTransaction)transaction).jooq();
+        int res = jooq.insertInto(KITPVP_KITS_OWNERSHIP,KITPVP_KITS_OWNERSHIP.USER_ID,KITPVP_KITS_OWNERSHIP.KIT_ID)
+                .values(userID,kit.getId())
+                .onDuplicateKeyUpdate()
+                .set(KITPVP_KITS_OWNERSHIP.KIT_ID, kit.getId())
+                .execute();
+        return new KitResult(res != 0);
+    }
+
+    //TODO verify if the record-counting part of this (res != 0) is accurate or needs to be flipped
+
+    /**
+     * Remove an existing kit from player's kit list
+     * @param transaction represents the transaction
+     * @param kit represents the kit to remove
+     * @return whether the action was successful or not
+     */
+    public KitResult removeKit(Transaction transaction, Kit kit) {
+        var jooq = ((SQLTransaction)transaction).jooq();
+        int res = jooq.delete(KITPVP_KITS_OWNERSHIP)
+                .where(KITPVP_KITS_OWNERSHIP.USER_ID.eq(userID),KITPVP_KITS_OWNERSHIP.KIT_ID.eq(kit.getId()))
+                .execute();
+        return new KitResult(res != 0);
+    }
+
+    /**
+     * Gets all the kits the player owns
+     * @param transaction represents a...
+     * @return result containing all owned kits
+     */
+    public ListKitsResult getKits(Transaction transaction) {
+        var jooq = ((SQLTransaction)transaction).jooq();
+        Result<KitpvpKitsOwnershipRecord> result = jooq.fetch(KITPVP_KITS_OWNERSHIP,KITPVP_KITS_OWNERSHIP.USER_ID.eq(this.userID));
+
+        Set<Kit> kits = new HashSet<>();
+
+        for (KitpvpKitsOwnershipRecord record : result) {
+            kits.add(manager.getKit(transaction,record.getKitId()));
         }
 
-        var kits = getOwnedKits(transaction).intoMap(KITPVP_KITS_OWNERSHIP.USER_ID,KITPVP_KITS_OWNERSHIP.KIT_ID);
-
-        if (kits.containsValue(kitID)) {
-            return new KitResult(kits.values(),false);
-        }
-
-        ((SQLTransaction) transaction).jooq().insertInto(KITPVP_KITS_OWNERSHIP)
-                .columns(KITPVP_KITS_OWNERSHIP.USER_ID,KITPVP_KITS_OWNERSHIP.KIT_ID)
-                .values(userID,kitID);
-
-        this.ownedKits.add(kitID);
-        kits.values().add(kitID);
-
-        return new KitResult(kits.values(),true);
+        return new ListKitsResult(kits);
     }
 
-    /**
-     * Adds an existing kit to the player's kit list based on the Name.
-     * Recommended to use addKit by ID instead due to case sensitivity.
-     * @param transaction represents the transaction
-     * @param kitName represents the name of the kit
-     * @return resulting kits the player owns by ID
-     */
-    public KitResult addKit(Transaction transaction, String kitName) {
-        return addKit(transaction,manager.getKitIDFromString(kitName));
-    }
 
-    /**
-     * Remove a kit from the player based on kit ID. Can fail.
-     * @param transaction represents the transaction
-     * @param kitID represents the ID of the kit
-     */
-    public RemoveKitResult removeKit(Transaction transaction, int kitID) {
-        return null;
-    }
+
 
 }

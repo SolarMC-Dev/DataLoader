@@ -22,10 +22,11 @@ package gg.solarmc.loader.kitpvp;
 import gg.solarmc.loader.data.DataLoader;
 import gg.solarmc.loader.Transaction;
 import gg.solarmc.loader.impl.SQLTransaction;
-import gg.solarmc.loader.kitpvp.kit.Kit;
+import gg.solarmc.loader.schema.tables.records.KitpvpStatisticsRecord;
 
 import java.util.HashSet;
 
+import static gg.solarmc.loader.schema.tables.KitpvpKitsOwnership.KITPVP_KITS_OWNERSHIP;
 import static gg.solarmc.loader.schema.tables.KitpvpStatistics.*;
 
 // TODO all of this
@@ -49,15 +50,16 @@ public class KitPvpLoader implements DataLoader<KitPvp> {
                 .values(userId,0,0,0)
                 .execute();
 
-        return new KitPvp(userId,0,0,0,new HashSet<>(),manager);
+        return new KitPvp(userId,0,0,0,manager);
     }
 
     @Override
     public KitPvp loadData(Transaction transaction, int userId) {
-        // SELECT * FROM pvpstats WHERE user_id = ?
-        //TODO improve query
+        var jooq = ((SQLTransaction) transaction).jooq();
 
-        return null;
+        KitpvpStatisticsRecord record = jooq.fetchOne(KITPVP_STATISTICS,KITPVP_STATISTICS.USER_ID.eq(userId));
+
+        return new KitPvp(userId,record.getKills(),record.getDeaths(),record.getAssists(),manager);
     }
 
 }

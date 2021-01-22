@@ -19,36 +19,43 @@
  *
  */
 
-package gg.solarmc.loader.credits;
+package gg.solarmc.loader.kitpvp;
 
-import java.math.BigDecimal;
+import java.util.Set;
 
-public class WithdrawResult extends EconomyResult {
+/**
+ * Represents a kit and it's contents
+ * TODO: DO NOT LET THIS BE PACKAGE PUBLIC @
+ */
+public class Kit {
 
-	private final boolean success;
+    private final int id;
+    private final String name;
+    private final Set<KitPair> contents;
 
-	WithdrawResult(BigDecimal newBalance, boolean success) {
-		super(newBalance);
-		this.success = success;
-	}
+    Kit(int id, String name, Set<KitPair> contents) {
+        this.id = id;
+        this.name = name;
+        this.contents = contents;
+    }
 
-	public boolean isSuccessful() {
-		return success;
-	}
+    public int getId() {
+        return this.id;
+    }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
-		if (!super.equals(o)) return false;
-		WithdrawResult that = (WithdrawResult) o;
-		return success == that.success;
-	}
+    public String getName() {
+        return this.name;
+    }
 
-	@Override
-	public int hashCode() {
-		int result = super.hashCode();
-		result = 31 * result + (success ? 1 : 0);
-		return result;
-	}
+    public Set<KitPair> getContents() {
+        return this.contents;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) return true;
+        if (!(o instanceof Kit)) return false;
+        return ((Kit)o).getId() == this.getId();
+    }
+
 }

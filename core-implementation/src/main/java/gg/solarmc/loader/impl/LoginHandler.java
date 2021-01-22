@@ -23,6 +23,7 @@ import gg.solarmc.loader.SolarPlayer;
 import gg.solarmc.loader.data.DataKey;
 import gg.solarmc.loader.data.DataObject;
 import gg.solarmc.uuidutil.UUIDUtil;
+import org.jooq.DSLContext;
 import space.arim.omnibus.util.concurrent.CentralisedFuture;
 
 import java.sql.SQLException;
@@ -60,7 +61,7 @@ public class LoginHandler {
 		try (SQLTransaction transaction = transactionSource.openTransaction()) {
 			transaction.markReadOnly();
 
-			var idRecord = transaction.jooq()
+			var idRecord = transaction.getProperty(DSLContext.class)
 					.select(USER_IDS.ID).from(USER_IDS)
 					.where(USER_IDS.UUID.eq(mcUuidBytes)).fetchOne();
 			if (idRecord == null) {

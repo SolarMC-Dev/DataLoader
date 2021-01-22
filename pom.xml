@@ -74,8 +74,6 @@
 		<module>mod-prefs</module>
 		<module>mod-kitpvp</module>
         <module>core-schema</module>
-        <module>loader-mod-friends</module>
-		<module>loader-mod-friends</module>
 	</modules>
 
 	<dependencyManagement>

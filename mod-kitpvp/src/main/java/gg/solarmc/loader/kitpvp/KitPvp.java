@@ -53,19 +53,19 @@ public class KitPvp implements DataObject {
     }
 
     private KitpvpStatisticsRecord getStatistics(Transaction transaction) {
-        DSLContext context = ((SQLTransaction) transaction).jooq();
+        KitpvpStatisticsRecord record = transaction
+                .getProperty(DSLContext.class)
+                .fetchOne(KITPVP_STATISTICS,KITPVP_STATISTICS.USER_ID.eq(userID));
 
-        KitpvpStatisticsRecord record = context.fetchOne(KITPVP_STATISTICS,KITPVP_STATISTICS.USER_ID.eq(userID));
         assert record != null : "Data is missing!";
 
         return record;
     }
 
     private Result<KitpvpKitsOwnershipRecord> getOwnedKits(Transaction transaction) {
-        DSLContext context = ((SQLTransaction) transaction).jooq();
-
         //cannot be null, is a list
-        return context.fetch(KITPVP_KITS_OWNERSHIP,KITPVP_KITS_OWNERSHIP.USER_ID.eq(userID)); //return all entries where id = this.id
+
+        return transaction.getProperty(DSLContext.class).fetch(KITPVP_KITS_OWNERSHIP,KITPVP_KITS_OWNERSHIP.USER_ID.eq(userID)); //return all entries where id = this.id
     }
 
     /**
@@ -168,8 +168,8 @@ public class KitPvp implements DataObject {
      * @return whether the action was successful or not
      */
     public KitResult addKit(Transaction transaction, Kit kit) {
-        var jooq = ((SQLTransaction)transaction).jooq();
-        int res = jooq.insertInto(KITPVP_KITS_OWNERSHIP,KITPVP_KITS_OWNERSHIP.USER_ID,KITPVP_KITS_OWNERSHIP.KIT_ID)
+        int res = transaction.getProperty(DSLContext.class)
+                .insertInto(KITPVP_KITS_OWNERSHIP,KITPVP_KITS_OWNERSHIP.USER_ID,KITPVP_KITS_OWNERSHIP.KIT_ID)
                 .values(userID,kit.getId())
                 .onDuplicateKeyUpdate()
                 .set(KITPVP_KITS_OWNERSHIP.KIT_ID, kit.getId())
@@ -186,8 +186,8 @@ public class KitPvp implements DataObject {
      * @return whether the action was successful or not
      */
     public KitResult removeKit(Transaction transaction, Kit kit) {
-        var jooq = ((SQLTransaction)transaction).jooq();
-        int res = jooq.delete(KITPVP_KITS_OWNERSHIP)
+        int res = transaction.getProperty(DSLContext.class)
+                .delete(KITPVP_KITS_OWNERSHIP)
                 .where(KITPVP_KITS_OWNERSHIP.USER_ID.eq(userID),KITPVP_KITS_OWNERSHIP.KIT_ID.eq(kit.getId()))
                 .execute();
         return new KitResult(res != 0);
@@ -199,8 +199,8 @@ public class KitPvp implements DataObject {
      * @return result containing all owned kits
      */
     public ListKitsResult getKits(Transaction transaction) {
-        var jooq = ((SQLTransaction)transaction).jooq();
-        Result<KitpvpKitsOwnershipRecord> result = jooq.fetch(KITPVP_KITS_OWNERSHIP,KITPVP_KITS_OWNERSHIP.USER_ID.eq(this.userID));
+        Result<KitpvpKitsOwnershipRecord> result = transaction.getProperty(DSLContext.class)
+                .fetch(KITPVP_KITS_OWNERSHIP,KITPVP_KITS_OWNERSHIP.USER_ID.eq(this.userID));
 
         Set<Kit> kits = new HashSet<>();
 

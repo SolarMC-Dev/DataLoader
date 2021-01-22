@@ -23,6 +23,7 @@ import gg.solarmc.loader.data.DataLoader;
 import gg.solarmc.loader.Transaction;
 import gg.solarmc.loader.impl.SQLTransaction;
 import gg.solarmc.loader.schema.tables.records.KitpvpStatisticsRecord;
+import org.jooq.DSLContext;
 
 import java.util.HashSet;
 
@@ -44,8 +45,8 @@ public class KitPvpLoader implements DataLoader<KitPvp> {
 
         HashSet<Kit> defaultKits = new HashSet<>();
 
-        var jooq = ((SQLTransaction) transaction).jooq();
-        jooq.insertInto(KITPVP_STATISTICS)
+        transaction.getProperty(DSLContext.class)
+                .insertInto(KITPVP_STATISTICS)
                 .columns(KITPVP_STATISTICS.USER_ID, KITPVP_STATISTICS.KILLS,KITPVP_STATISTICS.DEATHS,KITPVP_STATISTICS.ASSISTS)
                 .values(userId,0,0,0)
                 .execute();
@@ -55,9 +56,8 @@ public class KitPvpLoader implements DataLoader<KitPvp> {
 
     @Override
     public KitPvp loadData(Transaction transaction, int userId) {
-        var jooq = ((SQLTransaction) transaction).jooq();
-
-        KitpvpStatisticsRecord record = jooq.fetchOne(KITPVP_STATISTICS,KITPVP_STATISTICS.USER_ID.eq(userId));
+        KitpvpStatisticsRecord record = transaction.getProperty(DSLContext.class)
+                .fetchOne(KITPVP_STATISTICS,KITPVP_STATISTICS.USER_ID.eq(userId));
 
         return new KitPvp(userId,record.getKills(),record.getDeaths(),record.getAssists(),manager);
     }

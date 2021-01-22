@@ -23,6 +23,7 @@ import gg.solarmc.loader.data.DataObject;
 import gg.solarmc.loader.Transaction;
 import gg.solarmc.loader.impl.SQLTransaction;
 import gg.solarmc.loader.schema.tables.records.CreditsRecord;
+import org.jooq.DSLContext;
 
 import java.math.BigDecimal;
 
@@ -48,8 +49,7 @@ public class Credits implements DataObject {
 	}
 
 	private CreditsRecord getBalance(Transaction transaction) {
-		var jooq = ((SQLTransaction) transaction).jooq();
-		CreditsRecord creditsRecord = jooq.fetchOne(CREDITS, CREDITS.USER_ID.eq(userId));
+		CreditsRecord creditsRecord = transaction.getProperty(DSLContext.class).fetchOne(CREDITS, CREDITS.USER_ID.eq(userId));
 
 		assert creditsRecord != null : "User data disappeared";
 		return creditsRecord;

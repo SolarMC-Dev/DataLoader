@@ -23,6 +23,7 @@ import gg.solarmc.loader.Transaction;
 import gg.solarmc.loader.data.DataManager;
 import gg.solarmc.loader.impl.SQLTransaction;
 import gg.solarmc.loader.impl.SolarDataConfig;
+import org.jooq.DSLContext;
 import space.arim.dazzleconf.ConfigurationOptions;
 import space.arim.dazzleconf.error.InvalidConfigException;
 import space.arim.dazzleconf.ext.snakeyaml.SnakeYamlConfigurationFactory;
@@ -45,9 +46,7 @@ public class CreditsManager implements DataManager {
 	}
 
 	public List<TopBalanceEntry> getTopBalances(Transaction transaction, int limit) {
-		var jooq = ((SQLTransaction) transaction).jooq();
-
-		return jooq.select().from(CREDITS_WITH_NAMES)
+		return transaction.getProperty(DSLContext.class).select().from(CREDITS_WITH_NAMES)
 				.orderBy(CREDITS_WITH_NAMES.BALANCE.desc()).limit(limit)
 				.fetch((rowRecord) -> {
 					return new TopBalanceEntry(

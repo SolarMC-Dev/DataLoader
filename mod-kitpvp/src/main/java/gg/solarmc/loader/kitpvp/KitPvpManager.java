@@ -26,6 +26,7 @@ import gg.solarmc.loader.data.DataManager;
 import gg.solarmc.loader.impl.SQLTransaction;
 import gg.solarmc.loader.schema.tables.records.KitpvpKitsContentsRecord;
 import gg.solarmc.loader.schema.tables.records.KitpvpKitsNamesRecord;
+import org.jooq.DSLContext;
 import org.jooq.Result;
 
 import java.time.Duration;
@@ -51,7 +52,7 @@ public class KitPvpManager implements DataManager {
      */
     public Kit getKit(Transaction transaction, Integer id) {
         return existingKits.get(id,num -> {
-            var jooq = ((SQLTransaction)transaction).jooq();
+            var jooq = transaction.getProperty(DSLContext.class);
 
             KitpvpKitsNamesRecord result = jooq.fetchOne(KITPVP_KITS_NAMES,KITPVP_KITS_NAMES.KIT_ID.eq(num));
 
@@ -80,7 +81,7 @@ public class KitPvpManager implements DataManager {
      * @param contents of the kit
      */
     public void createKit(Transaction transaction, String name, Set<KitPair> contents) {
-        var jooq = ((SQLTransaction)transaction).jooq();
+        var jooq = transaction.getProperty(DSLContext.class);
 
         KitpvpKitsNamesRecord result = jooq.insertInto(KITPVP_KITS_NAMES,KITPVP_KITS_NAMES.KIT_NAME)
                 .values(name)
@@ -101,9 +102,8 @@ public class KitPvpManager implements DataManager {
      * @param id represents the id of the kit
      */
     public void deleteKit(Transaction transaction, Integer id) {
-        var jooq = ((SQLTransaction)transaction).jooq();
-
-        KitpvpKitsNamesRecord result = jooq.fetchOne(KITPVP_KITS_NAMES,KITPVP_KITS_NAMES.KIT_ID.eq(id));
+        KitpvpKitsNamesRecord result = transaction.getProperty(DSLContext.class)
+                .fetchOne(KITPVP_KITS_NAMES,KITPVP_KITS_NAMES.KIT_ID.eq(id));
 
         assert result != null : "ID provided does not exist as a kit!";
 

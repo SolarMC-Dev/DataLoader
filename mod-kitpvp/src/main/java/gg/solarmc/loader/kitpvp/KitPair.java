@@ -21,8 +21,6 @@
 
 package gg.solarmc.loader.kitpvp;
 
-import gg.solarmc.loader.kitpvp.KitItem;
-
 public class KitPair {
 
     public KitItem<?> getItem() {

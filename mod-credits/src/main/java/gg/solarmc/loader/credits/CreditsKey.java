@@ -30,6 +30,7 @@ import space.arim.dazzleconf.helper.ConfigurationHelper;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.math.BigDecimal;
 import java.nio.file.Path;
 
 public class CreditsKey implements DataKey<Credits, CreditsManager> {
@@ -40,7 +41,7 @@ public class CreditsKey implements DataKey<Credits, CreditsManager> {
 
 	@Override
 	public DataLoader<Credits> createLoader(CreditsManager dataManager, DataKeyInitializationContext context) {
-		return new CreditsLoader(dataManager.getConfiguration());
+		return new CreditsLoader(BigDecimal.valueOf(dataManager.getConfiguration().defaultBalance()));
 	}
 
 	@Override

@@ -73,6 +73,7 @@
 		<module>mod-credits</module>
 		<module>mod-prefs</module>
 		<module>mod-kitpvp</module>
+		<module>mod-friends</module>
         <module>core-schema</module>
 	</modules>
 

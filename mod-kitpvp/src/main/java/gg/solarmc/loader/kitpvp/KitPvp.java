@@ -21,7 +21,6 @@ package gg.solarmc.loader.kitpvp;
 
 import gg.solarmc.loader.Transaction;
 import gg.solarmc.loader.data.DataObject;
-import gg.solarmc.loader.impl.SQLTransaction;
 import gg.solarmc.loader.schema.tables.records.KitpvpKitsOwnershipRecord;
 import gg.solarmc.loader.schema.tables.records.KitpvpStatisticsRecord;
 import org.jooq.DSLContext;
@@ -33,16 +32,17 @@ import java.util.Set;
 import static gg.solarmc.loader.schema.tables.KitpvpStatistics.*;
 import static gg.solarmc.loader.schema.tables.KitpvpKitsOwnership.*;
 
+@SuppressWarnings("unused")
 public class KitPvp implements DataObject {
 
-    private volatile Integer kills;
-    private volatile Integer deaths;
-    private volatile Integer assists;
+    private volatile int kills;
+    private volatile int deaths;
+    private volatile int assists;
 
     private final int userID;
     private final KitPvpManager manager;
 
-    public KitPvp(int userID, Integer kills, Integer deaths, Integer assists, KitPvpManager manager) {
+    public KitPvp(int userID, int kills, int deaths, int assists, KitPvpManager manager) {
         this.userID = userID;
 
         this.kills = kills;
@@ -62,17 +62,11 @@ public class KitPvp implements DataObject {
         return record;
     }
 
-    private Result<KitpvpKitsOwnershipRecord> getOwnedKits(Transaction transaction) {
-        //cannot be null, is a list
-
-        return transaction.getProperty(DSLContext.class).fetch(KITPVP_KITS_OWNERSHIP,KITPVP_KITS_OWNERSHIP.USER_ID.eq(userID)); //return all entries where id = this.id
-    }
-
     /**
      * Cached kills. Not reliable.
      * @return kills
      */
-    public Integer currentKills() {
+    public int currentKills() {
         return kills;
     }
 
@@ -80,7 +74,7 @@ public class KitPvp implements DataObject {
      * Cached deaths. Not reliable.
      * @return deaths
      */
-    public Integer currentDeaths() {
+    public int currentDeaths() {
         return deaths;
     }
 
@@ -88,7 +82,7 @@ public class KitPvp implements DataObject {
      * Cached assists. Not reliable
      * @return assists
      */
-    public Integer currentAssists() {
+    public int currentAssists() {
         return assists;
     }
 
@@ -104,8 +98,8 @@ public class KitPvp implements DataObject {
         }
         KitpvpStatisticsRecord record = getStatistics(transaction);
 
-        Integer existingValue = record.getKills();
-        Integer newValue = existingValue + amount;
+        int existingValue = record.getKills();
+        int newValue = existingValue + amount;
 
         record.setKills(newValue);
         record.store(KITPVP_STATISTICS.KILLS);
@@ -126,8 +120,8 @@ public class KitPvp implements DataObject {
         }
         KitpvpStatisticsRecord record = getStatistics(transaction);
 
-        Integer existingValue = record.getDeaths();
-        Integer newValue = existingValue + amount;
+        int existingValue = record.getDeaths();
+        int newValue = existingValue + amount;
 
         record.setKills(newValue);
         record.store(KITPVP_STATISTICS.DEATHS);
@@ -148,8 +142,8 @@ public class KitPvp implements DataObject {
         }
         KitpvpStatisticsRecord record = getStatistics(transaction);
 
-        Integer existingValue = record.getAssists();
-        Integer newValue = existingValue + amount;
+        int existingValue = record.getAssists();
+        int newValue = existingValue + amount;
 
         record.setKills(newValue);
         record.store(KITPVP_STATISTICS.ASSISTS);
@@ -167,14 +161,14 @@ public class KitPvp implements DataObject {
      * @param kit represents the kit to add
      * @return whether the action was successful or not
      */
-    public KitResult addKit(Transaction transaction, Kit kit) {
+    public KitOwnershipResult addKit(Transaction transaction, Kit kit) {
         int res = transaction.getProperty(DSLContext.class)
                 .insertInto(KITPVP_KITS_OWNERSHIP,KITPVP_KITS_OWNERSHIP.USER_ID,KITPVP_KITS_OWNERSHIP.KIT_ID)
                 .values(userID,kit.getId())
                 .onDuplicateKeyUpdate()
                 .set(KITPVP_KITS_OWNERSHIP.KIT_ID, kit.getId())
                 .execute();
-        return new KitResult(res != 0);
+        return new KitOwnershipResult(res != 0);
     }
 
     //TODO verify if the record-counting part of this (res != 0) is accurate or needs to be flipped
@@ -185,12 +179,12 @@ public class KitPvp implements DataObject {
      * @param kit represents the kit to remove
      * @return whether the action was successful or not
      */
-    public KitResult removeKit(Transaction transaction, Kit kit) {
+    public KitOwnershipResult removeKit(Transaction transaction, Kit kit) {
         int res = transaction.getProperty(DSLContext.class)
                 .delete(KITPVP_KITS_OWNERSHIP)
                 .where(KITPVP_KITS_OWNERSHIP.USER_ID.eq(userID),KITPVP_KITS_OWNERSHIP.KIT_ID.eq(kit.getId()))
                 .execute();
-        return new KitResult(res != 0);
+        return new KitOwnershipResult(res != 0);
     }
 
     /**

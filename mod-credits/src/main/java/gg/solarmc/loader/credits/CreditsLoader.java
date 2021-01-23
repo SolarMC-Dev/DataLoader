@@ -32,8 +32,8 @@ class CreditsLoader implements DataLoader<Credits> {
 
 	private final BigDecimal defaultBigDecimalBalance;
 
-	public CreditsLoader(CreditsConfig configuration) {
-		defaultBigDecimalBalance = BigDecimal.valueOf(configuration.defaultBalance());
+	public CreditsLoader(BigDecimal defaultValue) {
+		defaultBigDecimalBalance = defaultValue;
 	}
 
 	@Override

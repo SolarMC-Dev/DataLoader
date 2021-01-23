@@ -1,7 +1,7 @@
 /*
  *
  *  * dataloader
- *  * Copyright © $DateInfo.year SolarMC Developers
+ *  * Copyright © 2021 SolarMC Developers
  *  *
  *  * dataloader is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU Affero General Public License as
@@ -21,16 +21,16 @@
 
 package gg.solarmc.loader.kitpvp;
 
-public class KitResult {
+public class KitOwnershipResult {
     //if this were c#, i'd have to do a constructor and a private bool Success {get;set;} but noooooooooooooooooooooooooo
 
-    private final boolean success;
+    private final boolean changed;
 
-    KitResult(boolean success) {
-        this.success = success;
+    KitOwnershipResult(boolean changed) {
+        this.changed = changed;
     }
 
-    public boolean isSuccess() {
-        return success;
+    public boolean isChanged() {
+        return changed;
     }
 }

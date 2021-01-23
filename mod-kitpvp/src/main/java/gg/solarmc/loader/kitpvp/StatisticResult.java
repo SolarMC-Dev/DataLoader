@@ -1,7 +1,7 @@
 /*
  *
  *  * dataloader
- *  * Copyright © $DateInfo.year SolarMC Developers
+ *  * Copyright © 2021 SolarMC Developers
  *  *
  *  * dataloader is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU Affero General Public License as
@@ -23,12 +23,12 @@ package gg.solarmc.loader.kitpvp;
 
 public class StatisticResult {
 
-    private final Integer newStat;
-    StatisticResult(Integer newStat) {
+    private final int newStat;
+    StatisticResult(int newStat) {
         this.newStat = newStat;
     }
 
-    public Integer newBalance() {
+    public int newValue() {
         return newStat;
     }
 
@@ -37,13 +37,7 @@ public class StatisticResult {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         StatisticResult that = (StatisticResult) o;
-        return newStat.equals(that.newStat);
+        return newStat == newStat;
     }
-
-    @Override
-    public int hashCode() {
-        return newStat.hashCode();
-    }
-
 
 }

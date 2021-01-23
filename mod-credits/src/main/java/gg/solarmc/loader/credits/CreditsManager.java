@@ -56,6 +56,8 @@ public class CreditsManager implements DataManager {
 				});
 	}
 
-	public CreditsConfig getConfiguration() { return configuration; }
+	public CreditsConfig getConfiguration() {
+		return configuration;
+	}
 
 }

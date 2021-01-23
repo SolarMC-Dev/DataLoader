@@ -39,10 +39,6 @@ public class SQLTransaction implements Transaction, AutoCloseable {
         this.connection = connection;
     }
 
-    public Connection getConnection() {
-        return connection;
-    }
-
     @Override
     public void markReadOnly() {
         try {

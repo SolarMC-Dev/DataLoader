@@ -17,7 +17,7 @@
 	<name>Solar-DataLoader</name>
 
 	<properties>
-		<omnibus.version>1.0.0-RC6</omnibus.version>
+		<omnibus.version>1.0.0</omnibus.version>
 		<slf4j.version>1.7.30</slf4j.version>
 		<junit.version>5.7.0</junit.version>
 

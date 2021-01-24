@@ -1,4 +1,6 @@
 module gg.solarmc.loader.impl {
+	exports gg.solarmc.loader.impl;
+
 	requires transitive java.sql;
 	requires transitive gg.solarmc.loader.schema;
 	requires transitive gg.solarmc.loader;

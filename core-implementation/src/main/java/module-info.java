@@ -9,5 +9,4 @@ module gg.solarmc.loader.impl {
 	requires org.flywaydb.core;
 	requires com.zaxxer.hikari;
 	requires space.arim.dazzleconf.ext.snakeyaml;
-	requires gg.solarmc.uuidutil;
 }

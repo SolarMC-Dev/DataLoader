@@ -33,10 +33,5 @@
 			<groupId>space.arim.dazzleconf</groupId>
 			<artifactId>dazzleconf-ext-snakeyaml</artifactId>
 		</dependency>
-		<dependency>
-			<groupId>gg.solarmc</groupId>
-			<artifactId>uuidutil</artifactId>
-			<version>0.1.0</version>
-		</dependency>
 	</dependencies>
 </project>

@@ -19,15 +19,14 @@
 
 package gg.solarmc.loader.credits;
 
-import gg.solarmc.loader.data.DataObject;
 import gg.solarmc.loader.Transaction;
-import gg.solarmc.loader.impl.SQLTransaction;
+import gg.solarmc.loader.data.DataObject;
 import gg.solarmc.loader.schema.tables.records.CreditsRecord;
 import org.jooq.DSLContext;
 
 import java.math.BigDecimal;
 
-import static gg.solarmc.loader.schema.tables.Credits.*;
+import static gg.solarmc.loader.schema.tables.Credits.CREDITS;
 
 public class Credits implements DataObject {
 

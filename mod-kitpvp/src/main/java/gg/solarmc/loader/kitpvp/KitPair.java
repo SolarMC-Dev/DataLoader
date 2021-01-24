@@ -23,7 +23,7 @@ package gg.solarmc.loader.kitpvp;
 
 public class KitPair {
 
-    public KitItem<?> getItem() {
+    public KitItemWithSlot<?> getItem() {
         return item;
     }
 
@@ -32,9 +32,9 @@ public class KitPair {
     }
 
     private final Byte slot;
-    private final KitItem<?> item;
+    private final KitItemWithSlot<?> item;
 
-    KitPair(Byte slot, KitItem<?> item) {
+    KitPair(Byte slot, KitItemWithSlot<?> item) {
         this.item = item;
         this.slot = slot;
     }

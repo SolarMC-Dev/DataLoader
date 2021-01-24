@@ -26,8 +26,8 @@ package gg.solarmc.loader.kitpvp;
  */
 public interface ItemSerializer {
 
-    byte[] serialize(KitItem<?> item);
+    byte[] serialize(KitItemWithSlot<?> item);
 
-    KitItem<?> deserialize(byte[] serialized);
+    KitItemWithSlot<?> deserialize(byte[] serialized);
 
 }

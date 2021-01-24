@@ -21,20 +21,14 @@
 
 package gg.solarmc.loader.kitpvp;
 
-import gg.solarmc.loader.kitpvp.Kit;
-
-import java.util.Set;
-
 /**
- * does not return a list - aurium
+ * Interface representing something that can be stored in a kit
  */
-public class ListKitsResult {
+public interface KitItemWithSlot<T> {
 
-    private final Set<Kit> resultingKits;
-    ListKitsResult(Set<Kit> blah) {
-        this.resultingKits = blah;
-    }
-
-    public Set<Kit> getResultingKits() { return resultingKits; }
+    String getMaterial();
+    String getDisplayName();
+    int getAmount();
+    T getObject();
 
 }

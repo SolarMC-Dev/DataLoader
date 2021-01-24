@@ -165,8 +165,7 @@ public class KitPvp implements DataObject {
         int res = transaction.getProperty(DSLContext.class)
                 .insertInto(KITPVP_KITS_OWNERSHIP,KITPVP_KITS_OWNERSHIP.USER_ID,KITPVP_KITS_OWNERSHIP.KIT_ID)
                 .values(userID,kit.getId())
-                .onDuplicateKeyUpdate()
-                .set(KITPVP_KITS_OWNERSHIP.KIT_ID, kit.getId())
+                .onDuplicateKeyIgnore()
                 .execute();
         return new KitOwnershipResult(res != 0);
     }
@@ -192,7 +191,7 @@ public class KitPvp implements DataObject {
      * @param transaction represents a...
      * @return result containing all owned kits
      */
-    public ListKitsResult getKits(Transaction transaction) {
+    public Set<Kit> getKits(Transaction transaction) {
         Result<KitpvpKitsOwnershipRecord> result = transaction.getProperty(DSLContext.class)
                 .fetch(KITPVP_KITS_OWNERSHIP,KITPVP_KITS_OWNERSHIP.USER_ID.eq(this.userID));
 
@@ -202,7 +201,7 @@ public class KitPvp implements DataObject {
             kits.add(manager.getKit(transaction,record.getKitId()));
         }
 
-        return new ListKitsResult(kits);
+        return kits;
     }
 
 

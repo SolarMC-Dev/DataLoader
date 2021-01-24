@@ -24,7 +24,7 @@ package gg.solarmc.loader.kitpvp;
 /**
  * Interface representing something that can be stored in a kit
  */
-public interface KitItemWithSlot<T> {
+public interface KitItem<T> {
 
     String getMaterial();
     String getDisplayName();

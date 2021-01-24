@@ -24,10 +24,16 @@ package gg.solarmc.loader.kitpvp;
 public class StatisticResult {
 
     private final int newStat;
+
     StatisticResult(int newStat) {
         this.newStat = newStat;
     }
 
+    /**
+     * The updated value of the statistic
+     *
+     * @return the new value
+     */
     public int newValue() {
         return newStat;
     }
@@ -37,7 +43,11 @@ public class StatisticResult {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         StatisticResult that = (StatisticResult) o;
-        return newStat == newStat;
+        return newStat == that.newStat;
     }
 
+    @Override
+    public int hashCode() {
+        return newStat;
+    }
 }

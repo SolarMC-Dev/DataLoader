@@ -27,16 +27,16 @@ import org.jooq.impl.DSL;
 import java.sql.Connection;
 import java.sql.SQLException;
 
+/**
+ * Implementation of transaction. Produced in {@link TransactionSource}
+ */
 public class SQLTransaction implements Transaction, AutoCloseable {
 
     private final Connection connection;
 
+
     SQLTransaction(Connection connection) {
         this.connection = connection;
-    }
-
-    public Connection getConnection() {
-        return connection;
     }
 
     @Override
@@ -48,12 +48,16 @@ public class SQLTransaction implements Transaction, AutoCloseable {
         }
     }
 
-    /*
-     * Useful for data module implementors
-     */
+    @Override
+    public <T> T getProperty(Class<T> cls) {
+        if (cls.equals(Connection.class)) {
+            return (T)connection;
+        } else if (cls.equals(DSLContext.class)) {
+            return (T) DSL.using(connection,SQLDialect.MARIADB);
+        } else {
+            throw new IllegalArgumentException("Transaction implementation SQLTransaction does not provide property of " + cls.getName());
+        }
 
-    public DSLContext jooq() {
-        return DSL.using(connection, SQLDialect.MARIADB);
     }
 
     public RuntimeException rethrow(SQLException cause) {

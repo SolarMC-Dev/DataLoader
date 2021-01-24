@@ -22,6 +22,7 @@ package gg.solarmc.loader.credits;
 import gg.solarmc.loader.data.DataLoader;
 import gg.solarmc.loader.Transaction;
 import gg.solarmc.loader.impl.SQLTransaction;
+import org.jooq.DSLContext;
 
 import java.math.BigDecimal;
 
@@ -29,20 +30,23 @@ import static gg.solarmc.loader.schema.tables.Credits.CREDITS;
 
 class CreditsLoader implements DataLoader<Credits> {
 
+	private final BigDecimal defaultBigDecimalBalance;
+
+	public CreditsLoader(BigDecimal defaultValue) {
+		defaultBigDecimalBalance = defaultValue;
+	}
+
 	@Override
 	public Credits createDefaultData(Transaction transaction, int userId) {
-		BigDecimal defaultBalance = BigDecimal.ZERO; // TODO: Configurable default balance
-		var jooq = ((SQLTransaction) transaction).jooq();
-		jooq.insertInto(CREDITS)
-				.columns(CREDITS.USER_ID, CREDITS.BALANCE).values(userId, defaultBalance)
+		transaction.getProperty(DSLContext.class).insertInto(CREDITS)
+				.columns(CREDITS.USER_ID, CREDITS.BALANCE).values(userId, defaultBigDecimalBalance)
 				.execute();
-		return new Credits(userId, defaultBalance);
+		return new Credits(userId, defaultBigDecimalBalance);
 	}
 
 	@Override
 	public Credits loadData(Transaction transaction, int userId) {
-		var jooq = ((SQLTransaction) transaction).jooq();
-		BigDecimal balance = jooq.select(CREDITS.BALANCE).from(CREDITS)
+		BigDecimal balance = transaction.getProperty(DSLContext.class).select(CREDITS.BALANCE).from(CREDITS)
 				.where(CREDITS.USER_ID.eq(userId))
 				.fetchOne((rowRecord) -> rowRecord.get(CREDITS.BALANCE));
 		return new Credits(userId, balance);

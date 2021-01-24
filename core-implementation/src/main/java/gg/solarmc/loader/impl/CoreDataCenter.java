@@ -24,6 +24,7 @@ import gg.solarmc.loader.data.DataKey;
 import gg.solarmc.loader.data.DataManager;
 import space.arim.omnibus.util.concurrent.CentralisedFuture;
 
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Map;
 import java.util.Objects;
@@ -48,11 +49,11 @@ class CoreDataCenter implements DataCenter {
 					runner.runTransactUsing(transaction);
 				} catch (RuntimeException ex) {
 					try {
-						transaction.getConnection().rollback();
+						transaction.getProperty(Connection.class).rollback();
 					} catch (SQLException suppressed) { ex.addSuppressed(suppressed); }
 					throw ex;
 				}
-				transaction.getConnection().commit();
+				transaction.getProperty(Connection.class).commit();
 
 			} catch (SQLException ex) {
 				throw new UncheckedSQLException(ex);
@@ -71,11 +72,11 @@ class CoreDataCenter implements DataCenter {
 					value = actor.transactUsing(transaction);
 				} catch (RuntimeException ex) {
 					try {
-						transaction.getConnection().rollback();
+						transaction.getProperty(Connection.class).rollback();
 					} catch (SQLException suppressed) { ex.addSuppressed(suppressed); }
 					throw ex;
 				}
-				transaction.getConnection().commit();
+				transaction.getProperty(Connection.class).commit();
 				return value;
 
 			} catch (SQLException ex) {

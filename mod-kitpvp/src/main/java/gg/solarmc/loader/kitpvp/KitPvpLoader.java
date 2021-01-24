@@ -21,24 +21,45 @@ package gg.solarmc.loader.kitpvp;
 
 import gg.solarmc.loader.data.DataLoader;
 import gg.solarmc.loader.Transaction;
+import gg.solarmc.loader.impl.SQLTransaction;
+import gg.solarmc.loader.schema.tables.records.KitpvpStatisticsRecord;
+import org.jooq.DSLContext;
 
-import java.math.BigDecimal;
 import java.util.HashSet;
+
+import static gg.solarmc.loader.schema.tables.KitpvpKitsOwnership.KITPVP_KITS_OWNERSHIP;
+import static gg.solarmc.loader.schema.tables.KitpvpStatistics.*;
 
 // TODO all of this
 public class KitPvpLoader implements DataLoader<KitPvp> {
 
+    private final KitPvpManager manager;
+
+    public KitPvpLoader(KitPvpManager manager) {
+        this.manager = manager;
+    }
+
     @Override
     public KitPvp createDefaultData(Transaction transaction, int userId) {
-        return new KitPvp(BigDecimal.ZERO,BigDecimal.ZERO,BigDecimal.ZERO,new HashSet<>());
+        //TODO: implement configuration for default kits
+
+        HashSet<Kit> defaultKits = new HashSet<>();
+
+        transaction.getProperty(DSLContext.class)
+                .insertInto(KITPVP_STATISTICS)
+                .columns(KITPVP_STATISTICS.USER_ID, KITPVP_STATISTICS.KILLS,KITPVP_STATISTICS.DEATHS,KITPVP_STATISTICS.ASSISTS)
+                .values(userId,0,0,0)
+                .execute();
+
+        return new KitPvp(userId,0,0,0,manager);
     }
 
     @Override
     public KitPvp loadData(Transaction transaction, int userId) {
-        // SELECT * FROM pvpstats WHERE user_id = ?
-        //TODO improve query
+        KitpvpStatisticsRecord record = transaction.getProperty(DSLContext.class)
+                .fetchOne(KITPVP_STATISTICS,KITPVP_STATISTICS.USER_ID.eq(userId));
 
-        return null;
+        return new KitPvp(userId,record.getKills(),record.getDeaths(),record.getAssists(),manager);
     }
 
 }

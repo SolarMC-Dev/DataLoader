@@ -23,15 +23,17 @@ import gg.solarmc.loader.data.DataKey;
 import gg.solarmc.loader.data.DataKeyInitializationContext;
 import gg.solarmc.loader.data.DataLoader;
 
+
 public class KitPvpKey implements DataKey<KitPvp, KitPvpManager> {
 
     @Override
     public DataLoader<KitPvp> createLoader(KitPvpManager dataManager, DataKeyInitializationContext context) {
-        return new KitPvpLoader();
+        return new KitPvpLoader(dataManager);
     }
 
     @Override
     public KitPvpManager createDataManager(DataKeyInitializationContext context) {
-        return null;
+        return new KitPvpManager(context.omnibus().getRegistry().getProvider(ItemSerializer.class));
     }
+
 }

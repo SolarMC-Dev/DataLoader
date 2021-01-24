@@ -22,16 +22,44 @@ package gg.solarmc.loader.credits;
 import gg.solarmc.loader.data.DataKey;
 import gg.solarmc.loader.data.DataKeyInitializationContext;
 import gg.solarmc.loader.data.DataLoader;
+import space.arim.dazzleconf.ConfigurationOptions;
+import space.arim.dazzleconf.error.InvalidConfigException;
+import space.arim.dazzleconf.ext.snakeyaml.SnakeYamlConfigurationFactory;
+import space.arim.dazzleconf.ext.snakeyaml.SnakeYamlOptions;
+import space.arim.dazzleconf.helper.ConfigurationHelper;
+
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.math.BigDecimal;
+import java.nio.file.Path;
 
 public class CreditsKey implements DataKey<Credits, CreditsManager> {
 
+	CreditsKey(){}
+
+	public static final CreditsKey INSTANCE = new CreditsKey(); //specifying it as creditskey since it already implements the specification
+
 	@Override
 	public DataLoader<Credits> createLoader(CreditsManager dataManager, DataKeyInitializationContext context) {
-		return new CreditsLoader();
+		return new CreditsLoader(BigDecimal.valueOf(dataManager.getConfiguration().defaultBalance()));
 	}
 
 	@Override
 	public CreditsManager createDataManager(DataKeyInitializationContext context) {
-		return null;
+		return new CreditsManager(loadConfig(context.configFolder()));
 	}
+
+	private CreditsConfig loadConfig(Path path) {
+		try {
+			return new ConfigurationHelper<>(path, "credits.yml",
+					new SnakeYamlConfigurationFactory<>(CreditsConfig.class, ConfigurationOptions.defaults(),
+							new SnakeYamlOptions.Builder().useCommentingWriter(true).build())).reloadConfigData();
+		} catch (IOException ex) {
+			throw new UncheckedIOException(ex);
+		} catch (InvalidConfigException ex) {
+			throw new RuntimeException("Fix the configuration and restart", ex);
+		}
+	}
+
+
 }

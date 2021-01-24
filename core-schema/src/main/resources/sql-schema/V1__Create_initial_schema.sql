@@ -28,7 +28,6 @@ CREATE TABLE kitpvp_kits_ownership (
   kit_id INT NOT NULL,
   FOREIGN KEY (user_id) REFERENCES user_ids (id) ON DELETE CASCADE,
   FOREIGN KEY (kit_id) REFERENCES kitpvp_kits_names (kit_id) ON DELETE CASCADE,
-  INDEX (user_id),
   PRIMARY KEY (user_id, kit_id)
 );
 
@@ -37,7 +36,6 @@ CREATE TABLE kitpvp_kits_contents (
   slot TINYINT NOT NULL,
   item BLOB NOT NULL,
   FOREIGN KEY (kit_id) REFERENCES kitpvp_kits_names (kit_id) ON DELETE CASCADE,
-  INDEX (kit_id),
   PRIMARY KEY (kit_id, slot)
 );
 
@@ -47,10 +45,18 @@ CREATE TABLE prefs_flags (
   FOREIGN KEY (user_id) REFERENCES user_ids (id) ON DELETE CASCADE
 );
 
-CREATE TABLE prefs_blockedusers (
+CREATE TABLE friends_blocked_users (
   user_id INT NOT NULL,
   blocked_user_id INT NOT NULL,
   FOREIGN KEY (user_id) REFERENCES user_ids (id) ON DELETE CASCADE,
   FOREIGN KEY (blocked_user_id) REFERENCES user_ids (id) ON DELETE CASCADE,
-  INDEX (user_id)
+  PRIMARY KEY (user_id, blocked_user_id)
+);
+
+CREATE TABLE friends_friended_users (
+  user_id INT NOT NULL,
+  friend_user_id INT NOT NULL,
+  FOREIGN KEY (user_id) REFERENCES user_ids (id) ON DELETE CASCADE,
+  FOREIGN KEY (friend_user_id) REFERENCES user_ids (id) ON DELETE CASCADE,
+  PRIMARY KEY (user_id, friend_user_id)
 );

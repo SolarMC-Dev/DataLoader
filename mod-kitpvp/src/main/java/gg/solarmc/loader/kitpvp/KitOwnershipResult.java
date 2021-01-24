@@ -1,7 +1,7 @@
 /*
  *
  *  * dataloader
- *  * Copyright © $DateInfo.year SolarMC Developers
+ *  * Copyright © 2021 SolarMC Developers
  *  *
  *  * dataloader is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU Affero General Public License as
@@ -19,36 +19,18 @@
  *
  */
 
-package gg.solarmc.loader.credits;
+package gg.solarmc.loader.kitpvp;
 
-import java.math.BigDecimal;
+public class KitOwnershipResult {
+    //if this were c#, i'd have to do a constructor and a private bool Success {get;set;} but noooooooooooooooooooooooooo
 
-public class WithdrawResult extends EconomyResult {
+    private final boolean changed;
 
-	private final boolean success;
+    KitOwnershipResult(boolean changed) {
+        this.changed = changed;
+    }
 
-	WithdrawResult(BigDecimal newBalance, boolean success) {
-		super(newBalance);
-		this.success = success;
-	}
-
-	public boolean isSuccessful() {
-		return success;
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
-		if (!super.equals(o)) return false;
-		WithdrawResult that = (WithdrawResult) o;
-		return success == that.success;
-	}
-
-	@Override
-	public int hashCode() {
-		int result = super.hashCode();
-		result = 31 * result + (success ? 1 : 0);
-		return result;
-	}
+    public boolean isChanged() {
+        return changed;
+    }
 }

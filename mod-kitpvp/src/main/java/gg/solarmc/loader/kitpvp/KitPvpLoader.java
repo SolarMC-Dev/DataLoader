@@ -47,7 +47,8 @@ public class KitPvpLoader implements DataLoader<KitPvp> {
 
         transaction.getProperty(DSLContext.class)
                 .insertInto(KITPVP_STATISTICS)
-                .columns(KITPVP_STATISTICS.USER_ID, KITPVP_STATISTICS.KILLS,KITPVP_STATISTICS.DEATHS,KITPVP_STATISTICS.ASSISTS)
+                .columns(KITPVP_STATISTICS.USER_ID, KITPVP_STATISTICS.KILLS,
+                        KITPVP_STATISTICS.DEATHS,KITPVP_STATISTICS.ASSISTS)
                 .values(userId,0,0,0)
                 .execute();
 

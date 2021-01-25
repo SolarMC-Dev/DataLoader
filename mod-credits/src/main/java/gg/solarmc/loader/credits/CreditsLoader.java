@@ -32,7 +32,7 @@ class CreditsLoader implements DataLoader<Credits> {
 
 	private final BigDecimal defaultBigDecimalBalance;
 
-	public CreditsLoader(BigDecimal defaultValue) {
+	CreditsLoader(BigDecimal defaultValue) {
 		defaultBigDecimalBalance = defaultValue;
 	}
 

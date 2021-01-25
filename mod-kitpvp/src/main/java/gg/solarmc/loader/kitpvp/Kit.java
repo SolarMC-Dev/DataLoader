@@ -25,15 +25,15 @@ import java.util.Set;
 
 /**
  * Represents a kit and it's contents
- * TODO: DO NOT LET THIS BE PACKAGE PUBLIC @
+ *
  */
 public class Kit {
 
     private final int id;
     private final String name;
-    private final Set<KitPair> contents;
+    private final Set<ItemInSlot> contents;
 
-    Kit(int id, String name, Set<KitPair> contents) {
+    Kit(int id, String name, Set<ItemInSlot> contents) {
         this.id = id;
         this.name = name;
         this.contents = contents;
@@ -47,15 +47,26 @@ public class Kit {
         return this.name;
     }
 
-    public Set<KitPair> getContents() {
+    public Set<ItemInSlot> getContents() {
         return this.contents;
     }
 
+    /**
+     * A kit is equal to another according to its ID only
+     *
+     * @param o the other object
+     * @return true if equal, false otherwise
+     */
     @Override
     public boolean equals(Object o) {
-        if (o == this) return true;
-        if (!(o instanceof Kit)) return false;
-        return ((Kit)o).getId() == this.getId();
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Kit kit = (Kit) o;
+        return id == kit.id;
     }
 
+    @Override
+    public int hashCode() {
+        return id;
+    }
 }

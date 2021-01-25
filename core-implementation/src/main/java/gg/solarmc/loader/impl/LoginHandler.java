@@ -22,9 +22,9 @@ package gg.solarmc.loader.impl;
 import gg.solarmc.loader.SolarPlayer;
 import gg.solarmc.loader.data.DataKey;
 import gg.solarmc.loader.data.DataObject;
-import gg.solarmc.uuidutil.UUIDUtil;
 import org.jooq.DSLContext;
 import space.arim.omnibus.util.concurrent.CentralisedFuture;
+import space.arim.omnibus.util.UUIDUtil;
 
 import java.sql.SQLException;
 import java.util.HashMap;

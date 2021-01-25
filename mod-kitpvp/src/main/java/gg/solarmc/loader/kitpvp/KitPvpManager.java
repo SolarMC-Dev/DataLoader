@@ -23,92 +23,101 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import gg.solarmc.loader.Transaction;
 import gg.solarmc.loader.data.DataManager;
-import gg.solarmc.loader.impl.SQLTransaction;
-import gg.solarmc.loader.schema.tables.records.KitpvpKitsContentsRecord;
-import gg.solarmc.loader.schema.tables.records.KitpvpKitsNamesRecord;
+import gg.solarmc.loader.schema.tables.records.KitpvpKitsIdsRecord;
+
 import org.jooq.DSLContext;
-import org.jooq.Result;
+import org.jooq.Query;
 
 import java.time.Duration;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 
-import static gg.solarmc.loader.schema.tables.KitpvpKitsNames.KITPVP_KITS_NAMES;
+import static gg.solarmc.loader.schema.Tables.KITPVP_KITS_IDS;
 import static gg.solarmc.loader.schema.tables.KitpvpKitsContents.KITPVP_KITS_CONTENTS;
 
 public class KitPvpManager implements DataManager {
 
-    private final Cache<Integer,Kit> existingKits = Caffeine.newBuilder().expireAfterAccess(Duration.ofMinutes(15)).build();
-    private final ItemSerializer serializer;
+	private final Cache<Integer,Kit> existingKits = Caffeine.newBuilder().expireAfterAccess(Duration.ofMinutes(15)).build();
+	private final ItemSerializer serializer;
 
-    public KitPvpManager(ItemSerializer serializer) {
-        this.serializer = serializer;
-    }
+	KitPvpManager(ItemSerializer serializer) {
+		this.serializer = serializer;
+	}
 
-    /**
-     * Gets a kit based on it's kit ID
-     * @param transaction how many times to i have to write this...?
-     * @param id represents the kit ID
-     * @return the kit from cache or table
-     */
-    public Kit getKit(Transaction transaction, Integer id) {
-        return existingKits.get(id,num -> {
-            var jooq = transaction.getProperty(DSLContext.class);
+	/**
+	 * Gets a kit based on it's kit ID
+	 *
+	 * @param transaction the transaction
+	 * @param id represents the kit ID
+	 * @return the kit from cache or table
+	 */
+	Kit getKit(Transaction transaction, int id) {
+		return existingKits.get(id, num -> {
+			var jooq = transaction.getProperty(DSLContext.class);
 
-            KitpvpKitsNamesRecord result = jooq.fetchOne(KITPVP_KITS_NAMES,KITPVP_KITS_NAMES.KIT_ID.eq(num));
+			String kitName = jooq
+					.select(KITPVP_KITS_IDS.KIT_NAME).from(KITPVP_KITS_IDS)
+					.where(KITPVP_KITS_IDS.KIT_ID.eq(id)).fetchOne(KITPVP_KITS_IDS.KIT_NAME);
+			if (kitName == null) {
+				throw new IllegalStateException("Kit by id " + id + " does not exist");
+			}
 
-            assert result != null : "Invalid kit selected!";
+			Set<ItemInSlot> contents = jooq
+                    .select(KITPVP_KITS_CONTENTS.ITEM, KITPVP_KITS_CONTENTS.SLOT).from(KITPVP_KITS_CONTENTS)
+                    .where(KITPVP_KITS_CONTENTS.KIT_ID.eq(id)).fetchSet((itemInSlotRecord) -> {
+                        return new ItemInSlot(
+                        		itemInSlotRecord.get(KITPVP_KITS_CONTENTS.SLOT),
+								serializer.deserialize(itemInSlotRecord.get(KITPVP_KITS_CONTENTS.ITEM)));
+                    });
+			return new Kit(id, kitName, Set.copyOf(contents));
+		});
+	}
 
-            Result<KitpvpKitsContentsRecord> result1 = jooq.fetch(KITPVP_KITS_CONTENTS,KITPVP_KITS_CONTENTS.KIT_ID.eq(num));
+	/**
+	 * Creates a kit with given arguments
+	 * @param transaction is the transaction
+	 * @param name name of the kit, must be unique
+	 * @param contents of the kit
+	 * @return the kit which was created
+	 */
+	public Kit createKit(Transaction transaction, String name, Set<ItemInSlot> contents) {
+		var jooq = transaction.getProperty(DSLContext.class);
 
-            Set<KitPair> set = new HashSet<>(); //this does not have to be concurrent because it will just be reloaded
+		KitpvpKitsIdsRecord result = jooq.insertInto(KITPVP_KITS_IDS)
+				.columns(KITPVP_KITS_IDS.KIT_NAME).values(name)
+				.returning().fetchOne();
+		if (result == null) {
+			throw new IllegalStateException("Failed to insert kit by name " + name);
+		}
+		int kitId = result.getKitId();
 
-            for (KitpvpKitsContentsRecord record : result1) {
-                set.add(new KitPair(record.getSlot(),this.serializer.deserialize(record.getItem())));
-            }
+		List<Query> queries = new ArrayList<>(contents.size());
+		for (ItemInSlot itemInSlot : contents) {
+			Query query = jooq
+					.insertInto(KITPVP_KITS_CONTENTS)
+					.columns(KITPVP_KITS_CONTENTS.KIT_ID, KITPVP_KITS_CONTENTS.SLOT, KITPVP_KITS_CONTENTS.ITEM)
+					.values(kitId, (byte) itemInSlot.getSlot(), serializer.serialize(itemInSlot.getItem()));
+			queries.add(query);
+		}
+		jooq.batch(queries).execute();
 
-            return new Kit(
-                    num,
-                    result.getKitName(),
-                    Collections.unmodifiableSet(set)
-                    );
-        });
-    }
+		Kit kit = new Kit(kitId, name, contents);
+		existingKits.put(kitId, kit);
+		return kit;
+	}
 
-    /**
-     * Creates a kit with given arguments
-     * @param transaction is the transaction
-     * @param name name of the kit, please make it unique
-     * @param contents of the kit
-     */
-    public void createKit(Transaction transaction, String name, Set<KitPair> contents) {
-        var jooq = transaction.getProperty(DSLContext.class);
-
-        KitpvpKitsNamesRecord result = jooq.insertInto(KITPVP_KITS_NAMES,KITPVP_KITS_NAMES.KIT_NAME)
-                .values(name)
-                .returning()
-                .fetchOne();
-
-        for (KitPair pair : contents) {
-            jooq.insertInto(KITPVP_KITS_CONTENTS,KITPVP_KITS_CONTENTS.SLOT,KITPVP_KITS_CONTENTS.ITEM,KITPVP_KITS_CONTENTS.KIT_ID)
-                    .values(pair.getSlot(), serializer.serialize(pair.getItem()),result.getKitId());
-        }
-
-        existingKits.put(result.getKitId(),new Kit(result.getKitId(),name,contents));
-    }
-
-    /**
-     * Deletes a kit based on id.
-     * @param transaction represents the transaction (the more times i type this the more sanity i lose)
-     * @param id represents the id of the kit
-     */
-    public void deleteKit(Transaction transaction, Integer id) {
-        KitpvpKitsNamesRecord result = transaction.getProperty(DSLContext.class)
-                .fetchOne(KITPVP_KITS_NAMES,KITPVP_KITS_NAMES.KIT_ID.eq(id));
-
-        assert result != null : "ID provided does not exist as a kit!";
-
-        this.existingKits.invalidate(id);
-        result.delete();
-    }
+	/**
+	 * Deletes a kit based on id, if it exists
+	 * @param transaction represents the transaction
+	 * @param kit the kit
+	 */
+	public void deleteKit(Transaction transaction, Kit kit) {
+		int kitId = kit.getId();
+		transaction.getProperty(DSLContext.class)
+				.deleteFrom(KITPVP_KITS_IDS).where(KITPVP_KITS_IDS.KIT_ID.eq(kitId))
+				.execute();
+		existingKits.invalidate(kitId);
+	}
 
 }

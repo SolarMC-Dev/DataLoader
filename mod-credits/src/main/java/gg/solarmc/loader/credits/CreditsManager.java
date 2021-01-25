@@ -21,18 +21,8 @@ package gg.solarmc.loader.credits;
 
 import gg.solarmc.loader.Transaction;
 import gg.solarmc.loader.data.DataManager;
-import gg.solarmc.loader.impl.SQLTransaction;
-import gg.solarmc.loader.impl.SolarDataConfig;
 import org.jooq.DSLContext;
-import space.arim.dazzleconf.ConfigurationOptions;
-import space.arim.dazzleconf.error.InvalidConfigException;
-import space.arim.dazzleconf.ext.snakeyaml.SnakeYamlConfigurationFactory;
-import space.arim.dazzleconf.ext.snakeyaml.SnakeYamlOptions;
-import space.arim.dazzleconf.helper.ConfigurationHelper;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.Path;
 import java.util.List;
 
 import static gg.solarmc.loader.schema.tables.CreditsWithNames.CREDITS_WITH_NAMES;
@@ -41,7 +31,7 @@ public class CreditsManager implements DataManager {
 
 	private final CreditsConfig configuration;
 
-	public CreditsManager(CreditsConfig config) {
+	CreditsManager(CreditsConfig config) {
 		this.configuration = config;
 	}
 

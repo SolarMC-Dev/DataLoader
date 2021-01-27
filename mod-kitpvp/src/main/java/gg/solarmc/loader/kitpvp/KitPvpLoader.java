@@ -19,16 +19,14 @@
 
 package gg.solarmc.loader.kitpvp;
 
-import gg.solarmc.loader.data.DataLoader;
 import gg.solarmc.loader.Transaction;
-import gg.solarmc.loader.impl.SQLTransaction;
+import gg.solarmc.loader.data.DataLoader;
 import gg.solarmc.loader.schema.tables.records.KitpvpStatisticsRecord;
 import org.jooq.DSLContext;
 
 import java.util.HashSet;
 
-import static gg.solarmc.loader.schema.tables.KitpvpKitsOwnership.KITPVP_KITS_OWNERSHIP;
-import static gg.solarmc.loader.schema.tables.KitpvpStatistics.*;
+import static gg.solarmc.loader.schema.tables.KitpvpStatistics.KITPVP_STATISTICS;
 
 // TODO all of this
 public class KitPvpLoader implements DataLoader<KitPvp> {

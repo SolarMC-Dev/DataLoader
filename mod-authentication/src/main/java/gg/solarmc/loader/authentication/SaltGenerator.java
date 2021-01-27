@@ -38,7 +38,7 @@ class SaltGenerator {
 	}
 
 	byte[] emptySalt() {
-		return new byte[32];
+		return new byte[SALT_LENGTH];
 	}
 
 }

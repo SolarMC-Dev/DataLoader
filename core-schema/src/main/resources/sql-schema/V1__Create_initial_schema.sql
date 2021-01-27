@@ -1,7 +1,6 @@
 CREATE TABLE user_ids (
-  id INT NOT NULL AUTO_INCREMENT UNIQUE,
-  uuid BINARY(16) NOT NULL,
-  PRIMARY KEY(uuid)
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  uuid BINARY(16) NOT NULL UNIQUE
 );
 
 CREATE TABLE credits (
@@ -60,3 +59,17 @@ CREATE TABLE friends_friended_users (
   FOREIGN KEY (friend_user_id) REFERENCES user_ids (id) ON DELETE CASCADE,
   PRIMARY KEY (user_id, friend_user_id)
 );
+
+-- A password row can be in 1 of 4 states:
+-- 1. Not created, in which case the row does not exist
+-- 2. Manually created, in which case the row exists and all fields are not null
+-- 3. Automatically created, in which case iterations is 0 and other fields are empty
+-- #2 is typical for cracked users, #3 for premium users
+
+CREATE TABLE auth_passwords (
+  username VARCHAR(16) PRIMARY KEY,
+  iterations TINYINT NOT NULL,
+  memory INT NOT NULL,
+  password_hash BINARY(64) NOT NULL,
+  password_salt BINARY(32) NOT NULL
+)

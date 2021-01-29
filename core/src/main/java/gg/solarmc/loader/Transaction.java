@@ -37,9 +37,11 @@ public interface Transaction {
 	void markReadOnly();
 
 	/**
-	 * Retrieves a property class
-	 * @param cls Class provided
-	 * @return Object of type {@param cls}
+	 * Retrieves a property of this transaction
+	 *
+	 * @param cls the class of the property
+	 * @param <T> the type of the property
+	 * @return the property
 	 */
 	<T> T getProperty(Class<T> cls);
 

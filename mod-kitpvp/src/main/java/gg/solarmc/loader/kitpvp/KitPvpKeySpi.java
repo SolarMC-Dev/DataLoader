@@ -19,24 +19,15 @@
 
 package gg.solarmc.loader.kitpvp;
 
-import gg.solarmc.loader.data.DataKey;
-import gg.solarmc.loader.data.DataKeyInitializationContext;
-import gg.solarmc.loader.data.DataLoader;
+import gg.solarmc.loader.data.DataKeySpi;
 
-public class KitPvpKey implements DataKey<KitPvp, KitPvpManager> {
+import java.util.Set;
 
-    public static final KitPvpKey INSTANCE = new KitPvpKey();
+public final class KitPvpKeySpi {
 
-    KitPvpKey() {}
+	private KitPvpKeySpi() {}
 
-    @Override
-    public DataLoader<KitPvp> createLoader(KitPvpManager dataManager, DataKeyInitializationContext context) {
-        return new KitPvpLoader(dataManager);
-    }
-
-    @Override
-    public KitPvpManager createDataManager(DataKeyInitializationContext context) {
-        return new KitPvpManager(context.omnibus().getRegistry().getProvider(ItemSerializer.class).orElseThrow());
-    }
-
+	public static DataKeySpi provider() {
+		return () -> Set.of(KitPvpKey.INSTANCE);
+	}
 }

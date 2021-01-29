@@ -98,4 +98,16 @@ public class Credits implements DataObject {
 		return new DepositResult(newBalance);
 	}
 
+	/**
+	 * Sets the user's account balance. Cannot fail
+	 * @param transaction the transaction
+	 * @param newAmount amount to set to
+	 */
+	public void setBalance(Transaction transaction, BigDecimal newAmount) {
+		CreditsRecord creditsRecord = getBalance(transaction);
+		creditsRecord.setBalance(newAmount);
+		creditsRecord.store(CREDITS.BALANCE);
+		currentBalance = newAmount;
+	}
+
 }

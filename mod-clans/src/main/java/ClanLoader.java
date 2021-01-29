@@ -22,14 +22,14 @@
 import gg.solarmc.loader.Transaction;
 import gg.solarmc.loader.data.DataLoader;
 
-public class ClanLoader implements DataLoader<ClanPlayer> {
+public class ClanLoader implements DataLoader<ClanDataObject> {
     @Override
-    public ClanPlayer createDefaultData(Transaction transaction, int userId) {
-        return new ClanPlayer();
+    public ClanDataObject createDefaultData(Transaction transaction, int userId) {
+        return new ClanDataObject();
     }
 
     @Override
-    public ClanPlayer loadData(Transaction transaction, int userId) {
-        return new ClanPlayer();
+    public ClanDataObject loadData(Transaction transaction, int userId) {
+        return new ClanDataObject();
     }
 }

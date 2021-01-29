@@ -21,7 +21,7 @@
 
 import gg.solarmc.loader.data.DataObject;
 
-public class ClanPlayer implements DataObject {
+public class ClanDataObject implements DataObject {
 
 
 

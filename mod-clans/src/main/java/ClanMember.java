@@ -19,19 +19,24 @@
  *
  */
 
-import gg.solarmc.loader.data.DataKey;
-import gg.solarmc.loader.data.DataKeyInitializationContext;
-import gg.solarmc.loader.data.DataLoader;
+public class ClanMember {
 
-public class ClansKey implements DataKey<ClanDataObject,ClanManager> {
+    private final Clan clan;
+    private final int userId;
 
-    @Override
-    public DataLoader<ClanDataObject> createLoader(ClanManager dataManager, DataKeyInitializationContext context) {
-        return new ClanLoader();
+    public ClanMember(Clan clan, int userId) {
+        this.clan = clan;
+        this.userId = userId;
     }
 
-    @Override
-    public ClanManager createDataManager(DataKeyInitializationContext context) {
-        return new ClanManager();
+    public Clan getClan() {
+        return clan;
     }
+
+    public int getUserId() {
+        return userId;
+    }
+
+
+
 }

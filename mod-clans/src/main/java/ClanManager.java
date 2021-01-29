@@ -36,6 +36,13 @@ public class ClanManager implements DataManager {
 
     private final Cache<Integer,Clan> clans = Caffeine.newBuilder().expireAfterAccess(Duration.ofMinutes(10)).build();
 
+    /**
+     * Gets a clan from memory cache or from table if not present.
+     * @param transaction the tx
+     * @param id ID of clan requested
+     * @return the clan you asked for idiot
+     * @throws IllegalStateException if the clan isn't present in table
+     */
     public Clan getClan(Transaction transaction, Integer id) {
         return clans.get(id, i -> {
 

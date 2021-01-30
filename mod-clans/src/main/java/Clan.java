@@ -21,6 +21,7 @@
 
 import gg.solarmc.loader.Transaction;
 import gg.solarmc.loader.schema.tables.records.ClansClanEnemiesRecord;
+import gg.solarmc.loader.schema.tables.records.ClansClanMembershipRecord;
 import org.jooq.DSLContext;
 
 import java.util.Optional;
@@ -28,6 +29,7 @@ import java.util.Set;
 
 import static gg.solarmc.loader.schema.tables.ClansAllianceRequests.*;
 import static gg.solarmc.loader.schema.tables.ClansClanEnemies.*;
+import static gg.solarmc.loader.schema.tables.ClansClanMembership.CLANS_CLAN_MEMBERSHIP;
 
 public class Clan {
 
@@ -42,7 +44,9 @@ public class Clan {
     private volatile int clanDeaths;
     private volatile int clanAssists;
 
-    public Clan(Set<ClanMember> members, int clanID, String clanName, int clanKills, int clanDeaths, int clanAssists, Clan alliedClan, ClanManager manager) {
+    public Clan(int clanID, String clanName, int clanKills, int clanDeaths, int clanAssists,
+                Clan alliedClan, ClanManager manager, Set<ClanMember> members, ClanMember leader) {
+
         this.clanID = clanID;
         this.clanName = clanName;
         this.clanKills = clanKills;
@@ -92,6 +96,64 @@ public class Clan {
     public Optional<Clan> currentAlliedClan() { return Optional.ofNullable(alliedClan); }
 
     /**
+     * Gets all current members currently in the clan. Not accurate.
+     * @return all ClanMembers.
+     */
+    public Set<ClanMember> currentMembers() {
+        return this.members;
+    }
+
+    /**
+     * Adds a member to the clan. Note that this does not have a built in limit, API implementer needs to implement
+     * limit if we desire a limit on members
+     * @param transaction The tx
+     * @param member ClanMember to add.
+     * @return Accurate set of ClanMembers post transaction
+     * @throws IllegalStateException if member is already a member of the clan.
+     */
+    public Set<ClanMember> addClanMember(Transaction transaction, ClanMember member) {
+        int sec = transaction.getProperty(DSLContext.class)
+                .insertInto(CLANS_CLAN_MEMBERSHIP)
+                .columns(CLANS_CLAN_MEMBERSHIP.CLAN_ID,CLANS_CLAN_MEMBERSHIP.USER_ID)
+                .values(this.clanID,member.getUserId())
+                .execute();
+
+        if (sec != 1) throw new IllegalStateException("Inserted ClanMember already belongs to clan!");
+
+        return transaction.getProperty(DSLContext.class)
+                .select(CLANS_CLAN_MEMBERSHIP.USER_ID)
+                .from(CLANS_CLAN_MEMBERSHIP)
+                .where(CLANS_CLAN_MEMBERSHIP.CLAN_ID.eq(this.clanID))
+                .fetchSet((rec) -> {
+                    return new ClanMember(this.clanID,rec.value1(),manager);
+                });
+    }
+
+    /**
+     * Removes a member from the clan.
+     * @param transaction The tx
+     * @param member ClanMember to remove
+     * @return Accurate set of ClanMembers post transaction
+     * @throws IllegalStateException if member is not present in the clan
+     */
+    public Set<ClanMember> removeClanMember(Transaction transaction, ClanMember member) {
+        ClansClanMembershipRecord rec = transaction.getProperty(DSLContext.class)
+                .fetchOne(CLANS_CLAN_MEMBERSHIP,CLANS_CLAN_MEMBERSHIP.CLAN_ID.eq(this.clanID).and(CLANS_CLAN_MEMBERSHIP.USER_ID.eq(member.getUserId())));
+
+        if (rec == null) throw new IllegalStateException("Member is not part of clan!");
+
+        rec.delete();
+
+        return transaction.getProperty(DSLContext.class)
+                .select(CLANS_CLAN_MEMBERSHIP.USER_ID)
+                .from(CLANS_CLAN_MEMBERSHIP)
+                .where(CLANS_CLAN_MEMBERSHIP.CLAN_ID.eq(this.clanID))
+                .fetchSet((rec1) -> {
+                    return new ClanMember(this.clanID,rec1.value1(),manager);
+                });
+    }
+
+    /**
      * Requests clan to be ally. Note that the clan will have to approve this request.
      * @param transaction the tx
      * @param receiver represents the clan to add as an ally
@@ -132,8 +194,9 @@ public class Clan {
 
     /**
      * Marks clan enemy as no longer an enemy
-     * @param transaction
-     * @param clan
+     * @param transaction the tx
+     * @param clan clan provided
+     * @throws IllegalArgumentException if passed self or if passed ally
      */
     public void removeClanAsEnemy(Transaction transaction, Clan clan) {
         if (clan.getID() == this.clanID) throw new IllegalArgumentException("Tried to unmark self as enemy??");

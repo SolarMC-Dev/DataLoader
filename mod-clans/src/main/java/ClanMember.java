@@ -19,23 +19,43 @@
  *
  */
 
+import gg.solarmc.loader.Transaction;
+
+import java.util.Objects;
+
 public class ClanMember {
 
-    private final Clan clan;
+    private final int clanId;
     private final int userId;
+    private final ClanManager manager;
 
-    public ClanMember(Clan clan, int userId) {
-        this.clan = clan;
+    public ClanMember(int clanId, int userId, ClanManager manager) {
+        this.clanId = clanId;
         this.userId = userId;
+        this.manager = manager;
     }
 
-    public Clan getClan() {
-        return clan;
+    public Clan getClan(Transaction transaction) {
+        return manager.getClan(transaction,clanId);
     }
 
     public int getUserId() {
         return userId;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ClanMember that = (ClanMember) o;
+        return userId == that.userId;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(userId);
+    }
+
 
 
 

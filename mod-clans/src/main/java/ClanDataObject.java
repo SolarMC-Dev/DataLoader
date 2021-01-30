@@ -23,6 +23,23 @@ import gg.solarmc.loader.data.DataObject;
 
 public class ClanDataObject implements DataObject {
 
+    private Clan personalClan;
+    private int userId;
+
+    public ClanDataObject(Clan personalClan, int userId) {
+        this.personalClan = personalClan;
+        this.userId = userId;
+    }
+
+    public Clan getPersonalClan() {
+        return personalClan;
+    }
+
+    public int getUserId() {
+        return userId;
+    }
+
+
 
 
 

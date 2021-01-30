@@ -21,16 +21,17 @@
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import gg.solarmc.loader.DataCenter;
 import gg.solarmc.loader.Transaction;
 import gg.solarmc.loader.data.DataManager;
 import gg.solarmc.loader.schema.tables.records.ClansClanInfoRecord;
 import org.jooq.DSLContext;
-import org.jooq.impl.DSL;
 
 import java.time.Duration;
+import java.util.Set;
 
 import static gg.solarmc.loader.schema.tables.ClansClanInfo.CLANS_CLAN_INFO;
+import static gg.solarmc.loader.schema.tables.ClansClanMembership.CLANS_CLAN_MEMBERSHIP;
+import static gg.solarmc.loader.schema.tables.ClansClanAlliances.CLANS_CLAN_ALLIANCES;
 
 public class ClanManager implements DataManager {
 
@@ -46,13 +47,23 @@ public class ClanManager implements DataManager {
     public Clan getClan(Transaction transaction, Integer id) {
         return clans.get(id, i -> {
 
-            ClansClanInfoRecord rec = transaction.getProperty(DSLContext.class).fetchOne(CLANS_CLAN_INFO,CLANS_CLAN_INFO.CLAN_ID.eq(i));
+            var jooq = transaction.getProperty(DSLContext.class);
+
+            ClansClanInfoRecord rec = jooq.fetchOne(CLANS_CLAN_INFO,CLANS_CLAN_INFO.CLAN_ID.eq(i));
 
             if (rec == null) {
                 throw new IllegalStateException("No such clan exists!");
             }
 
-            return new Clan(rec.getClanId(), rec.getClanName(),rec.getClanKills(),rec.getClanDeaths(),rec.getClanAssists());
+            Set<ClanMember> members = jooq.select(CLANS_CLAN_MEMBERSHIP.USER_ID).from(CLANS_CLAN_MEMBERSHIP)
+                    .where(CLANS_CLAN_MEMBERSHIP.CLAN_ID.eq(id)).fetchSet((rec1) -> {
+
+                        return new ClanMember(i,rec1.value1(),this);
+            });
+
+            Clan clan = jooq.fetchOne(CLANS_)
+
+            return new Clan(rec.getClanId(), rec.getClanName(),rec.getClanKills(),rec.getClanDeaths(),rec.getClanAssists(),);
 
         });
     }

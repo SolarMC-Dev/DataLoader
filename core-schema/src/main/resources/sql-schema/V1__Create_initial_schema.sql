@@ -64,6 +64,7 @@ CREATE TABLE friends_friended_users (
 CREATE TABLE clans_clan_info (
   clan_id INT NOT NULL AUTO_INCREMENT UNIQUE,
   clan_name VARCHAR(100) NOT NULL,
+  clan_leader INT NOT NULL,
   clan_kills INT NOT NULL,
   clan_deaths INT NOT NULL,
   clan_assists INT NOT NULL,

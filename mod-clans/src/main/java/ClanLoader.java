@@ -21,15 +21,31 @@
 
 import gg.solarmc.loader.Transaction;
 import gg.solarmc.loader.data.DataLoader;
+import gg.solarmc.loader.schema.tables.records.ClansClanMembershipRecord;
+import org.jooq.DSLContext;
+
+import static gg.solarmc.loader.schema.tables.ClansClanMembership.CLANS_CLAN_MEMBERSHIP;
 
 public class ClanLoader implements DataLoader<ClanDataObject> {
+
+    private final ClanManager manager;
+
+    ClanLoader(ClanManager manager) {
+        this.manager = manager;
+    }
+
     @Override
     public ClanDataObject createDefaultData(Transaction transaction, int userId) {
-        return new ClanDataObject();
+        return new ClanDataObject(userId,null,manager);
     }
 
     @Override
     public ClanDataObject loadData(Transaction transaction, int userId) {
-        return new ClanDataObject();
+
+        ClansClanMembershipRecord rec = transaction.getProperty(DSLContext.class).fetchOne(CLANS_CLAN_MEMBERSHIP,CLANS_CLAN_MEMBERSHIP.USER_ID.eq(userId));
+
+        if (rec == null) return new ClanDataObject(userId,null,manager);
+
+        return new ClanDataObject(userId,manager.getClan(transaction,userId),manager);
     }
 }

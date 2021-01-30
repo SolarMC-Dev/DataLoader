@@ -31,6 +31,9 @@ import static gg.solarmc.loader.schema.tables.ClansAllianceRequests.*;
 import static gg.solarmc.loader.schema.tables.ClansClanEnemies.*;
 import static gg.solarmc.loader.schema.tables.ClansClanMembership.CLANS_CLAN_MEMBERSHIP;
 
+/**
+ * Note to reader of this source code: Come play SolarMC!
+ */
 public class Clan {
 
     private final int clanID;
@@ -39,6 +42,7 @@ public class Clan {
     private final Clan alliedClan;
     private final Set<ClanMember> members;
     private final ClanManager manager;
+    private final ClanMember leader;
 
     private volatile int clanKills;
     private volatile int clanDeaths;
@@ -55,6 +59,7 @@ public class Clan {
         this.members = members;
         this.alliedClan = alliedClan;
         this.manager = manager;
+        this.leader = leader;
     }
 
     public int getID() {
@@ -106,19 +111,27 @@ public class Clan {
     /**
      * Adds a member to the clan. Note that this does not have a built in limit, API implementer needs to implement
      * limit if we desire a limit on members
+     *
+     * Note to API implementer: This handles nothing regarding invites. If you want an invite system, it needs to come
+     * before this method.
+     *
      * @param transaction The tx
-     * @param member ClanMember to add.
+     * @param object ClanDataObject to add.
      * @return Accurate set of ClanMembers post transaction
      * @throws IllegalStateException if member is already a member of the clan.
+     * @throws IllegalArgumentException if member is the leader of the clan
      */
-    public Set<ClanMember> addClanMember(Transaction transaction, ClanMember member) {
+    public Set<ClanMember> addClanMember(Transaction transaction, ClanDataObject object) {
+        if (object.isSimilar(leader)) throw new IllegalArgumentException("Tried to add leader as member");
         int sec = transaction.getProperty(DSLContext.class)
                 .insertInto(CLANS_CLAN_MEMBERSHIP)
                 .columns(CLANS_CLAN_MEMBERSHIP.CLAN_ID,CLANS_CLAN_MEMBERSHIP.USER_ID)
-                .values(this.clanID,member.getUserId())
+                .values(this.clanID,object.getUserId())
                 .execute();
 
         if (sec != 1) throw new IllegalStateException("Inserted ClanMember already belongs to clan!");
+
+        object.setCachedClan(this);
 
         return transaction.getProperty(DSLContext.class)
                 .select(CLANS_CLAN_MEMBERSHIP.USER_ID)
@@ -132,17 +145,21 @@ public class Clan {
     /**
      * Removes a member from the clan.
      * @param transaction The tx
-     * @param member ClanMember to remove
+     * @param object ClanDataObject to remove
      * @return Accurate set of ClanMembers post transaction
      * @throws IllegalStateException if member is not present in the clan
+     * @throws IllegalArgumentException if member tried to remove was the leader of the clan
      */
-    public Set<ClanMember> removeClanMember(Transaction transaction, ClanMember member) {
+    public Set<ClanMember> removeClanMember(Transaction transaction, ClanDataObject object) {
         ClansClanMembershipRecord rec = transaction.getProperty(DSLContext.class)
-                .fetchOne(CLANS_CLAN_MEMBERSHIP,CLANS_CLAN_MEMBERSHIP.CLAN_ID.eq(this.clanID).and(CLANS_CLAN_MEMBERSHIP.USER_ID.eq(member.getUserId())));
+                .fetchOne(CLANS_CLAN_MEMBERSHIP,CLANS_CLAN_MEMBERSHIP.CLAN_ID.eq(this.clanID).and(CLANS_CLAN_MEMBERSHIP.USER_ID.eq(object.getUserId())));
 
         if (rec == null) throw new IllegalStateException("Member is not part of clan!");
+        if (object.isSimilar(leader)) throw new IllegalArgumentException("Tried to remove leader of clan!");
 
         rec.delete();
+
+        object.setCachedClan(null);
 
         return transaction.getProperty(DSLContext.class)
                 .select(CLANS_CLAN_MEMBERSHIP.USER_ID)

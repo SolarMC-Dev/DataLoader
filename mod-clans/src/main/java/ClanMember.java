@@ -22,25 +22,34 @@
 import gg.solarmc.loader.Transaction;
 
 import java.util.Objects;
+import java.util.Optional;
 
+/**
+ * Represents something that can be in a clan. Always compare with #equals
+ */
 public class ClanMember {
 
-    private final int clanId;
+    private final Integer clanId; //nullable
     private final int userId;
     private final ClanManager manager;
 
-    public ClanMember(int clanId, int userId, ClanManager manager) {
+    public ClanMember(Integer clanId, int userId, ClanManager manager) {
         this.clanId = clanId;
         this.userId = userId;
         this.manager = manager;
     }
 
-    public Clan getClan(Transaction transaction) {
-        return manager.getClan(transaction,clanId);
-    }
-
     public int getUserId() {
         return userId;
+    }
+
+    /**
+     * Checks if a ClanDataObject is similar to this
+     * @param object the object to compare
+     * @return whether they are similar or not
+     */
+    public boolean isSimilar(ClanDataObject object) {
+        return object.isSimilar(this);
     }
 
     @Override

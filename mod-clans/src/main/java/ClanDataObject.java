@@ -19,28 +19,85 @@
  *
  */
 
+import gg.solarmc.loader.Transaction;
 import gg.solarmc.loader.data.DataObject;
+import gg.solarmc.loader.schema.tables.records.ClansClanMembershipRecord;
+import org.jooq.DSLContext;
+
+import java.util.Optional;
+
+import static gg.solarmc.loader.schema.tables.ClansClanMembership.CLANS_CLAN_MEMBERSHIP;
 
 public class ClanDataObject implements DataObject {
 
-    private Clan personalClan;
-    private int userId;
+    private final int userId;
+    private final ClanManager manager;
 
-    public ClanDataObject(Clan personalClan, int userId) {
-        this.personalClan = personalClan;
+    private volatile Clan cachedClan;
+
+    public ClanDataObject(int userId, Clan clan, ClanManager manager) {
         this.userId = userId;
-    }
-
-    public Clan getPersonalClan() {
-        return personalClan;
+        this.manager = manager;
     }
 
     public int getUserId() {
         return userId;
     }
 
+    /**
+     * Gets current cached clan. Not accurate.
+     * @return Optional containing cached value
+     */
+    public Optional<Clan> currentClan() {
+        return Optional.ofNullable(cachedClan);
+    }
 
+    /**
+     * Gets current clan the object belongs to
+     * @param transaction the tx
+     * @return Optional containing clan player belongs to
+     */
+    public Optional<Clan> getClan(Transaction transaction) {
+        ClansClanMembershipRecord rec = transaction.getProperty(DSLContext.class)
+                .fetchOne(CLANS_CLAN_MEMBERSHIP,CLANS_CLAN_MEMBERSHIP.USER_ID.eq(this.userId));
 
+        if (rec == null) return Optional.empty();
 
+        return Optional.of(manager.getClan(transaction,rec.getClanId()));
+    }
+
+    /**
+     * Gets a ClanMember object from this object.
+     * Note to Aurium from Aurium - Since clanmember should always be accurate to the Clan, you cannot get
+     * one of these from cached information. Come back to this later if you have more memory loss :)
+     * @param transaction the tx
+     * @return ClanMember from table.
+     */
+    public ClanMember asClanMember(Transaction transaction) {
+        Optional<Clan> temp = getClan(transaction);
+
+        if (temp.isEmpty()) {
+            return new ClanMember(null,this.userId,manager);
+        }
+
+        return new ClanMember(temp.orElseThrow().getID(),this.userId,manager);
+    }
+
+    /**
+     * Checks if a ClanMember is similar (read: equal) to this object
+     * @param member ClanMember to compare
+     * @return whether they are similar or not
+     */
+    public boolean isSimilar(ClanMember member) {
+        return member.getUserId() == this.userId;
+    }
+
+    /**
+     * Internal method to change cached clan.
+     * @param clan clan to change to
+     */
+    void setCachedClan(Clan clan) {
+        this.cachedClan = clan;
+    }
 
 }

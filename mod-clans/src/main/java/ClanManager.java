@@ -27,11 +27,12 @@ import gg.solarmc.loader.schema.tables.records.ClansClanInfoRecord;
 import org.jooq.DSLContext;
 
 import java.time.Duration;
+import java.util.HashSet;
 import java.util.Set;
 
+import static gg.solarmc.loader.schema.tables.ClansClanAlliances.CLANS_CLAN_ALLIANCES;
 import static gg.solarmc.loader.schema.tables.ClansClanInfo.CLANS_CLAN_INFO;
 import static gg.solarmc.loader.schema.tables.ClansClanMembership.CLANS_CLAN_MEMBERSHIP;
-import static gg.solarmc.loader.schema.tables.ClansClanAlliances.CLANS_CLAN_ALLIANCES;
 
 public class ClanManager implements DataManager {
 
@@ -61,31 +62,34 @@ public class ClanManager implements DataManager {
                         return new ClanMember(i,rec1.value1(),this);
             });
 
-            Clan clan = jooq.fetchOne(CLANS_)
+            Clan ally = getClan(transaction,jooq.fetchOne(CLANS_CLAN_ALLIANCES,CLANS_CLAN_ALLIANCES.CLAN_ID.eq(i)).getAllyId());
 
-            return new Clan(rec.getClanId(), rec.getClanName(),rec.getClanKills(),rec.getClanDeaths(),rec.getClanAssists(),);
+            return new Clan(rec.getClanId(), rec.getClanName(),rec.getClanKills(),
+                    rec.getClanDeaths(),rec.getClanAssists(),ally,this,members,null);
 
         });
     }
 
     /**
-     * Creates an empty clan with given name. Note to implementer: You will need to manually
-     * populate this Clan with players.
-     * @param name
-     * @param transaction
-     * @return
+     * Creates an empty clan with given name.
+     * @param name Name of the Clan to add
+     * @param transaction the tx
+     * @param owner the to be owner of the clan
+     * @return created clan.
      */
-    public Clan createClan(Transaction transaction, String name) {
+    public Clan createClan(Transaction transaction, String name, ClanMember owner) {
         ClansClanInfoRecord rec = transaction.getProperty(DSLContext.class)
                 .insertInto(CLANS_CLAN_INFO)
-                .columns(CLANS_CLAN_INFO.CLAN_NAME,CLANS_CLAN_INFO.CLAN_KILLS,CLANS_CLAN_INFO.CLAN_DEATHS,CLANS_CLAN_INFO.CLAN_ASSISTS)
-                .values(name,0,0,0)
+                .columns(CLANS_CLAN_INFO.CLAN_NAME,CLANS_CLAN_INFO.CLAN_LEADER,CLANS_CLAN_INFO.CLAN_KILLS,CLANS_CLAN_INFO.CLAN_DEATHS,CLANS_CLAN_INFO.CLAN_ASSISTS)
+                .values(name,owner.getUserId(),0,0,0)
                 .returning()
                 .fetchOne();
 
         if (rec == null) throw new IllegalStateException("Failed to insert new Clan by name " + name);
 
-        Clan returned = new Clan(rec.getClanId(),rec.getClanName(),rec.getClanKills(),rec.getClanDeaths(),rec.getClanAssists());
+        Set<ClanMember> memberSet = new HashSet<>();
+
+        Clan returned = new Clan(rec.getClanId(),rec.getClanName(),rec.getClanKills(),rec.getClanDeaths(),rec.getClanAssists(),null,this,memberSet,owner);
 
         clans.put(returned.getID(),returned);
 

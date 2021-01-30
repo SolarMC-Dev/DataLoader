@@ -27,7 +27,7 @@ public class ClansKey implements DataKey<ClanDataObject,ClanManager> {
 
     @Override
     public DataLoader<ClanDataObject> createLoader(ClanManager dataManager, DataKeyInitializationContext context) {
-        return new ClanLoader();
+        return new ClanLoader(dataManager);
     }
 
     @Override

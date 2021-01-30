@@ -94,11 +94,3 @@ CREATE TABLE clans_clan_enemies (
   FOREIGN KEY (enemy_id) REFERENCES clans_clan_info (clan_id) ON DELETE CASCADE,
   PRIMARY KEY (clan_id,enemy_id)
 );
-
-CREATE TABLE clans_alliance_requests (
-  requester_id INT NOT NULL,
-  requested_id INT NOT NULL,
-  FOREIGN KEY (requester_id) REFERENCES clans_clan_info (clan_id) ON DELETE CASCADE,
-  FOREIGN KEY (requested_id) REFERENCES clans_clan_info (clan_id) ON DELETE CASCADE,
-  PRIMARY KEY (requester_id,requested_id)
-);

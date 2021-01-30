@@ -27,19 +27,21 @@ import org.jooq.DSLContext;
 import java.util.Optional;
 import java.util.Set;
 
-import static gg.solarmc.loader.schema.tables.ClansAllianceRequests.*;
-import static gg.solarmc.loader.schema.tables.ClansClanEnemies.*;
+import static gg.solarmc.loader.schema.tables.ClansClanAlliances.CLANS_CLAN_ALLIANCES;
+import static gg.solarmc.loader.schema.tables.ClansClanEnemies.CLANS_CLAN_ENEMIES;
 import static gg.solarmc.loader.schema.tables.ClansClanMembership.CLANS_CLAN_MEMBERSHIP;
 
 /**
  * Note to reader of this source code: Come play SolarMC!
  */
+@SuppressWarnings("unused")
 public class Clan {
 
     private final int clanID;
     private final String clanName;
 
-    private final Clan alliedClan;
+    private volatile Integer alliedClan; //nullable
+
     private final Set<ClanMember> members;
     private final ClanManager manager;
     private final ClanMember leader;
@@ -49,7 +51,7 @@ public class Clan {
     private volatile int clanAssists;
 
     public Clan(int clanID, String clanName, int clanKills, int clanDeaths, int clanAssists,
-                Clan alliedClan, ClanManager manager, Set<ClanMember> members, ClanMember leader) {
+                Integer alliedClan, ClanManager manager, Set<ClanMember> members, ClanMember leader) {
 
         this.clanID = clanID;
         this.clanName = clanName;
@@ -95,17 +97,17 @@ public class Clan {
     }
 
     /**
-     * Returns the current allied clan. Not accurate.
-     * @return current allied clan
-     */
-    public Optional<Clan> currentAlliedClan() { return Optional.ofNullable(alliedClan); }
-
-    /**
      * Gets all current members currently in the clan. Not accurate.
      * @return all ClanMembers.
      */
     public Set<ClanMember> currentMembers() {
         return this.members;
+    }
+
+    public Optional<Clan> getAlliedClan(Transaction transaction) {
+        if (this.alliedClan == null) return Optional.empty();
+
+        return Optional.of(manager.getClan(transaction,alliedClan));
     }
 
     /**
@@ -116,76 +118,82 @@ public class Clan {
      * before this method.
      *
      * @param transaction The tx
-     * @param object ClanDataObject to add.
+     * @param receiver ClanDataObject to add.
      * @return Accurate set of ClanMembers post transaction
-     * @throws IllegalStateException if member is already a member of the clan.
+     * @throws IllegalStateException if member is already a member of another clan
      * @throws IllegalArgumentException if member is the leader of the clan
      */
-    public Set<ClanMember> addClanMember(Transaction transaction, ClanDataObject object) {
-        if (object.isSimilar(leader)) throw new IllegalArgumentException("Tried to add leader as member");
+    public Set<ClanMember> addClanMember(Transaction transaction, ClanDataObject receiver) {
+        if (receiver.isSimilar(leader)) throw new IllegalArgumentException("Tried to add leader as member");
+        if (receiver.getClan(transaction).isPresent()) throw new IllegalStateException("Object is already a member of another clan");
+
         int sec = transaction.getProperty(DSLContext.class)
                 .insertInto(CLANS_CLAN_MEMBERSHIP)
                 .columns(CLANS_CLAN_MEMBERSHIP.CLAN_ID,CLANS_CLAN_MEMBERSHIP.USER_ID)
-                .values(this.clanID,object.getUserId())
+                .values(this.clanID,receiver.getUserId())
                 .execute();
 
         if (sec != 1) throw new IllegalStateException("Inserted ClanMember already belongs to clan!");
 
-        object.setCachedClan(this);
+        receiver.setCachedClan(this);
 
         return transaction.getProperty(DSLContext.class)
                 .select(CLANS_CLAN_MEMBERSHIP.USER_ID)
                 .from(CLANS_CLAN_MEMBERSHIP)
                 .where(CLANS_CLAN_MEMBERSHIP.CLAN_ID.eq(this.clanID))
-                .fetchSet((rec) -> {
-                    return new ClanMember(this.clanID,rec.value1(),manager);
-                });
+                .fetchSet((rec) -> new ClanMember(this.clanID,rec.value1(),manager));
     }
 
     /**
      * Removes a member from the clan.
      * @param transaction The tx
-     * @param object ClanDataObject to remove
+     * @param receiver ClanDataObject to remove
      * @return Accurate set of ClanMembers post transaction
-     * @throws IllegalStateException if member is not present in the clan
-     * @throws IllegalArgumentException if member tried to remove was the leader of the clan
+     * @throws IllegalStateException if member already has a clan
+     * @throws IllegalArgumentException if member tried to remove was the leader of the clan, or if they are not
+     * present in the clan
      */
-    public Set<ClanMember> removeClanMember(Transaction transaction, ClanDataObject object) {
-        ClansClanMembershipRecord rec = transaction.getProperty(DSLContext.class)
-                .fetchOne(CLANS_CLAN_MEMBERSHIP,CLANS_CLAN_MEMBERSHIP.CLAN_ID.eq(this.clanID).and(CLANS_CLAN_MEMBERSHIP.USER_ID.eq(object.getUserId())));
+    public Set<ClanMember> removeClanMember(Transaction transaction, ClanDataObject receiver) {
+        if (receiver.getClan(transaction).isPresent()) throw new IllegalStateException("Receiver already has clan!");
 
-        if (rec == null) throw new IllegalStateException("Member is not part of clan!");
-        if (object.isSimilar(leader)) throw new IllegalArgumentException("Tried to remove leader of clan!");
+        ClansClanMembershipRecord rec = transaction.getProperty(DSLContext.class)
+                .fetchOne(CLANS_CLAN_MEMBERSHIP,CLANS_CLAN_MEMBERSHIP.CLAN_ID.eq(this.clanID).and(CLANS_CLAN_MEMBERSHIP.USER_ID.eq(receiver.getUserId())));
+
+        if (rec == null) throw new IllegalArgumentException("Member is not part of clan!");
+        if (receiver.isSimilar(leader)) throw new IllegalArgumentException("Tried to remove leader of clan!");
 
         rec.delete();
 
-        object.setCachedClan(null);
+        receiver.setCachedClan(null);
 
         return transaction.getProperty(DSLContext.class)
                 .select(CLANS_CLAN_MEMBERSHIP.USER_ID)
                 .from(CLANS_CLAN_MEMBERSHIP)
                 .where(CLANS_CLAN_MEMBERSHIP.CLAN_ID.eq(this.clanID))
-                .fetchSet((rec1) -> {
-                    return new ClanMember(this.clanID,rec1.value1(),manager);
-                });
+                .fetchSet((rec1) -> new ClanMember(this.clanID,rec1.value1(),manager));
     }
 
     /**
-     * Requests clan to be ally. Note that the clan will have to approve this request.
+     * Adds clan as an ally
      * @param transaction the tx
-     * @param receiver represents the clan to add as an ally
-     * @return whether action was successful or not (failure implying request already exists)
+     * @param receiver the receiver
+     * @return whether record was inserted or not.
+     * @throws IllegalArgumentException if receiver is the same Clan as this object
+     * @throws IllegalStateException if receiver or this object already has an ally
      */
-    public boolean requestClanAsAlly(Transaction transaction, Clan receiver) {
+    public boolean addClanAsAlly(Transaction transaction, Clan receiver) {
         if (receiver.getID() == this.clanID) throw new IllegalArgumentException("Tried to mark clan ally as same clan!");
-        if (this.currentAlliedClan().isPresent()) throw new IllegalStateException("Tried to ally with alternate clan while having an ally!");
-        if (receiver.currentAlliedClan().isPresent()) throw new IllegalStateException("Selected clan already has an ally!");
+        if (this.getAlliedClan(transaction).isPresent()) throw new IllegalStateException("Sender already have an ally!");
+        if (receiver.getAlliedClan(transaction).isPresent()) throw new IllegalStateException("Selected clan already has an ally!");
 
         int res = transaction.getProperty(DSLContext.class)
-                .insertInto(CLANS_ALLIANCE_REQUESTS)
-                .columns(CLANS_ALLIANCE_REQUESTS.REQUESTER_ID,CLANS_ALLIANCE_REQUESTS.REQUESTED_ID)
+                .insertInto(CLANS_CLAN_ALLIANCES)
+                .columns(CLANS_CLAN_ALLIANCES.CLAN_ID,CLANS_CLAN_ALLIANCES.ALLY_ID)
                 .values(this.clanID,receiver.getID())
                 .execute();
+
+        this.setCachedAllyClan(receiver.clanID);
+        receiver.setCachedAllyClan(this.clanID);
 
         return res == 1;
     }
@@ -193,17 +201,21 @@ public class Clan {
     /**
      * Marks clan as an enemy
      * @param transaction twix bar
-     * @param clan the clan to mark as an enemy.
+     * @param receiver the clan to mark as an enemy.
      * @return whether action was successful or not (failure represents that they are already enemies)
      * @throws IllegalArgumentException if the presented clan is an ally or is the same object (what?)
      */
-    public boolean addClanAsEnemy(Transaction transaction, Clan clan) {
-        if (clan.getID() == this.clanID) throw new IllegalArgumentException("Tried to mark clan enemy as same clan!");
-        if (clan.equals(this.alliedClan)) throw new IllegalArgumentException("Tried to add allied clan as enemy!");
+    public boolean addClanAsEnemy(Transaction transaction, Clan receiver) {
+        if (receiver.getID() == this.clanID) throw new IllegalArgumentException("Tried to mark clan enemy as same clan!");
+
+        this.getAlliedClan(transaction).ifPresent(ally -> {
+            if (this.alliedClan.equals(ally.getID())) throw new IllegalArgumentException("Tried to add allied clan as enemy!");
+        });
 
         int res = transaction.getProperty(DSLContext.class)
                 .insertInto(CLANS_CLAN_ENEMIES)
                 .columns(CLANS_CLAN_ENEMIES.CLAN_ID,CLANS_CLAN_ENEMIES.ENEMY_ID)
+                .values(this.clanID,receiver.getID())
                 .execute();
 
         return res == 1;
@@ -217,7 +229,10 @@ public class Clan {
      */
     public void removeClanAsEnemy(Transaction transaction, Clan clan) {
         if (clan.getID() == this.clanID) throw new IllegalArgumentException("Tried to unmark self as enemy??");
-        if (clan.equals(this.alliedClan)) throw new IllegalArgumentException("Tried to unmark allied clan!");
+
+        this.getAlliedClan(transaction).ifPresent(ally -> {
+            if (this.alliedClan.equals(ally.getID())) throw new IllegalArgumentException("Tried to unmark allied clan as enemy!");
+        });
 
         ClansClanEnemiesRecord rec = transaction.getProperty(DSLContext.class)
                 .fetchOne(CLANS_CLAN_ENEMIES,CLANS_CLAN_ENEMIES.CLAN_ID.eq(this.clanID).and(CLANS_CLAN_ENEMIES.ENEMY_ID.eq(clan.getID())));
@@ -229,25 +244,18 @@ public class Clan {
 
     /**
      * Gets all clans enemies with this current clan
-     * @param transaction
+     * @param transaction the tx
      * @return All clans this clan has currently marked as enemies
      */
     public Set<Clan> getEnemyClans(Transaction transaction) {
         return transaction.getProperty(DSLContext.class)
                 .select(CLANS_CLAN_ENEMIES.ENEMY_ID).from(CLANS_CLAN_ENEMIES)
                 .where(CLANS_CLAN_ENEMIES.CLAN_ID.eq(this.clanID))
-                .fetchSet((record) -> {
-                    return manager.getClan(transaction,record.get(CLANS_CLAN_ENEMIES.ENEMY_ID));
-                });
+                .fetchSet((record) -> manager.getClan(transaction,record.get(CLANS_CLAN_ENEMIES.ENEMY_ID)));
     }
 
-    public Set<Request> getAllyRequests(Transaction transaction) {
-        return transaction.getProperty(DSLContext.class)
-                .select(CLANS_ALLIANCE_REQUESTS.REQUESTER_ID).from(CLANS_ALLIANCE_REQUESTS)
-                .where(CLANS_ALLIANCE_REQUESTS.REQUESTED_ID.eq(this.clanID))
-                .fetchSet((record) -> {
-                   return new Request(this, manager.getClan(transaction,record.get(CLANS_ALLIANCE_REQUESTS.REQUESTER_ID)));
-                });
+    void setCachedAllyClan(Integer id) {
+        this.alliedClan = id;
     }
 
 }

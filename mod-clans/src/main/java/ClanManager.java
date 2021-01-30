@@ -23,6 +23,7 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import gg.solarmc.loader.Transaction;
 import gg.solarmc.loader.data.DataManager;
+import gg.solarmc.loader.schema.tables.records.ClansClanAlliancesRecord;
 import gg.solarmc.loader.schema.tables.records.ClansClanInfoRecord;
 import org.jooq.DSLContext;
 
@@ -34,6 +35,7 @@ import static gg.solarmc.loader.schema.tables.ClansClanAlliances.CLANS_CLAN_ALLI
 import static gg.solarmc.loader.schema.tables.ClansClanInfo.CLANS_CLAN_INFO;
 import static gg.solarmc.loader.schema.tables.ClansClanMembership.CLANS_CLAN_MEMBERSHIP;
 
+@SuppressWarnings("unused")
 public class ClanManager implements DataManager {
 
     private final Cache<Integer,Clan> clans = Caffeine.newBuilder().expireAfterAccess(Duration.ofMinutes(10)).build();
@@ -57,15 +59,17 @@ public class ClanManager implements DataManager {
             }
 
             Set<ClanMember> members = jooq.select(CLANS_CLAN_MEMBERSHIP.USER_ID).from(CLANS_CLAN_MEMBERSHIP)
-                    .where(CLANS_CLAN_MEMBERSHIP.CLAN_ID.eq(id)).fetchSet((rec1) -> {
+                    .where(CLANS_CLAN_MEMBERSHIP.CLAN_ID.eq(id)).fetchSet((rec1) -> new ClanMember(i,rec1.value1(),this));
 
-                        return new ClanMember(i,rec1.value1(),this);
-            });
+            ClansClanAlliancesRecord rec1 = jooq.fetchOne(CLANS_CLAN_ALLIANCES,CLANS_CLAN_ALLIANCES.CLAN_ID.eq(i));
 
-            Clan ally = getClan(transaction,jooq.fetchOne(CLANS_CLAN_ALLIANCES,CLANS_CLAN_ALLIANCES.CLAN_ID.eq(i)).getAllyId());
-
-            return new Clan(rec.getClanId(), rec.getClanName(),rec.getClanKills(),
-                    rec.getClanDeaths(),rec.getClanAssists(),ally,this,members,null);
+            if (rec1 == null) {
+                return new Clan(rec.getClanId(), rec.getClanName(),rec.getClanKills(),
+                        rec.getClanDeaths(),rec.getClanAssists(),null,this,members,null);
+            } else {
+                return new Clan(rec.getClanId(), rec.getClanName(),rec.getClanKills(),
+                        rec.getClanDeaths(),rec.getClanAssists(),rec1.getAllyId(),this,members,null);
+            }
 
         });
     }

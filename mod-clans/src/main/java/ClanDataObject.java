@@ -33,7 +33,7 @@ public class ClanDataObject implements DataObject {
     private final int userId;
     private final ClanManager manager;
 
-    private volatile Clan cachedClan;
+    private volatile Clan cachedClan; //nullable
 
     public ClanDataObject(int userId, Clan clan, ClanManager manager) {
         this.userId = userId;

@@ -76,6 +76,7 @@
 		<module>mod-clans</module>
 		<module>mod-friends</module>
         <module>core-schema</module>
+		<module>standard-caching</module>
 	</modules>
 
 	<dependencyManagement>

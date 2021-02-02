@@ -17,26 +17,17 @@
  * and navigate to version 3 of the GNU Affero General Public License.
  */
 
-package gg.solarmc.loader.kitpvp;
+package gg.solarmc.loader.credits;
 
-import gg.solarmc.loader.data.DataKey;
-import gg.solarmc.loader.data.DataKeyInitializationContext;
-import gg.solarmc.loader.data.DataLoader;
+import gg.solarmc.loader.data.DataKeySpi;
 
-public class KitPvpKey implements DataKey<KitPvp, KitPvpManager> {
+import java.util.Set;
 
-    public static final KitPvpKey INSTANCE = new KitPvpKey();
+public final class CreditsKeySpi {
 
-    KitPvpKey() {}
+	private CreditsKeySpi() {}
 
-    @Override
-    public DataLoader<KitPvp> createLoader(KitPvpManager dataManager, DataKeyInitializationContext context) {
-        return new KitPvpLoader(dataManager);
-    }
-
-    @Override
-    public KitPvpManager createDataManager(DataKeyInitializationContext context) {
-        return new KitPvpManager(context.omnibus().getRegistry().getProvider(ItemSerializer.class).orElseThrow());
-    }
-
+	public static DataKeySpi provider() {
+		return () -> Set.of(CreditsKey.INSTANCE);
+	}
 }

@@ -19,6 +19,27 @@
  *
  */
 
+package gg.solarmc.loader.clans;/*
+ *
+ *  * dataloader
+ *  * Copyright © 2021 SolarMC Developers
+ *  *
+ *  * dataloader is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU Affero General Public License as
+ *  * published by the Free Software Foundation, either version 3 of the
+ *  * License, or (at your option) any later version.
+ *  *
+ *  * dataloader is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ *  * GNU Affero General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU Affero General Public License
+ *  * along with dataloader. If not, see <https://www.gnu.org/licenses/>
+ *  * and navigate to version 3 of the GNU Affero General Public License.
+ *
+ */
+
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import gg.solarmc.loader.Transaction;
@@ -82,7 +103,7 @@ public class ClanManager implements DataManager {
 
     /**
      * Creates an empty clan with given name.
-     * @param name Name of the Clan to add
+     * @param name Name of the gg.solarmc.loader.clans.Clan to add
      * @param transaction the tx
      * @param owner the to be owner of the clan
      * @return created clan.
@@ -95,7 +116,7 @@ public class ClanManager implements DataManager {
                 .returning()
                 .fetchOne();
 
-        if (rec == null) throw new IllegalStateException("Failed to insert new Clan by name " + name);
+        if (rec == null) throw new IllegalStateException("Failed to insert new gg.solarmc.loader.clans.Clan by name " + name);
 
         ClanMember ownerAsMember = owner.asClanMember(transaction);
         Set<ClanMember> memberSet = new HashSet<>();

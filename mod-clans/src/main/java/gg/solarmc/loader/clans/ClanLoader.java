@@ -19,7 +19,7 @@
  *
  */
 
-import gg.solarmc.loader.Transaction;
+package gg.solarmc.loader.clans;import gg.solarmc.loader.Transaction;
 import gg.solarmc.loader.data.DataLoader;
 import gg.solarmc.loader.schema.tables.records.ClansClanMembershipRecord;
 import org.jooq.DSLContext;

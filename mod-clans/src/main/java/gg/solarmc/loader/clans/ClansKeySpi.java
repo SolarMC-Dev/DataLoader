@@ -19,19 +19,16 @@
  *
  */
 
-import gg.solarmc.loader.data.DataKey;
-import gg.solarmc.loader.data.DataKeyInitializationContext;
-import gg.solarmc.loader.data.DataLoader;
+package gg.solarmc.loader.clans;
 
-public class ClansKey implements DataKey<ClanDataObject,ClanManager> {
+import gg.solarmc.loader.data.DataKeySpi;
 
-    @Override
-    public DataLoader<ClanDataObject> createLoader(ClanManager dataManager, DataKeyInitializationContext context) {
-        return new ClanLoader(dataManager);
-    }
+import java.util.Set;
 
-    @Override
-    public ClanManager createDataManager(DataKeyInitializationContext context) {
-        return new ClanManager();
-    }
+public class ClansKeySpi {
+
+    ClansKeySpi() {}
+
+    public static DataKeySpi provider() { return () -> Set.of(ClansKey.INSTANCE); }
+
 }

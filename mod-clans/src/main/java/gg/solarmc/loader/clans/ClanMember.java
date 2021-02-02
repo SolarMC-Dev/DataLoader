@@ -19,10 +19,7 @@
  *
  */
 
-import gg.solarmc.loader.Transaction;
-
-import java.util.Objects;
-import java.util.Optional;
+package gg.solarmc.loader.clans;import java.util.Objects;
 
 /**
  * Represents something that can be in a clan. Always compare with #equals
@@ -47,7 +44,7 @@ public class ClanMember {
     }
 
     /**
-     * Checks if a ClanDataObject is similar to this
+     * Checks if a gg.solarmc.loader.clans.ClanDataObject is similar to this
      * @param object the object to compare
      * @return whether they are similar or not
      */

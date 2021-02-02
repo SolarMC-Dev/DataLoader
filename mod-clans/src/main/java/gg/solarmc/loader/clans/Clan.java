@@ -19,6 +19,27 @@
  *
  */
 
+package gg.solarmc.loader.clans;/*
+ *
+ *  * dataloader
+ *  * Copyright © 2021 SolarMC Developers
+ *  *
+ *  * dataloader is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU Affero General Public License as
+ *  * published by the Free Software Foundation, either version 3 of the
+ *  * License, or (at your option) any later version.
+ *  *
+ *  * dataloader is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ *  * GNU Affero General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU Affero General Public License
+ *  * along with dataloader. If not, see <https://www.gnu.org/licenses/>
+ *  * and navigate to version 3 of the GNU Affero General Public License.
+ *
+ */
+
 import gg.solarmc.loader.Transaction;
 import gg.solarmc.loader.schema.tables.records.ClansClanEnemiesRecord;
 import gg.solarmc.loader.schema.tables.records.ClansClanInfoRecord;
@@ -140,7 +161,7 @@ public class Clan {
     }
 
     /**
-     * Adds deaths to a Clan
+     * Adds deaths to a gg.solarmc.loader.clans.Clan
      * @param transaction the tx
      * @param toAdd amount of deaths to add
      * @return accurate count of deaths post transaction
@@ -159,7 +180,7 @@ public class Clan {
     }
 
     /**
-     * Adds assists to a Clan.
+     * Adds assists to a gg.solarmc.loader.clans.Clan.
      * @param transaction tx
      * @param toAdd the amount you want to add
      * @return Accurate assists after transaction
@@ -209,7 +230,7 @@ public class Clan {
      * before this method.
      *
      * @param transaction The tx
-     * @param receiver ClanDataObject to add.
+     * @param receiver gg.solarmc.loader.clans.ClanDataObject to add.
      * @return Accurate set of ClanMembers post transaction
      * @throws IllegalStateException if member is already a member of another clan
      * @throws IllegalArgumentException if member is the leader of the clan
@@ -224,7 +245,7 @@ public class Clan {
                 .values(this.clanID,receiver.getUserId())
                 .execute();
 
-        if (sec != 1) throw new IllegalStateException("Inserted ClanMember already belongs to clan!");
+        if (sec != 1) throw new IllegalStateException("Inserted gg.solarmc.loader.clans.ClanMember already belongs to clan!");
 
         receiver.setCachedClan(this);
 
@@ -234,7 +255,7 @@ public class Clan {
     /**
      * Removes a member from the clan.
      * @param transaction The tx
-     * @param receiver ClanDataObject to remove
+     * @param receiver gg.solarmc.loader.clans.ClanDataObject to remove
      * @return Accurate set of ClanMembers post transaction
      * @throws IllegalStateException if member already has a clan
      * @throws IllegalArgumentException if member tried to remove was the leader of the clan, or if they are not
@@ -261,7 +282,7 @@ public class Clan {
      * @param transaction the tx
      * @param receiver the receiver
      * @return whether record was inserted or not.
-     * @throws IllegalArgumentException if receiver is the same Clan as this object
+     * @throws IllegalArgumentException if receiver is the same gg.solarmc.loader.clans.Clan as this object
      * @throws IllegalStateException if receiver or this object already has an ally
      */
     public boolean addClanAsAlly(Transaction transaction, Clan receiver) {

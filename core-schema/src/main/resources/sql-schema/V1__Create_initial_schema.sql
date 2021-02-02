@@ -63,7 +63,7 @@ CREATE TABLE friends_friended_users (
 
 CREATE TABLE clans_clan_info (
   clan_id INT NOT NULL AUTO_INCREMENT UNIQUE,
-  clan_name VARCHAR(100) NOT NULL,
+  clan_name VARCHAR(32) NOT NULL,
   clan_leader INT NOT NULL,
   clan_kills INT NOT NULL,
   clan_deaths INT NOT NULL,
@@ -76,7 +76,8 @@ CREATE TABLE clans_clan_membership (
   clan_id INT NOT NULL,
   FOREIGN KEY (clan_id) REFERENCES clans_clan_info (clan_id) ON DELETE CASCADE,
   FOREIGN KEY (user_id) REFERENCES user_ids (id) ON DELETE CASCADE,
-  PRIMARY KEY (user_id,clan_id)
+  PRIMARY KEY (user_id),
+  INDEX (clan_id)
 );
 
 CREATE TABLE clans_clan_alliances (
@@ -93,5 +94,6 @@ CREATE TABLE clans_clan_enemies (
   enemy_id INT NOT NULL,
   FOREIGN KEY (clan_id) REFERENCES clans_clan_info (clan_id) ON DELETE CASCADE,
   FOREIGN KEY (enemy_id) REFERENCES clans_clan_info (clan_id) ON DELETE CASCADE,
-  PRIMARY KEY (clan_id,enemy_id)
+  PRIMARY KEY (clan_id,enemy_id),
+  INDEX (enemy_id)
 );

@@ -26,6 +26,9 @@ import java.util.Optional;
 
 /**
  * Represents something that can be in a clan. Always compare with #equals
+ *
+ * Think of this as a final object - it simply holds information for you to interact with
+ * that is accurate at the time - aurium, telling aurium how his own code works (2021)
  */
 public class ClanMember {
 

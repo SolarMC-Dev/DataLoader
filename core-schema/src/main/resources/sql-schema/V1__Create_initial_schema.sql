@@ -84,7 +84,8 @@ CREATE TABLE clans_clan_alliances (
   ally_id INT NOT NULL,
   FOREIGN KEY (clan_id) REFERENCES clans_clan_info (clan_id) ON DELETE CASCADE,
   FOREIGN KEY (ally_id) REFERENCES clans_clan_info (clan_id) ON DELETE CASCADE,
-  PRIMARY KEY (clan_id,ally_id)
+  PRIMARY KEY (clan_id,ally_id),
+  INDEX (ally_id)
 );
 
 CREATE TABLE clans_clan_enemies (

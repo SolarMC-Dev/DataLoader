@@ -28,6 +28,14 @@ import java.util.Optional;
 
 import static gg.solarmc.loader.schema.tables.ClansClanMembership.CLANS_CLAN_MEMBERSHIP;
 
+
+/**
+ * Note to aurium - you don't have to put anything into the database when setting
+ * the cached clan *because this doesn't exist in the database*
+ *
+ * (Clan membership is stored in the clan membership table, not alongside the dataobject,
+ * and furthermore this dataobject isn't stored in a table)
+ */
 public class ClanDataObject implements DataObject {
 
     private final int userId;
@@ -53,7 +61,7 @@ public class ClanDataObject implements DataObject {
     }
 
     /**
-     * Gets current clan the object belongs to
+     * Gets current clan the object belongs to accurately
      * @param transaction the tx
      * @return Optional containing clan player belongs to
      */

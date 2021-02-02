@@ -63,12 +63,18 @@ public class ClanManager implements DataManager {
 
             ClansClanAlliancesRecord rec1 = jooq.fetchOne(CLANS_CLAN_ALLIANCES,CLANS_CLAN_ALLIANCES.CLAN_ID.eq(i));
 
+            ClanMember owner = new ClanMember(i,rec.getClanLeader(),this);
+
+            //Yes, i know i could :probably: put rec1#getAllyId in the alliedClan slot and save 2 lines of code
+            //However i don't want to risk any bugs and nullpointerexceptions
+            //i hate null you were right a248
+
             if (rec1 == null) {
                 return new Clan(rec.getClanId(), rec.getClanName(),rec.getClanKills(),
-                        rec.getClanDeaths(),rec.getClanAssists(),null,this,members,null);
+                        rec.getClanDeaths(),rec.getClanAssists(),null,this,members,owner);
             } else {
                 return new Clan(rec.getClanId(), rec.getClanName(),rec.getClanKills(),
-                        rec.getClanDeaths(),rec.getClanAssists(),rec1.getAllyId(),this,members,null);
+                        rec.getClanDeaths(),rec.getClanAssists(),rec1.getAllyId(),this,members,owner);
             }
 
         });
@@ -81,7 +87,7 @@ public class ClanManager implements DataManager {
      * @param owner the to be owner of the clan
      * @return created clan.
      */
-    public Clan createClan(Transaction transaction, String name, ClanMember owner) {
+    public Clan createClan(Transaction transaction, String name, ClanDataObject owner) {
         ClansClanInfoRecord rec = transaction.getProperty(DSLContext.class)
                 .insertInto(CLANS_CLAN_INFO)
                 .columns(CLANS_CLAN_INFO.CLAN_NAME,CLANS_CLAN_INFO.CLAN_LEADER,CLANS_CLAN_INFO.CLAN_KILLS,CLANS_CLAN_INFO.CLAN_DEATHS,CLANS_CLAN_INFO.CLAN_ASSISTS)
@@ -91,9 +97,11 @@ public class ClanManager implements DataManager {
 
         if (rec == null) throw new IllegalStateException("Failed to insert new Clan by name " + name);
 
+        ClanMember ownerAsMember = owner.asClanMember(transaction);
         Set<ClanMember> memberSet = new HashSet<>();
+        memberSet.add(ownerAsMember);
 
-        Clan returned = new Clan(rec.getClanId(),rec.getClanName(),rec.getClanKills(),rec.getClanDeaths(),rec.getClanAssists(),null,this,memberSet,owner);
+        Clan returned = new Clan(rec.getClanId(),rec.getClanName(),rec.getClanKills(),rec.getClanDeaths(),rec.getClanAssists(),null,this,memberSet,ownerAsMember);
 
         clans.put(returned.getID(),returned);
 

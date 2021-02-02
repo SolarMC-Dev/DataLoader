@@ -21,6 +21,7 @@
 
 import gg.solarmc.loader.Transaction;
 import gg.solarmc.loader.schema.tables.records.ClansClanEnemiesRecord;
+import gg.solarmc.loader.schema.tables.records.ClansClanInfoRecord;
 import gg.solarmc.loader.schema.tables.records.ClansClanMembershipRecord;
 import org.jooq.DSLContext;
 
@@ -30,6 +31,7 @@ import java.util.Set;
 import static gg.solarmc.loader.schema.tables.ClansClanAlliances.CLANS_CLAN_ALLIANCES;
 import static gg.solarmc.loader.schema.tables.ClansClanEnemies.CLANS_CLAN_ENEMIES;
 import static gg.solarmc.loader.schema.tables.ClansClanMembership.CLANS_CLAN_MEMBERSHIP;
+import static gg.solarmc.loader.schema.tables.ClansClanInfo.CLANS_CLAN_INFO;
 
 /**
  * Note to reader of this source code: Come play SolarMC!
@@ -104,10 +106,99 @@ public class Clan {
         return this.members;
     }
 
+    /**
+     * Returns a record of info
+     * @param transaction the tx
+     * @return the record
+     */
+    private ClansClanInfoRecord getInformation(Transaction transaction) {
+        ClansClanInfoRecord rec =  transaction.getProperty(DSLContext.class)
+                .fetchOne(CLANS_CLAN_INFO,CLANS_CLAN_INFO.CLAN_ID.eq(this.clanID));
+
+        assert rec != null : "nullity check failed for record get!";
+
+        return rec;
+    }
+
+    /**
+     * Adds kills to a clan
+     * @param transaction the tx
+     * @param toAdd how much to add
+     * @return accurate amount of kills post transaction
+     */
+    public Integer addKills(Transaction transaction, int toAdd) {
+        ClansClanInfoRecord rec = getInformation(transaction);
+
+        int newValue = rec.getClanKills() + toAdd;
+
+        rec.setClanKills(newValue);
+        rec.store(CLANS_CLAN_INFO.CLAN_KILLS);
+
+        this.clanKills = newValue;
+
+        return newValue;
+    }
+
+    /**
+     * Adds deaths to a Clan
+     * @param transaction the tx
+     * @param toAdd amount of deaths to add
+     * @return accurate count of deaths post transaction
+     */
+    public Integer addDeaths(Transaction transaction, int toAdd) {
+        ClansClanInfoRecord rec = getInformation(transaction);
+
+        int newValue = rec.getClanDeaths() + toAdd;
+
+        rec.setClanDeaths(newValue);
+        rec.store(CLANS_CLAN_INFO.CLAN_DEATHS);
+
+        this.clanDeaths = newValue;
+
+        return newValue;
+    }
+
+    /**
+     * Adds assists to a Clan.
+     * @param transaction tx
+     * @param toAdd the amount you want to add
+     * @return Accurate assists after transaction
+     */
+    public Integer addAssists(Transaction transaction, int toAdd) {
+        ClansClanInfoRecord rec = getInformation(transaction);
+
+        int newValue = rec.getClanAssists() + toAdd;
+
+        rec.setClanAssists(newValue);
+        rec.store(CLANS_CLAN_INFO.CLAN_ASSISTS);
+
+        this.clanAssists = newValue;
+
+        return newValue;
+    }
+
+    /**
+     * Returns the accurate allied clan to this object.
+     * @param transaction
+     * @return
+     */
     public Optional<Clan> getAlliedClan(Transaction transaction) {
         if (this.alliedClan == null) return Optional.empty();
 
         return Optional.of(manager.getClan(transaction,alliedClan));
+    }
+
+    /**
+     * Gets all cached clan members
+     * @param transaction
+     * @return
+     */
+    public Set<ClanMember> getClanMembers(Transaction transaction) {
+        return transaction.getProperty(DSLContext.class)
+                .select(CLANS_CLAN_MEMBERSHIP.USER_ID)
+                .from(CLANS_CLAN_MEMBERSHIP)
+                .where(CLANS_CLAN_MEMBERSHIP.CLAN_ID.eq(this.clanID))
+                .fetchSet((rec) -> new ClanMember(this.clanID,rec.value1(),manager));
     }
 
     /**
@@ -137,11 +228,7 @@ public class Clan {
 
         receiver.setCachedClan(this);
 
-        return transaction.getProperty(DSLContext.class)
-                .select(CLANS_CLAN_MEMBERSHIP.USER_ID)
-                .from(CLANS_CLAN_MEMBERSHIP)
-                .where(CLANS_CLAN_MEMBERSHIP.CLAN_ID.eq(this.clanID))
-                .fetchSet((rec) -> new ClanMember(this.clanID,rec.value1(),manager));
+        return getClanMembers(transaction);
     }
 
     /**
@@ -166,11 +253,7 @@ public class Clan {
 
         receiver.setCachedClan(null);
 
-        return transaction.getProperty(DSLContext.class)
-                .select(CLANS_CLAN_MEMBERSHIP.USER_ID)
-                .from(CLANS_CLAN_MEMBERSHIP)
-                .where(CLANS_CLAN_MEMBERSHIP.CLAN_ID.eq(this.clanID))
-                .fetchSet((rec1) -> new ClanMember(this.clanID,rec1.value1(),manager));
+        return getClanMembers(transaction);
     }
 
     /**
@@ -192,10 +275,29 @@ public class Clan {
                 .values(this.clanID,receiver.getID())
                 .execute();
 
-        this.setCachedAllyClan(receiver.clanID);
-        receiver.setCachedAllyClan(this.clanID);
+        this.alliedClan = receiver.getID();
+        receiver.alliedClan = this.getID();
 
         return res == 1;
+    }
+
+    /**
+     * Revokes ally. Can be called from either clan. Revokes alliance for both.
+     * @param transaction the tx
+     * @return whether operation was successful or not
+     */
+    public boolean revokeAlly(Transaction transaction) {
+
+        int i = transaction.getProperty(DSLContext.class)
+                .deleteFrom(CLANS_CLAN_ALLIANCES)
+                .where(CLANS_CLAN_ALLIANCES.CLAN_ID.eq(this.clanID))
+                .or(CLANS_CLAN_ALLIANCES.ALLY_ID.eq(this.clanID))
+                .execute();
+
+        this.getAlliedClan(transaction).ifPresent(c -> c.alliedClan = null);
+        this.alliedClan = null;
+
+        return i == 1;
     }
 
     /**
@@ -252,10 +354,6 @@ public class Clan {
                 .select(CLANS_CLAN_ENEMIES.ENEMY_ID).from(CLANS_CLAN_ENEMIES)
                 .where(CLANS_CLAN_ENEMIES.CLAN_ID.eq(this.clanID))
                 .fetchSet((record) -> manager.getClan(transaction,record.get(CLANS_CLAN_ENEMIES.ENEMY_ID)));
-    }
-
-    void setCachedAllyClan(Integer id) {
-        this.alliedClan = id;
     }
 
 }

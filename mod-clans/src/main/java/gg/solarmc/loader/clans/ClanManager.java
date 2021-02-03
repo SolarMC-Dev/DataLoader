@@ -19,26 +19,7 @@
  *
  */
 
-package gg.solarmc.loader.clans;/*
- *
- *  * dataloader
- *  * Copyright © 2021 SolarMC Developers
- *  *
- *  * dataloader is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU Affero General Public License as
- *  * published by the Free Software Foundation, either version 3 of the
- *  * License, or (at your option) any later version.
- *  *
- *  * dataloader is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- *  * GNU Affero General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU Affero General Public License
- *  * along with dataloader. If not, see <https://www.gnu.org/licenses/>
- *  * and navigate to version 3 of the GNU Affero General Public License.
- *
- */
+package gg.solarmc.loader.clans;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -55,7 +36,7 @@ import static gg.solarmc.loader.schema.tables.ClansClanAlliances.CLANS_CLAN_ALLI
 import static gg.solarmc.loader.schema.tables.ClansClanInfo.CLANS_CLAN_INFO;
 import static gg.solarmc.loader.schema.tables.ClansClanMembership.CLANS_CLAN_MEMBERSHIP;
 
-@SuppressWarnings("unused")
+
 public class ClanManager implements DataManager {
 
     private final Cache<Integer,Clan> clans = Caffeine.newBuilder().expireAfterAccess(Duration.ofMinutes(10)).build();
@@ -80,11 +61,11 @@ public class ClanManager implements DataManager {
             }
 
             Set<ClanMember> members = jooq.select(CLANS_CLAN_MEMBERSHIP.USER_ID).from(CLANS_CLAN_MEMBERSHIP)
-                    .where(CLANS_CLAN_MEMBERSHIP.CLAN_ID.eq(id)).fetchSet((rec1) -> new ClanMember(i,rec1.value1(),this));
+                    .where(CLANS_CLAN_MEMBERSHIP.CLAN_ID.eq(id)).fetchSet((rec1) -> new ClanMember(id,rec1.value1(),this));
 
-            ClansClanAlliancesRecord rec1 = jooq.fetchOne(CLANS_CLAN_ALLIANCES,CLANS_CLAN_ALLIANCES.CLAN_ID.eq(i));
+            ClansClanAlliancesRecord rec1 = jooq.fetchOne(CLANS_CLAN_ALLIANCES,CLANS_CLAN_ALLIANCES.CLAN_ID.eq(id));
 
-            ClanMember owner = new ClanMember(i,rec.getClanLeader(),this);
+            ClanMember owner = new ClanMember(id,rec.getClanLeader(),this);
 
             Clan returned = new Clan(rec.getClanId(), rec.getClanName(),rec.getClanKills(),
                     rec.getClanDeaths(),rec.getClanAssists(),this,members,owner);
@@ -163,11 +144,26 @@ public class ClanManager implements DataManager {
         return returned;
     }
 
+    /**
+     * Deletes a clan from the cache and table, and deletes alliances
+     * if the clan is in an alliance.
+     *
+     * @param transaction the tx
+     * @param clan the clan to delete
+     * @throws IllegalStateException if the clan does not exist in the table.
+     */
     public void deleteClan(Transaction transaction, Clan clan) {
-        transaction.getProperty(DSLContext.class)
+        int i = transaction.getProperty(DSLContext.class)
                 .delete(CLANS_CLAN_INFO)
                 .where(CLANS_CLAN_INFO.CLAN_ID.eq(clan.getID()))
                 .execute();
+
+        assert i == 1 : "Clan does not exist in table!";
+
+        clan.currentlyAlliedClan().ifPresent(allyId -> {
+            this.invalidateAllianceCache(clan.getID(),allyId);
+        });
+
         clans.invalidate(clan);
     }
 

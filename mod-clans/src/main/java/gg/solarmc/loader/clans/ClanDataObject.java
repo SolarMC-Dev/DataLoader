@@ -57,7 +57,7 @@ import static gg.solarmc.loader.schema.tables.ClansClanMembership.CLANS_CLAN_MEM
  * (gg.solarmc.loader.clans.Clan membership is stored in the clan membership table, not alongside the dataobject,
  * and furthermore this dataobject isn't stored in a table)
  */
-public class ClanDataObject implements DataObject {
+class ClanDataObject implements DataObject {
 
     private final int userId;
     private final ClanManager manager;
@@ -67,6 +67,7 @@ public class ClanDataObject implements DataObject {
     public ClanDataObject(int userId, Clan clan, ClanManager manager) {
         this.userId = userId;
         this.manager = manager;
+        this.cachedClan = clan;
     }
 
     public int getUserId() {
@@ -92,7 +93,11 @@ public class ClanDataObject implements DataObject {
 
         if (rec == null) return Optional.empty();
 
-        return Optional.of(manager.getClan(transaction,rec.getClanId()));
+        Clan fetched = manager.getClan(transaction,rec.getClanId());
+
+        this.cachedClan = fetched;
+
+        return Optional.of(fetched);
     }
 
     /**

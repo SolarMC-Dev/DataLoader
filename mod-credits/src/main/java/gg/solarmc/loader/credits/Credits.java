@@ -104,6 +104,10 @@ public class Credits implements DataObject {
 	 * @param newAmount amount to set to
 	 */
 	public void setBalance(Transaction transaction, BigDecimal newAmount) {
+		if (newAmount.compareTo(BigDecimal.ZERO) <= 0) {
+			throw new IllegalArgumentException("newAmount must be positive");
+		}
+
 		CreditsRecord creditsRecord = getBalance(transaction);
 		creditsRecord.setBalance(newAmount);
 		creditsRecord.store(CREDITS.BALANCE);

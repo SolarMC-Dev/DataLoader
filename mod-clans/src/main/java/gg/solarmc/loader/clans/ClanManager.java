@@ -49,8 +49,7 @@ import gg.solarmc.loader.schema.tables.records.ClansClanInfoRecord;
 import org.jooq.DSLContext;
 
 import java.time.Duration;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 import static gg.solarmc.loader.schema.tables.ClansClanAlliances.CLANS_CLAN_ALLIANCES;
 import static gg.solarmc.loader.schema.tables.ClansClanInfo.CLANS_CLAN_INFO;
@@ -60,6 +59,7 @@ import static gg.solarmc.loader.schema.tables.ClansClanMembership.CLANS_CLAN_MEM
 public class ClanManager implements DataManager {
 
     private final Cache<Integer,Clan> clans = Caffeine.newBuilder().expireAfterAccess(Duration.ofMinutes(10)).build();
+    private final Cache<Integer,Integer> allianceCache = Caffeine.newBuilder().build();
 
     /**
      * Gets a clan from memory cache or from table if not present.
@@ -86,19 +86,53 @@ public class ClanManager implements DataManager {
 
             ClanMember owner = new ClanMember(i,rec.getClanLeader(),this);
 
-            //Yes, i know i could :probably: put rec1#getAllyId in the alliedClan slot and save 2 lines of code
-            //However i don't want to risk any bugs and nullpointerexceptions
-            //i hate null you were right a248
+            Clan returned = new Clan(rec.getClanId(), rec.getClanName(),rec.getClanKills(),
+                    rec.getClanDeaths(),rec.getClanAssists(),this,members,owner);
 
-            if (rec1 == null) {
-                return new Clan(rec.getClanId(), rec.getClanName(),rec.getClanKills(),
-                        rec.getClanDeaths(),rec.getClanAssists(),null,this,members,owner);
-            } else {
-                return new Clan(rec.getClanId(), rec.getClanName(),rec.getClanKills(),
-                        rec.getClanDeaths(),rec.getClanAssists(),rec1.getAllyId(),this,members,owner);
+            if (rec1 != null) {
+                this.insertAllianceCache(rec1.getClanId(),rec1.getAllyId());
             }
 
+            return returned;
+
         });
+    }
+
+    public Optional<Integer> getAllyFromCache(Integer clanId) { return Optional.ofNullable(allianceCache.getIfPresent(clanId)); }
+
+    /**
+     * Returns an optional representing the allied clan
+     * @param clan The clan you want to check for alliance
+     * @return the optional containing allied clan.
+     */
+
+    /*public Optional<Clan> s(Clan clan) {
+        return Optional.ofNullable(alliance.getIfPresent(clan));
+    }*/
+
+    /**
+     * Invalidates an alliance, not order sensitive
+     * Information for api users - this invalidates two rows in the cache.
+     * @param clan1 the first clan id, ally of the second
+     * @param clan2 the second clan id, ally of the first
+     */
+    public void invalidateAllianceCache(Integer clan1, Integer clan2) {
+        this.allianceCache.invalidate(clan1);
+        this.allianceCache.invalidate(clan2);
+    }
+
+    /**
+     * (a248 please review this method, i'm not sure if inserting two rows here is an issue
+     * because it will be called on clan generation for the first and for the second clan,
+     * and i'm not sure if this will lead to 2 rows {cache ignores duplicate} or to 4 rows { cache accepts duplicate} )
+     *
+     * Inserts 2 rows into the alliance cache, not order sensitive
+     * @param clan1 the first clan, ally of the second
+     * @param clan2 the second clan, ally of the first
+     */
+    public void insertAllianceCache(Integer clan1, Integer clan2) {
+        this.allianceCache.put(clan1,clan2);
+        this.allianceCache.put(clan2,clan1);
     }
 
     /**
@@ -122,7 +156,7 @@ public class ClanManager implements DataManager {
         Set<ClanMember> memberSet = new HashSet<>();
         memberSet.add(ownerAsMember);
 
-        Clan returned = new Clan(rec.getClanId(),rec.getClanName(),rec.getClanKills(),rec.getClanDeaths(),rec.getClanAssists(),null,this,memberSet,ownerAsMember);
+        Clan returned = new Clan(rec.getClanId(),rec.getClanName(),rec.getClanKills(),rec.getClanDeaths(),rec.getClanAssists(),this,memberSet,ownerAsMember);
 
         clans.put(returned.getID(),returned);
 

@@ -126,7 +126,7 @@ public class ClanManager implements DataManager {
     public Clan createClan(Transaction transaction, String name, ClanDataObject owner) {
         ClansClanInfoRecord rec = transaction.getProperty(DSLContext.class)
                 .insertInto(CLANS_CLAN_INFO)
-                .columns(CLANS_CLAN_INFO.CLAN_NAME,CLANS_CLAN_INFO.CLAN_LEADER,CLANS_CLAN_INFO.CLAN_KILLS,CLANS_CLAN_INFO.CLAN_DEATHS,CLANS_CLAN_INFO.CLAN_ASSISTS)
+                .columns(CLANS_CLAN_INFO.CLAN_NAME, CLANS_CLAN_INFO.CLAN_LEADER, CLANS_CLAN_INFO.CLAN_KILLS, CLANS_CLAN_INFO.CLAN_DEATHS, CLANS_CLAN_INFO.CLAN_ASSISTS)
                 .values(name,owner.getUserId(),0,0,0)
                 .returning()
                 .fetchOne();

@@ -160,7 +160,7 @@ public class ClanManager implements DataManager {
 
         assert i == 1 : "Clan does not exist in table!";
 
-        clan.currentlyAlliedClan().ifPresent(allyId -> {
+        clan.currentlyAlliedClanID().ifPresent(allyId -> {
             this.invalidateAllianceCache(clan.getID(),allyId);
         });
 

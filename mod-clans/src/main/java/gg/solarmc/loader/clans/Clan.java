@@ -42,6 +42,7 @@ package gg.solarmc.loader.clans;/*
 
 import gg.solarmc.loader.SolarPlayer;
 import gg.solarmc.loader.Transaction;
+import gg.solarmc.loader.schema.tables.records.ClansClanAlliancesRecord;
 import gg.solarmc.loader.schema.tables.records.ClansClanEnemiesRecord;
 import gg.solarmc.loader.schema.tables.records.ClansClanInfoRecord;
 import gg.solarmc.loader.schema.tables.records.ClansClanMembershipRecord;
@@ -129,7 +130,7 @@ public class Clan {
      * Returns a number representing the currently allied clan by cache.
      * @return currently allied clan ID.
      */
-    public Optional<Integer> currentlyAlliedClan() {
+    public Optional<Integer> currentlyAlliedClanID() {
         return manager.getAllyFromCache(this.getID());
     }
 
@@ -139,9 +140,14 @@ public class Clan {
      * @return optional holding currently allied clan
      */
     public Optional<Clan> getAlliedClan(Transaction transaction) {
-        if (currentlyAlliedClan().isEmpty()) return Optional.empty();
+        ClansClanAlliancesRecord rec1 = transaction
+                .getProperty(DSLContext.class)
+                .fetchOne(CLANS_CLAN_ALLIANCES,CLANS_CLAN_ALLIANCES.CLAN_ID.eq(this.clanID));
 
-        return Optional.of(manager.getClan(transaction,currentlyAlliedClan().orElseThrow()));
+
+        if (rec1 == null) return Optional.empty();
+
+        return Optional.of(manager.getClan(transaction,rec1.getAllyId()));
     }
 
     /**
@@ -295,8 +301,8 @@ public class Clan {
      */
     public boolean addClanAsAlly(Transaction transaction, Clan receiver) {
         if (receiver.getID() == this.clanID) throw new IllegalArgumentException("Tried to mark clan ally as same clan!");
-        if (this.currentlyAlliedClan().isPresent()) throw new IllegalStateException("Sender already have an ally!");
-        if (receiver.currentlyAlliedClan().isPresent()) throw new IllegalStateException("Selected clan already has an ally!");
+        if (this.currentlyAlliedClanID().isPresent()) throw new IllegalStateException("Sender already have an ally!");
+        if (receiver.currentlyAlliedClanID().isPresent()) throw new IllegalStateException("Selected clan already has an ally!");
 
         //note to aurium - these are now okay to do becaue we run the checks previous
         int res = transaction.getProperty(DSLContext.class)
@@ -317,7 +323,7 @@ public class Clan {
      * @throws IllegalStateException if the clan does not have an ally
      */
     public boolean revokeAlly(Transaction transaction) {
-        if (this.currentlyAlliedClan().isEmpty()) throw new IllegalStateException("This clan has no ally!");
+        if (this.currentlyAlliedClanID().isEmpty()) throw new IllegalStateException("This clan has no ally!");
 
         int i = transaction.getProperty(DSLContext.class)
                 .deleteFrom(CLANS_CLAN_ALLIANCES)
@@ -325,7 +331,7 @@ public class Clan {
                 .or(CLANS_CLAN_ALLIANCES.ALLY_ID.eq(this.clanID))
                 .execute();
 
-        manager.invalidateAllianceCache(this.getID(),this.currentlyAlliedClan().orElseThrow());
+        manager.invalidateAllianceCache(this.getID(),this.currentlyAlliedClanID().orElseThrow());
 
         return i == 1;
     }
@@ -340,7 +346,7 @@ public class Clan {
     public boolean addClanAsEnemy(Transaction transaction, Clan receiver) {
         if (receiver.getID() == this.clanID) throw new IllegalArgumentException("Tried to mark clan enemy as same clan!");
 
-        this.currentlyAlliedClan().ifPresent(allyId -> {
+        this.currentlyAlliedClanID().ifPresent(allyId -> {
             if (receiver.getID() == allyId) throw new IllegalArgumentException("Tried to add allied clan as enemy");
         });
 
@@ -363,7 +369,7 @@ public class Clan {
     public void removeClanAsEnemy(Transaction transaction, Clan clan) {
         if (clan.getID() == this.clanID) throw new IllegalArgumentException("Tried to unmark self as enemy??");
 
-        this.currentlyAlliedClan().ifPresent(allyId -> {
+        this.currentlyAlliedClanID().ifPresent(allyId -> {
             if (clan.getID() == allyId) throw new IllegalArgumentException("Tried to remove allied clan as enemy");
         });
 

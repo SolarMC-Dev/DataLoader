@@ -75,7 +75,7 @@
 		<module>mod-prefs</module>
 		<module>mod-kitpvp</module>
 		<module>mod-friends</module>
-		<module>mod-authentication</module>
+		<module>core-authentication</module>
     </modules>
 
 	<dependencyManagement>

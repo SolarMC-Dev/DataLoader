@@ -10,7 +10,7 @@
         <version>0.1.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>loader-mod-authentication</artifactId>
+    <artifactId>core-authentication</artifactId>
 
     <dependencies>
         <dependency>

@@ -19,18 +19,21 @@
 
 package gg.solarmc.loader.impl;
 
+import gg.solarmc.loader.DataCenter;
 import space.arim.omnibus.util.concurrent.CentralisedFuture;
 import space.arim.omnibus.util.concurrent.FactoryOfTheFuture;
 
 import javax.sql.DataSource;
+import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 
 /**
  * Produces {@link SQLTransaction}s as well as allows for Async Futures to be produced using the contained executor.
  */
-class TransactionSource {
+public class TransactionSource {
 
 	private final FactoryOfTheFuture futuresFactory;
 	private final Executor executor;
@@ -42,11 +45,55 @@ class TransactionSource {
 		this.dataSource = dataSource;
 	}
 
+	public CentralisedFuture<?> runTransact(DataCenter.TransactionRunner runner) {
+		Objects.requireNonNull(runner, "runner");
+		return runAsync(() -> {
+			try (SQLTransaction transaction = openTransaction()) {
+
+				try {
+					runner.runTransactUsing(transaction);
+				} catch (RuntimeException ex) {
+					try {
+						transaction.getProperty(Connection.class).rollback();
+					} catch (SQLException suppressed) { ex.addSuppressed(suppressed); }
+					throw ex;
+				}
+				transaction.getProperty(Connection.class).commit();
+
+			} catch (SQLException ex) {
+				throw new UncheckedSQLException(ex);
+			}
+		});
+	}
+
+	public <R> CentralisedFuture<R> transact(DataCenter.TransactionActor<R> actor) {
+		Objects.requireNonNull(actor, "actor");
+		return supplyAsync(() -> {
+			try (SQLTransaction transaction = openTransaction()) {
+
+				R value;
+				try {
+					value = actor.transactUsing(transaction);
+				} catch (RuntimeException ex) {
+					try {
+						transaction.getProperty(Connection.class).rollback();
+					} catch (SQLException suppressed) { ex.addSuppressed(suppressed); }
+					throw ex;
+				}
+				transaction.getProperty(Connection.class).commit();
+				return value;
+
+			} catch (SQLException ex) {
+				throw new UncheckedSQLException(ex);
+			}
+		});
+	}
+
 	SQLTransaction openTransaction() throws SQLException {
 		return new SQLTransaction(dataSource.getConnection());
 	}
 
-	CentralisedFuture<?> runAsync(Runnable action) {
+	private CentralisedFuture<?> runAsync(Runnable action) {
 		return futuresFactory.runAsync(action, executor);
 	}
 

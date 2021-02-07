@@ -20,11 +20,11 @@
 package gg.solarmc.loader.impl;
 
 import gg.solarmc.loader.SolarPlayer;
+import gg.solarmc.loader.Transaction;
 import gg.solarmc.loader.data.DataKey;
+import gg.solarmc.loader.data.DataLoader;
 import gg.solarmc.loader.data.DataObject;
-import org.jooq.DSLContext;
 import space.arim.omnibus.util.concurrent.CentralisedFuture;
-import space.arim.omnibus.util.UUIDUtil;
 
 import java.sql.SQLException;
 import java.util.HashMap;
@@ -32,9 +32,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-import static gg.solarmc.loader.schema.tables.UserIds.USER_IDS;
-
-public class LoginHandler {
+public final class LoginHandler {
 
 	private final TransactionSource transactionSource;
 	private final Set<DataGroup<?, ?>> groups;
@@ -44,36 +42,47 @@ public class LoginHandler {
 		this.groups = Set.copyOf(groups);
 	}
 
-	public CentralisedFuture<SolarPlayer> login(UUID mcUUID) {
+	/**
+	 * Loads a solar player who has already logged in before
+	 *
+	 * @param userId the user ID
+	 * @param mcUuid the user's MC UUID
+	 * @return a future which yields the solar player
+	 */
+	public CentralisedFuture<SolarPlayer> loginExistingUser(int userId, UUID mcUuid) {
+		return runLogin(userId, mcUuid, DataLoader::loadData);
+	}
+
+	/**
+	 * Loads a new solar player
+	 *
+	 * @param userId the user ID
+	 * @param mcUuid the user's MC UUID
+	 * @return a future which yields the solar player
+	 */
+	public CentralisedFuture<SolarPlayer> loginNewUser(int userId, UUID mcUuid) {
+		return runLogin(userId, mcUuid, DataLoader::createDefaultData);
+	}
+
+	private interface LoadDataFunction {
+		<D> D loadData(DataLoader<D> loader, Transaction transaction, int userId);
+	}
+
+	private CentralisedFuture<SolarPlayer> runLogin(int userId, UUID mcUuid, LoadDataFunction function) {
 		return transactionSource.supplyAsync(() -> {
-			try {
-				return runLogin(mcUUID);
+			Map<DataKey<?, ?>, DataObject> storedData = new HashMap<>();
+			try (SQLTransaction transaction = transactionSource.openTransaction()) {
+				transaction.markReadOnly();
+
+				for (DataGroup<?, ?> group : groups) {
+					storedData.put(group.key(), function.loadData(group.loader(), transaction, userId));
+				}
+				// It is okay that the transaction is not committed, because data loading is read-only
 			} catch (SQLException ex) {
 				throw new UncheckedSQLException("Unable to log in user", ex);
 			}
+			return new SolarPlayerImpl(storedData, userId, mcUuid);
 		});
-	}
-
-	private SolarPlayer runLogin(UUID mcUuid) throws SQLException {
-		Map<DataKey<?, ?>, DataObject> storedData = new HashMap<>();
-		byte[] mcUuidBytes = UUIDUtil.toByteArray(mcUuid);
-		int userId;
-		try (SQLTransaction transaction = transactionSource.openTransaction()) {
-			transaction.markReadOnly();
-
-			var idRecord = transaction.getProperty(DSLContext.class)
-					.select(USER_IDS.ID).from(USER_IDS)
-					.where(USER_IDS.UUID.eq(mcUuidBytes)).fetchOne();
-			if (idRecord == null) {
-				throw new IllegalStateException("User ID does not exist for " + mcUuid);
-			}
-			userId = idRecord.get(USER_IDS.ID);
-			for (DataGroup<?, ?> group : groups) {
-				storedData.put(group.key(), group.loader().loadData(transaction, userId));
-			}
-			// It is okay that the transaction is not committed, because data loading is read-only
-		}
-		return new SolarPlayerImpl(storedData, userId, mcUuid);
 	}
 
 }

@@ -20,7 +20,6 @@
 package gg.solarmc.loader.impl;
 
 import com.zaxxer.hikari.HikariDataSource;
-import gg.solarmc.loader.DataCenter;
 import gg.solarmc.loader.data.DataKey;
 import org.flywaydb.core.Flyway;
 import space.arim.dazzleconf.ConfigurationOptions;
@@ -29,7 +28,6 @@ import space.arim.dazzleconf.ext.snakeyaml.SnakeYamlConfigurationFactory;
 import space.arim.dazzleconf.ext.snakeyaml.SnakeYamlOptions;
 import space.arim.dazzleconf.helper.ConfigurationHelper;
 import space.arim.omnibus.Omnibus;
-import space.arim.omnibus.registry.RegistryPriorities;
 import space.arim.omnibus.util.concurrent.FactoryOfTheFuture;
 
 import java.io.IOException;
@@ -92,11 +90,10 @@ public class DataCenterLauncher {
 		}
 		Set<DataGroup<?, ?>> groupsSet = Set.copyOf(groupsMap.values());
 
-		DataCenter dataCenter = new CoreDataCenter(transactionSource, groupsMap);
-		omnibus.getRegistry().register(DataCenter.class, RegistryPriorities.LOWEST, dataCenter, "Main DataCenter");
-
 		return new OperationalSolarDataControl(
 				new LoginHandler(transactionSource, groupsSet),
+				transactionSource,
+				new DataManagementCenter(groupsMap),
 				new DataCenterLifecycle(executor, dataSource, groupsSet));
 	}
 

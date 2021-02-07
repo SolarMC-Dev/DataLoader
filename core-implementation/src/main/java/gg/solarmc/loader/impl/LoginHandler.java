@@ -22,11 +22,9 @@ package gg.solarmc.loader.impl;
 import gg.solarmc.loader.SolarPlayer;
 import gg.solarmc.loader.Transaction;
 import gg.solarmc.loader.data.DataKey;
-import gg.solarmc.loader.data.DataLoader;
 import gg.solarmc.loader.data.DataObject;
 import space.arim.omnibus.util.concurrent.CentralisedFuture;
 
-import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -43,46 +41,30 @@ public final class LoginHandler {
 	}
 
 	/**
-	 * Loads a solar player who has already logged in before
+	 * Loads a solar player
 	 *
 	 * @param userId the user ID
 	 * @param mcUuid the user's MC UUID
 	 * @return a future which yields the solar player
 	 */
-	public CentralisedFuture<SolarPlayer> loginExistingUser(int userId, UUID mcUuid) {
-		return runLogin(userId, mcUuid, DataLoader::loadData);
+	public CentralisedFuture<SolarPlayer> loginUser(int userId, UUID mcUuid) {
+		return transactionSource.transact((transaction) -> loginUserNow(transaction, userId, mcUuid));
 	}
 
 	/**
-	 * Loads a new solar player
+	 * Loads a solar player
 	 *
+	 * @param transaction the transaction
 	 * @param userId the user ID
 	 * @param mcUuid the user's MC UUID
-	 * @return a future which yields the solar player
+	 * @return the solar player
 	 */
-	public CentralisedFuture<SolarPlayer> loginNewUser(int userId, UUID mcUuid) {
-		return runLogin(userId, mcUuid, DataLoader::createDefaultData);
-	}
-
-	private interface LoadDataFunction {
-		<D> D loadData(DataLoader<D> loader, Transaction transaction, int userId);
-	}
-
-	private CentralisedFuture<SolarPlayer> runLogin(int userId, UUID mcUuid, LoadDataFunction function) {
-		return transactionSource.supplyAsync(() -> {
-			Map<DataKey<?, ?>, DataObject> storedData = new HashMap<>();
-			try (SQLTransaction transaction = transactionSource.openTransaction()) {
-				transaction.markReadOnly();
-
-				for (DataGroup<?, ?> group : groups) {
-					storedData.put(group.key(), function.loadData(group.loader(), transaction, userId));
-				}
-				// It is okay that the transaction is not committed, because data loading is read-only
-			} catch (SQLException ex) {
-				throw new UncheckedSQLException("Unable to log in user", ex);
-			}
-			return new SolarPlayerImpl(storedData, userId, mcUuid);
-		});
+	public SolarPlayer loginUserNow(Transaction transaction, int userId, UUID mcUuid) {
+		Map<DataKey<?, ?>, DataObject> storedData = new HashMap<>();
+		for (DataGroup<?, ?> group : groups) {
+			storedData.put(group.key(), group.loader().loadData(transaction, userId));
+		}
+		return new SolarPlayerImpl(storedData, userId, mcUuid);
 	}
 
 }

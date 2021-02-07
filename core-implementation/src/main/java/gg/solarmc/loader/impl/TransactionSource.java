@@ -46,19 +46,22 @@ public class TransactionSource {
 	}
 
 	public CentralisedFuture<?> runTransact(DataCenter.TransactionRunner runner) {
-		Objects.requireNonNull(runner, "runner");
+		if (runner == null) {
+			throw new NullPointerException("runner");
+		}
 		return runAsync(() -> {
-			try (SQLTransaction transaction = openTransaction()) {
+			try (Connection connection = dataSource.getConnection()) {
+				SQLTransaction transaction = new SQLTransaction(connection);
 
 				try {
 					runner.runTransactUsing(transaction);
 				} catch (RuntimeException ex) {
 					try {
-						transaction.getProperty(Connection.class).rollback();
+						connection.rollback();
 					} catch (SQLException suppressed) { ex.addSuppressed(suppressed); }
 					throw ex;
 				}
-				transaction.getProperty(Connection.class).commit();
+				connection.commit();
 
 			} catch (SQLException ex) {
 				throw new UncheckedSQLException(ex);
@@ -67,20 +70,23 @@ public class TransactionSource {
 	}
 
 	public <R> CentralisedFuture<R> transact(DataCenter.TransactionActor<R> actor) {
-		Objects.requireNonNull(actor, "actor");
+		if (actor == null) {
+			throw new NullPointerException("actor");
+		}
 		return supplyAsync(() -> {
-			try (SQLTransaction transaction = openTransaction()) {
+			try (Connection connection = dataSource.getConnection()) {
+				SQLTransaction transaction = new SQLTransaction(connection);
 
 				R value;
 				try {
 					value = actor.transactUsing(transaction);
 				} catch (RuntimeException ex) {
 					try {
-						transaction.getProperty(Connection.class).rollback();
+						connection.rollback();
 					} catch (SQLException suppressed) { ex.addSuppressed(suppressed); }
 					throw ex;
 				}
-				transaction.getProperty(Connection.class).commit();
+				connection.commit();
 				return value;
 
 			} catch (SQLException ex) {
@@ -89,15 +95,11 @@ public class TransactionSource {
 		});
 	}
 
-	SQLTransaction openTransaction() throws SQLException {
-		return new SQLTransaction(dataSource.getConnection());
-	}
-
 	private CentralisedFuture<?> runAsync(Runnable action) {
 		return futuresFactory.runAsync(action, executor);
 	}
 
-	<T> CentralisedFuture<T> supplyAsync(Supplier<T> supplier) {
+	private <T> CentralisedFuture<T> supplyAsync(Supplier<T> supplier) {
 		return futuresFactory.supplyAsync(supplier, executor);
 	}
 

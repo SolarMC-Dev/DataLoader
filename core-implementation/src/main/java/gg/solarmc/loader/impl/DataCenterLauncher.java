@@ -33,7 +33,6 @@ import space.arim.omnibus.util.concurrent.FactoryOfTheFuture;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
-import java.sql.SQLException;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -65,7 +64,7 @@ public class DataCenterLauncher {
 		}
 	}
 
-	public OperationalSolarDataControl launch() {
+	public Icarus launch() {
 		HikariDataSource dataSource = new DatabaseSettings(loadConfig()).createDataSource();
 
 		Flyway flyway = Flyway.configure(getClass().getClassLoader())
@@ -79,18 +78,14 @@ public class DataCenterLauncher {
 
 		TransactionSource transactionSource = new TransactionSource(futuresFactory, executor, dataSource);
 
-		Map<DataKey<?, ?>, DataGroup<?, ?>> groupsMap;
-		try (SQLTransaction transaction = transactionSource.openTransaction()) {
-			transaction.markReadOnly();
-
-			groupsMap = new DataGroupLoader(
-					new DataKeyInitializationContextImpl(omnibus, futuresFactory, folder, transaction)).loadGroups();
-		} catch (SQLException ex) {
-			throw new UncheckedSQLException(ex);
-		}
+		Map<DataKey<?, ?>, DataGroup<?, ?>> groupsMap = transactionSource.transact((transaction) -> {
+			return new DataGroupLoader(
+					new DataKeyInitializationContextImpl(omnibus, futuresFactory, folder, transaction)
+			).loadGroups();
+		}).join();
 		Set<DataGroup<?, ?>> groupsSet = Set.copyOf(groupsMap.values());
 
-		return new OperationalSolarDataControl(
+		return new Icarus(
 				new LoginHandler(transactionSource, groupsSet),
 				transactionSource,
 				new DataManagementCenter(groupsMap),

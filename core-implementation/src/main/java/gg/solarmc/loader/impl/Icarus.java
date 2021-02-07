@@ -19,15 +19,15 @@
 
 package gg.solarmc.loader.impl;
 
-public class OperationalSolarDataControl implements AutoCloseable {
+public class Icarus implements AutoCloseable {
 
 	private final LoginHandler loginHandler;
 	private final TransactionSource transactionSource;
 	private final DataManagementCenter dataManagement;
 	private final DataCenterLifecycle lifecycle;
 
-	OperationalSolarDataControl(LoginHandler loginHandler, TransactionSource transactionSource,
-									   DataManagementCenter dataManagement, DataCenterLifecycle lifecycle) {
+	Icarus(LoginHandler loginHandler, TransactionSource transactionSource,
+		   DataManagementCenter dataManagement, DataCenterLifecycle lifecycle) {
 		this.loginHandler = loginHandler;
 		this.transactionSource = transactionSource;
 		this.dataManagement = dataManagement;

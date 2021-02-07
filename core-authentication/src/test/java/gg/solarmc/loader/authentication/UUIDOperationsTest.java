@@ -42,7 +42,7 @@ public class UUIDOperationsTest {
 	@Test
 	public void computeOfflineUuid() {
 		assertEquals(
-				UUID.fromString("0b58c22d-56f5-3296-87b8-c0155a071d4d.yml"),
+				UUID.fromString("0b58c22d-56f5-3296-87b8-c0155a071d4d"),
 				UUIDOperations.computeOfflineUuid("McStorm_MlyK11qF"));
 	}
 

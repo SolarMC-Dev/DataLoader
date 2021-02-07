@@ -24,21 +24,23 @@ import gg.solarmc.loader.Transaction;
 public interface DataLoader<D> {
 
 	/**
-	 * Performs the initial data loader for a new user.
-	 *
-	 * @param transaction the enclosing transaction
-	 * @param userId the new user's ID
-	 * @return the data object with default values
-	 */
-	D createDefaultData(Transaction transaction, int userId);
-
-	/**
-	 * Performs the initial data load for a specific user
+	 * Performs the data load for a specific user. Implementations should accomodate
+	 * whether this is the first login or an existing one, and set default values
+	 * if necessary.
 	 *
 	 * @param transaction the enclosing transaction
 	 * @param userId the user's ID
 	 * @return the loaded data
 	 */
 	D loadData(Transaction transaction, int userId);
+
+	/**
+	 * Drops any and all data relating to this loader for all users. Used for testing purposes. <br>
+	 * <br>
+	 * A logical implementation is to truncate all tables.
+	 *
+	 * @param transaction the transaction
+	 */
+	void wipeAllData(Transaction transaction);
 
 }

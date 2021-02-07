@@ -77,9 +77,7 @@ class DataCenterLifecycle implements AutoCloseable {
 			Iterator<Exception> exceptionIterator = exceptions.iterator();
 			Exception firstEx = exceptionIterator.next();
 			exceptionIterator.remove();
-			for (Exception remaining : exceptions) {
-				firstEx.addSuppressed(remaining);
-			}
+			exceptions.forEach(firstEx::addSuppressed);
 			throw firstEx;
 		}
 	}

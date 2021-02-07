@@ -65,7 +65,7 @@ public class Clan {
     private final int clanID;
     private final String clanName;
 
-    private final Set<ClanMember> members;
+    private Set<ClanMember> members;
     private final ClanManager manager;
     private final ClanMember leader;
 
@@ -81,7 +81,7 @@ public class Clan {
         this.clanKills = clanKills;
         this.clanDeaths = clanDeaths;
         this.clanAssists = clanAssists;
-        this.members = members;
+        this.members = Set.copyOf(members);
         this.manager = manager;
         this.leader = leader;
     }
@@ -170,7 +170,7 @@ public class Clan {
      * @param toAdd how much to add
      * @return accurate amount of kills post transaction
      */
-    public Integer addKills(Transaction transaction, int toAdd) {
+    public int addKills(Transaction transaction, int toAdd) {
         ClansClanInfoRecord rec = getInformation(transaction);
 
         int newValue = rec.getClanKills() + toAdd;
@@ -189,7 +189,7 @@ public class Clan {
      * @param toAdd amount of deaths to add
      * @return accurate count of deaths post transaction
      */
-    public Integer addDeaths(Transaction transaction, int toAdd) {
+    public int addDeaths(Transaction transaction, int toAdd) {
         ClansClanInfoRecord rec = getInformation(transaction);
 
         int newValue = rec.getClanDeaths() + toAdd;
@@ -208,7 +208,7 @@ public class Clan {
      * @param toAdd the amount you want to add
      * @return Accurate assists after transaction
      */
-    public Integer addAssists(Transaction transaction, int toAdd) {
+    public int addAssists(Transaction transaction, int toAdd) {
         ClansClanInfoRecord rec = getInformation(transaction);
 
         int newValue = rec.getClanAssists() + toAdd;
@@ -227,11 +227,15 @@ public class Clan {
      * @return the clan members
      */
     public Set<ClanMember> getClanMembers(Transaction transaction) {
-        return transaction.getProperty(DSLContext.class)
+        Set<ClanMember> bruh = transaction.getProperty(DSLContext.class)
                 .select(CLANS_CLAN_MEMBERSHIP.USER_ID)
                 .from(CLANS_CLAN_MEMBERSHIP)
                 .where(CLANS_CLAN_MEMBERSHIP.CLAN_ID.eq(this.clanID))
                 .fetchSet((rec) -> new ClanMember(this.clanID,rec.value1(),manager));
+
+        this.members = bruh;
+
+        return bruh;
     }
 
     /**
@@ -244,14 +248,13 @@ public class Clan {
      * @param transaction The tx
      * @param player player to add
      * @return Accurate set of ClanMembers post transaction
-     * @throws IllegalStateException if member is already a member of another clan
-     * @throws IllegalArgumentException if member is the leader of the clan
+     * @throws IllegalArgumentException if member is the leader of the clan or if member is already a member of another clan
      */
     public Set<ClanMember> addClanMember(Transaction transaction, SolarPlayer player) {
         ClanDataObject receiver = player.getData(ClansKey.INSTANCE);
 
         if (receiver.isSimilar(leader)) throw new IllegalArgumentException("Tried to add leader as member");
-        if (receiver.getClan(transaction).isPresent()) throw new IllegalStateException("Object is already a member of another clan");
+        if (receiver.getClan(transaction).isPresent()) throw new IllegalArgumentException("Object is already a member of another clan");
 
         int sec = transaction.getProperty(DSLContext.class)
                 .insertInto(CLANS_CLAN_MEMBERSHIP)
@@ -269,21 +272,20 @@ public class Clan {
      * @param transaction The tx
      * @param player player to remove from the clan
      * @return Accurate set of ClanMembers post transaction
-     * @throws IllegalStateException if member already has a clan
-     * @throws IllegalArgumentException if member tried to remove was the leader of the clan, or if they are not
-     * present in the clan
+     * @throws IllegalStateException if member already has a clan or if they are not present in the clan.
+     * @throws IllegalArgumentException if member tried to remove was the leader of the clan
      */
     public Set<ClanMember> removeClanMember(Transaction transaction, SolarPlayer player) {
         ClanDataObject receiver = player.getData(ClansKey.INSTANCE);
         if (receiver.getClan(transaction).isPresent()) throw new IllegalStateException("Receiver already has clan!");
-
-        ClansClanMembershipRecord rec = transaction.getProperty(DSLContext.class)
-                .fetchOne(CLANS_CLAN_MEMBERSHIP,CLANS_CLAN_MEMBERSHIP.CLAN_ID.eq(this.clanID).and(CLANS_CLAN_MEMBERSHIP.USER_ID.eq(receiver.getUserId())));
-
-        if (rec == null) throw new IllegalArgumentException("Member is not part of clan!");
         if (receiver.isSimilar(leader)) throw new IllegalArgumentException("Tried to remove leader of clan!");
 
-        rec.delete();
+        int res = transaction.getProperty(DSLContext.class)
+                .deleteFrom(CLANS_CLAN_MEMBERSHIP)
+                .where(CLANS_CLAN_MEMBERSHIP.CLAN_ID.eq(this.clanID).and(CLANS_CLAN_MEMBERSHIP.USER_ID.eq(receiver.getUserId())))
+                .execute();
+
+        if (res != 1) throw new IllegalStateException("Member is not part of clan!");
 
         receiver.setCachedClan(null);
 

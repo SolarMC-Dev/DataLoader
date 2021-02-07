@@ -23,6 +23,7 @@ package gg.solarmc.loader.clans;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import gg.solarmc.loader.SolarPlayer;
 import gg.solarmc.loader.Transaction;
 import gg.solarmc.loader.data.DataManager;
 import gg.solarmc.loader.schema.tables.records.ClansClanAlliancesRecord;
@@ -63,15 +64,15 @@ public class ClanManager implements DataManager {
             Set<ClanMember> members = jooq.select(CLANS_CLAN_MEMBERSHIP.USER_ID).from(CLANS_CLAN_MEMBERSHIP)
                     .where(CLANS_CLAN_MEMBERSHIP.CLAN_ID.eq(id)).fetchSet((rec1) -> new ClanMember(id,rec1.value1(),this));
 
-            ClansClanAlliancesRecord rec1 = jooq.fetchOne(CLANS_CLAN_ALLIANCES,CLANS_CLAN_ALLIANCES.CLAN_ID.eq(id));
+            ClansClanAlliancesRecord recAlly = jooq.fetchOne(CLANS_CLAN_ALLIANCES,CLANS_CLAN_ALLIANCES.CLAN_ID.eq(id));
 
             ClanMember owner = new ClanMember(id,rec.getClanLeader(),this);
 
             Clan returned = new Clan(rec.getClanId(), rec.getClanName(),rec.getClanKills(),
                     rec.getClanDeaths(),rec.getClanAssists(),this,members,owner);
 
-            if (rec1 != null) {
-                this.insertAllianceCache(rec1.getClanId(),rec1.getAllyId());
+            if (recAlly != null) {
+                this.insertAllianceCache(recAlly.getClanId(),recAlly.getAllyId());
             }
 
             return returned;
@@ -97,7 +98,7 @@ public class ClanManager implements DataManager {
      * @param clan1 the first clan id, ally of the second
      * @param clan2 the second clan id, ally of the first
      */
-    public void invalidateAllianceCache(Integer clan1, Integer clan2) {
+    void invalidateAllianceCache(Integer clan1, Integer clan2) {
         this.allianceCache.invalidate(clan1);
         this.allianceCache.invalidate(clan2);
     }
@@ -111,7 +112,7 @@ public class ClanManager implements DataManager {
      * @param clan1 the first clan, ally of the second
      * @param clan2 the second clan, ally of the first
      */
-    public void insertAllianceCache(Integer clan1, Integer clan2) {
+    void insertAllianceCache(Integer clan1, Integer clan2) {
         this.allianceCache.put(clan1,clan2);
         this.allianceCache.put(clan2,clan1);
     }
@@ -120,10 +121,11 @@ public class ClanManager implements DataManager {
      * Creates an empty clan with given name.
      * @param name Name of the gg.solarmc.loader.clans.Clan to add
      * @param transaction the tx
-     * @param owner the to be owner of the clan
+     * @param player the to be owner of the clan
      * @return created clan.
      */
-    public Clan createClan(Transaction transaction, String name, ClanDataObject owner) {
+    public Clan createClan(Transaction transaction, String name, SolarPlayer player) {
+        ClanDataObject owner = player.getData(ClansKey.INSTANCE);
         ClansClanInfoRecord rec = transaction.getProperty(DSLContext.class)
                 .insertInto(CLANS_CLAN_INFO)
                 .columns(CLANS_CLAN_INFO.CLAN_NAME, CLANS_CLAN_INFO.CLAN_LEADER, CLANS_CLAN_INFO.CLAN_KILLS, CLANS_CLAN_INFO.CLAN_DEATHS, CLANS_CLAN_INFO.CLAN_ASSISTS)

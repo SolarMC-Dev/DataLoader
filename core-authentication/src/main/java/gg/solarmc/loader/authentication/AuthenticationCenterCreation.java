@@ -19,15 +19,16 @@
 
 package gg.solarmc.loader.authentication;
 
-import gg.solarmc.loader.data.DataKeySpi;
-import gg.solarmc.loader.impl.SimpleDataKeySpi;
+import de.mkammerer.argon2.Argon2Advanced;
+import de.mkammerer.argon2.Argon2Factory;
+import de.mkammerer.argon2.Argon2Factory.Argon2Types;
 
-public final class AuthKeySpi {
+public class AuthenticationCenterCreation {
 
-	private AuthKeySpi() { }
-
-	public static DataKeySpi provider() {
-		return new SimpleDataKeySpi(AuthKey.INSTANCE);
+	public AuthenticationCenter create() {
+		Argon2Advanced argon2 = Argon2Factory.createAdvanced(
+				Argon2Types.ARGON2i, PasswordHasher.SALT_LENGTH, PasswordHasher.HASH_LENGTH);
+		return new AuthenticationCenter(new PasswordHasher(argon2));
 	}
 
 }

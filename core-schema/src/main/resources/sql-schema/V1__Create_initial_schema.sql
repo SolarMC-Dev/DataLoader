@@ -1,3 +1,7 @@
+
+-- The user_ids table is used with raw JDBC, in core-authentication
+-- Do not modify it assuming compilation with flyway/jooq will cause compile errors
+
 CREATE TABLE user_ids (
   id INT AUTO_INCREMENT PRIMARY KEY,
   uuid BINARY(16) NOT NULL UNIQUE

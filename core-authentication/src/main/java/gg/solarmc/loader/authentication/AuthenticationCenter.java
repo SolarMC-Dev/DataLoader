@@ -20,18 +20,24 @@
 package gg.solarmc.loader.authentication;
 
 import gg.solarmc.loader.Transaction;
-import gg.solarmc.loader.data.DataManager;
+import gg.solarmc.loader.impl.SQLExceptionHandler;
 import org.jooq.DSLContext;
+import org.jooq.Record1;
 import org.jooq.Record5;
 import space.arim.omnibus.util.UUIDUtil;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.UUID;
 import java.util.concurrent.ForkJoinPool;
 
 import static gg.solarmc.loader.schema.Tables.AUTH_PASSWORDS;
 import static gg.solarmc.loader.schema.Tables.USER_IDS;
 
-public class AuthManager implements DataManager {
+public final class AuthenticationCenter {
 
 	/*
 	 * To understand the logic in this class, refer to its schema, which describes the multiple states
@@ -40,13 +46,11 @@ public class AuthManager implements DataManager {
 	 */
 
 	private final PasswordHasher passwordHasher;
-	private final SaltGenerator saltGenerator;
 
 	private static final HashingInstructions DEFAULT_HASHING_INSTRUCTIONS = new HashingInstructions(10, 65536);
 
-	AuthManager(PasswordHasher passwordHasher, SaltGenerator saltGenerator) {
+	AuthenticationCenter(PasswordHasher passwordHasher) {
 		this.passwordHasher = passwordHasher;
-		this.saltGenerator = saltGenerator;
 	}
 
 	/**
@@ -69,22 +73,25 @@ public class AuthManager implements DataManager {
 		if (passwordRecord == null) {
 			if (user.isPremium()) {
 				// New premium user, insert empty password and permit login
-				insertAutomaticAccount(context, user);
+				insertAutomaticAccount(transaction, user);
 				return InitialLoginAttempt.premiumPermitted();
 			}
 			// New cracked user, request account creation
 			return InitialLoginAttempt.needsAccount();
 		}
 		int iterations = passwordRecord.get(AUTH_PASSWORDS.ITERATIONS);
-		if (iterations == 0) { // 0 is a special value
+		if (iterations == 0) { // 0 indicates a premium account
 			/*
 			Existing premium/automatic account
-			If the user is premium, they must be permitted.
-			If the user is cracked, they must be denied.
 			 */
-			return (user.isPremium()) ?
-					InitialLoginAttempt.premiumPermitted()
-					: InitialLoginAttempt.deniedPremiumTookName();
+			if (!user.isPremium()) {
+				// User is cracked, but is trying to use a premium user's name
+				return InitialLoginAttempt.deniedPremiumTookName();
+			}
+			// User must be permitted. This has to be the same premium user
+			int userId = fetchIdFromUuid(context, user);
+			user.loadExistingData(userId, transaction);
+			return InitialLoginAttempt.premiumPermitted();
 		}
 		// Existing cracked account
 
@@ -105,22 +112,65 @@ public class AuthManager implements DataManager {
 		return InitialLoginAttempt.needsPassword(existingPassword);
 	}
 
+	private int fetchIdFromUuid(DSLContext context, UnauthenticatedUser user) {
+		return fetchIdFromUuid(context, UUIDUtil.toByteArray(user.mcUuid()), user);
+	}
+
+	private int fetchIdFromUuid(DSLContext context, byte[] uuidBytes, UnauthenticatedUser user) {
+		Integer userId = context.select(USER_IDS.ID)
+				.from(USER_IDS)
+				.where(USER_IDS.UUID.eq(uuidBytes))
+				.fetchOne(USER_IDS.ID);
+		if (userId == null) {
+			throw new IllegalStateException("User " + user + " does not have an ID");
+		}
+		return userId;
+	}
+
 	/**
 	 * Creates an automatic account. Called only for premium users
-	 * @param context the context
+	 * @param transaction the transaction
 	 * @param user the user
 	 */
-	private void insertAutomaticAccount(DSLContext context, UnauthenticatedUser user) {
+	private void insertAutomaticAccount(Transaction transaction, UnauthenticatedUser user) {
+		DSLContext context = transaction.getProperty(DSLContext.class);
 		context.insertInto(AUTH_PASSWORDS)
-				// iterations, being omitted from the insert, will be set to 0
+				// iterations and memory, being omitted, will be set to 0
 				.columns(AUTH_PASSWORDS.USERNAME, AUTH_PASSWORDS.PASSWORD_HASH, AUTH_PASSWORDS.PASSWORD_SALT)
-				.values(user.username(), passwordHasher.emptyHash(), saltGenerator.emptySalt())
+				.values(user.username(), passwordHasher.emptyHash(), passwordHasher.emptySalt())
 				.execute();
-		context.insertInto(USER_IDS)
-				.columns(USER_IDS.UUID)
-				.values(UUIDUtil.toByteArray(user.mcUuid()))
-				.onDuplicateKeyIgnore() // The premium user may have joined before with a different name
-				.execute();
+		byte[] uuidBytes = UUIDUtil.toByteArray(user.mcUuid());
+		int updateCount;
+		int userId;
+		/*
+		JDBC is the only way to retrieve both the update count and the generated ID
+		at the same time
+		 */
+		try (PreparedStatement preparedStatement = transaction.getProperty(Connection.class).prepareStatement(
+				"INSERT IGNORE INTO user_ids (uuid) VALUES (?)", Statement.RETURN_GENERATED_KEYS)) {
+			preparedStatement.setBytes(1, uuidBytes);
+			updateCount = preparedStatement.executeUpdate();
+			if (updateCount == 0) {
+				preparedStatement.close(); // early release
+				userId = fetchIdFromUuid(context, uuidBytes, user);
+			} else {
+				try (ResultSet generatedKeys = preparedStatement.getGeneratedKeys()) {
+					if (!generatedKeys.next()) {
+						throw new IllegalStateException("Unable to generate ID for inserted user " + user);
+					}
+					userId = generatedKeys.getInt("id");
+				}
+			}
+		} catch (SQLException ex) {
+			throw transaction.getProperty(SQLExceptionHandler.class).handle(ex);
+		}
+		if (updateCount == 0) {
+			// Premium user has joined before, with a different name
+			user.loadExistingData(userId, transaction);
+		} else {
+			// Totally new user
+			user.loadNewData(userId, transaction);
+		}
 	}
 
 	/**
@@ -150,10 +200,16 @@ public class AuthManager implements DataManager {
 		if (updateCount == 0) {
 			return CreateAccountResult.CONFLICT;
 		}
-		context.insertInto(USER_IDS)
+		Integer userId;
+		Record1<Integer> userIdRecord = context.insertInto(USER_IDS)
 				.columns(USER_IDS.UUID)
 				.values(UUIDUtil.toByteArray(user.mcUuid()))
-				.execute();
+				.returningResult(USER_IDS.ID)
+				.fetchOne();
+		if (userIdRecord == null || (userId = userIdRecord.value1()) == null) {
+			throw new IllegalStateException("Unable to generate user ID for user " + user);
+		}
+		user.loadNewData(userId, transaction);
 		return CreateAccountResult.CREATED;
 	}
 
@@ -167,29 +223,39 @@ public class AuthManager implements DataManager {
 	 * @return a login result indicating whether migration was performend
 	 */
 	public CompleteLoginResult completeLoginAndPossiblyMigrate(Transaction transaction, UnauthenticatedUser user) {
+		DSLContext context = transaction.getProperty(DSLContext.class);
 		if (user.isPremium()) {
-			// User is migrating from a cracked to a premium account
-			UUID offlineUuid = UUIDOperations.computeOfflineUuid(user.username());
-			UUID currentUuid = user.mcUuid();
-			DSLContext context = transaction.getProperty(DSLContext.class);
-			int updateCountOne = context
-					.update(USER_IDS)
-					.set(USER_IDS.UUID, UUIDUtil.toByteArray(currentUuid))
-					.where(USER_IDS.UUID.eq(UUIDUtil.toByteArray(offlineUuid)))
-					.execute();
-			assert updateCountOne == 1;
-			int updateCountTwo = context
-					.update(AUTH_PASSWORDS)
-					.set(AUTH_PASSWORDS.ITERATIONS, (byte) 0)
-					.set(AUTH_PASSWORDS.MEMORY, 0)
-					.set(AUTH_PASSWORDS.PASSWORD_HASH, passwordHasher.emptyHash())
-					.set(AUTH_PASSWORDS.PASSWORD_SALT, saltGenerator.emptySalt())
-					.where(AUTH_PASSWORDS.USERNAME.eq(user.username()))
-					.execute();
-			assert updateCountTwo == 1;
+			// Migrate previous cracked account to premium
+			byte[] currentUuidBytes = UUIDUtil.toByteArray(user.mcUuid());
+			{
+				UUID offlineUuid = UUIDOperations.computeOfflineUuid(user.username());
+				int updateCountUserIds = context
+						.update(USER_IDS)
+						.set(USER_IDS.UUID, currentUuidBytes)
+						.where(USER_IDS.UUID.eq(UUIDUtil.toByteArray(offlineUuid)))
+						.execute();
+				assert updateCountUserIds == 1;
+			}
+			{
+				int updateCountAuthPasswords = context
+						.update(AUTH_PASSWORDS)
+						.set(AUTH_PASSWORDS.ITERATIONS, (byte) 0)
+						.set(AUTH_PASSWORDS.MEMORY, 0)
+						.set(AUTH_PASSWORDS.PASSWORD_HASH, passwordHasher.emptyHash())
+						.set(AUTH_PASSWORDS.PASSWORD_SALT, passwordHasher.emptySalt())
+						.where(AUTH_PASSWORDS.USERNAME.eq(user.username()))
+						.execute();
+				assert updateCountAuthPasswords == 1;
+			}
+			int userId = fetchIdFromUuid(context, currentUuidBytes, user);
+			user.loadExistingData(userId, transaction);
+
 			return CompleteLoginResult.MIGRATED_TO_PREMIUM;
 		}
-		assert user.mcUuid().equals(UUIDOperations.computeOfflineUuid(user.username()));
+		assert user.mcUuid().equals(UUIDOperations.computeOfflineUuid(user.username()))
+				: "user is cracked";
+		int userId = fetchIdFromUuid(context, user);
+		user.loadExistingData(userId, transaction);
 		return CompleteLoginResult.NORMAL;
 	}
 
@@ -202,7 +268,7 @@ public class AuthManager implements DataManager {
 	 */
 	public VerifiablePassword hashNewPassword(String password) {
 		// Create a new salt and use it to hash this password
-		return hashPassword(password, saltGenerator.generateSalt(), DEFAULT_HASHING_INSTRUCTIONS);
+		return hashPassword(password, passwordHasher.generateSalt(), DEFAULT_HASHING_INSTRUCTIONS);
 	}
 
 	/**

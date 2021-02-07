@@ -28,6 +28,7 @@ class PasswordHasher {
 	private final Argon2Advanced argon2;
 
 	static final int HASH_LENGTH = 64;
+	static final int SALT_LENGTH = 32;
 
 	PasswordHasher(Argon2Advanced argon2) {
 		this.argon2 = argon2;
@@ -43,6 +44,16 @@ class PasswordHasher {
 
 	byte[] emptyHash() {
 		return new byte[HASH_LENGTH];
+	}
+
+	PasswordSalt generateSalt() {
+		byte[] salt = argon2.generateSalt();
+		assert salt.length == SALT_LENGTH;
+		return new PasswordSalt(salt);
+	}
+
+	byte[] emptySalt() {
+		return new byte[SALT_LENGTH];
 	}
 
 }

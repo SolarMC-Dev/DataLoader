@@ -19,26 +19,31 @@
 
 package gg.solarmc.loader.authentication;
 
-import java.security.SecureRandom;
+import org.junit.jupiter.api.Test;
 
-class SaltGenerator {
+import java.util.UUID;
 
-	private final SecureRandom random;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-	static final int SALT_LENGTH = 32;
+public class UUIDOperationsTest {
 
-	SaltGenerator(SecureRandom random) {
-		this.random = random;
+	@Test
+	public void isPremium() {
+		assertTrue(UUIDOperations.isPremium(UUID.fromString(
+				"ed5f12cd-6007-45d9-a4b9-940524ddaecf")), "Premium");
+		assertFalse(UUIDOperations.isPremium(UUID.fromString(
+				"0aef255c-11e0-3879-9dba-1c530ab70323")), "Cracked");
+
+		assertFalse(UUIDOperations.isPremium(UUIDOperations.computeOfflineUuid("A248")));
 	}
 
-	PasswordSalt generateSalt() {
-		byte[] salt = new byte[SALT_LENGTH];
-		random.nextBytes(salt);
-		return new PasswordSalt(salt);
-	}
-
-	byte[] emptySalt() {
-		return new byte[SALT_LENGTH];
+	@Test
+	public void computeOfflineUuid() {
+		assertEquals(
+				UUID.fromString("0b58c22d-56f5-3296-87b8-c0155a071d4d.yml"),
+				UUIDOperations.computeOfflineUuid("McStorm_MlyK11qF"));
 	}
 
 }

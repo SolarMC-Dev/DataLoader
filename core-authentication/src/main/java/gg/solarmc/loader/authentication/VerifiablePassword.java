@@ -21,6 +21,11 @@ package gg.solarmc.loader.authentication;
 
 import java.util.Objects;
 
+/**
+ * A combination of hashed password, a salt used to help create the hash,
+ * and hashing instructions also used to create the hash.
+ *
+ */
 public final class VerifiablePassword {
 
 	private final PasswordHash passwordHash;
@@ -31,6 +36,21 @@ public final class VerifiablePassword {
 		this.passwordHash = Objects.requireNonNull(passwordHash, "passwordHash");
 		this.passwordSalt = Objects.requireNonNull(passwordSalt, "passwordSalt");
 		this.instructions = Objects.requireNonNull(instructions, "instructions");
+	}
+
+	/**
+	 * Whether this password's hash matches another. Equivalent to
+	 * {@code passwordHash().equals(other.passwordHash())}<br>
+	 * <br>
+	 * In practice, this will be {@code true} if {@code equals} is true, but note that {@code equals}
+	 * also compares the salt and hashing instructions. Practically speaking, if the salt and
+	 * hashing instructions differ, the password hash will also differ.
+	 *
+	 * @param other the other password
+	 * @return true if matched, false otherwise
+	 */
+	public boolean matches(VerifiablePassword other) {
+		return passwordHash.equals(other.passwordHash);
 	}
 
 	public PasswordHash passwordHash() {

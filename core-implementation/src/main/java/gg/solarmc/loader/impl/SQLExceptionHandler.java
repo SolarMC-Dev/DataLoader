@@ -17,15 +17,16 @@
  * and navigate to version 3 of the GNU Affero General Public License.
  */
 
-package gg.solarmc.loader.authentication;
+package gg.solarmc.loader.impl;
 
-import gg.solarmc.loader.data.DataObject;
+import java.sql.SQLException;
 
-/**
- * Nothing here so far
- *
- */
-public class Auth implements DataObject {
+public final class SQLExceptionHandler {
 
-	Auth() {}
+	SQLExceptionHandler() {}
+
+	public RuntimeException handle(SQLException ex) {
+		throw new UncheckedSQLException("JDBC query execution error", ex);
+	}
+
 }

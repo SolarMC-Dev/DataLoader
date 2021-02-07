@@ -19,51 +19,43 @@
 
 package gg.solarmc.loader.authentication;
 
-import java.util.Objects;
+import gg.solarmc.loader.Transaction;
+
 import java.util.UUID;
 
-public final class UnauthenticatedUser {
+public interface UnauthenticatedUser {
 
-	private final UUID mcUuid;
-	private final String username;
+	UUID mcUuid();
 
-	public UnauthenticatedUser(UUID mcUuid, String username) {
-		this.mcUuid = Objects.requireNonNull(mcUuid);
-		this.username = Objects.requireNonNull(username);
+	String username();
+
+	default boolean isPremium() {
+		return UUIDOperations.isPremium(mcUuid());
 	}
 
-	boolean isPremium() {
-		return UUIDOperations.isPremium(mcUuid);
-	}
+	/**
+	 * Loads the data for the user, with the assumption that they have logged in before
+	 *
+	 * @param userId the user ID
+	 * @param transaction the transaction
+	 */
+	void loadExistingData(int userId, Transaction transaction);
 
-	public UUID mcUuid() {
-		return mcUuid;
-	}
+	/**
+	 * Loads data for a brand new user
+	 *
+	 * @param userId the user ID
+	 * @param transaction the transaction
+	 */
+	void loadNewData(int userId, Transaction transaction);
 
-	public String username() {
-		return username;
-	}
-
+	/**
+	 * Whether this user is equal to another
+	 *
+	 * @param o the object to determine equality with
+	 * @return true if equal, false otherwise
+	 */
 	@Override
-	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
-		UnauthenticatedUser that = (UnauthenticatedUser) o;
-		return mcUuid.equals(that.mcUuid) && username.equals(that.username);
-	}
+	boolean equals(Object o);
 
-	@Override
-	public int hashCode() {
-		int result = mcUuid.hashCode();
-		result = 31 * result + username.hashCode();
-		return result;
-	}
-
-	@Override
-	public String toString() {
-		return "UnauthenticatedUser{" +
-				"mcUuid=" + mcUuid +
-				", username='" + username + '\'' +
-				'}';
-	}
 }

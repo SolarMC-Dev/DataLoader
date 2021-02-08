@@ -19,26 +19,22 @@
 
 package gg.solarmc.loader.impl;
 
-public class OperationalSolarDataControl implements AutoCloseable {
+import gg.solarmc.loader.data.DataKey;
+import gg.solarmc.loader.data.DataManager;
 
-	private final LoginHandler loginHandler;
-	private final DataCenterLifecycle lifecycle;
+import java.util.Map;
 
-	public OperationalSolarDataControl(LoginHandler loginHandler, DataCenterLifecycle lifecycle) {
-		this.loginHandler = loginHandler;
-		this.lifecycle = lifecycle;
+public final class DataManagementCenter {
+
+	private final Map<DataKey<?, ?>, DataGroup<?, ?>> groups;
+
+	DataManagementCenter(Map<DataKey<?, ?>, DataGroup<?, ?>> groups) {
+		this.groups = groups;
 	}
 
-	public LoginHandler loginHandler() {
-		return loginHandler;
-	}
-
-	@Override
-	public void close() {
-		try {
-			lifecycle.close();
-		} catch (Exception ex) {
-			throw new RuntimeException("Failed to shut down properly", ex);
-		}
+	public <M extends DataManager> M getDataManager(DataKey<?, M> key) {
+		@SuppressWarnings("unchecked")
+		DataGroup<?, M> group = (DataGroup<?, M>) groups.get(key);
+		return group.manager();
 	}
 }

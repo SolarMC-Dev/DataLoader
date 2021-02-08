@@ -355,7 +355,7 @@ public class Clan {
      * Marks clan as an enemy
      * @param transaction twix bar
      * @param receiver the clan to mark as an enemy.
-     * @return whether action was successful or not (failure represents that they are already enemies)
+     * @return true if the enemy was added, false if the clans are already enemies
      * @throws IllegalArgumentException if the presented clan is an ally or is the same object (what?)
      */
     public boolean addClanAsEnemy(Transaction transaction, Clan receiver) {

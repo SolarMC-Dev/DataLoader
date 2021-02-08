@@ -50,6 +50,9 @@ class DatabaseSettings {
 		hikariConf.addDataSourceProperty("url", jdbcUrl);
 		hikariConf.setDataSourceClassName("org.mariadb.jdbc.MariaDbDataSource");
 
+		// JMX
+		hikariConf.setRegisterMbeans(true);
+
 		// Other settings
 		hikariConf.setAutoCommit(false);
 		hikariConf.setTransactionIsolation("TRANSACTION_REPEATABLE_READ");

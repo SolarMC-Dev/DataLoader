@@ -122,7 +122,7 @@ class ClanDataObject implements DataObject {
      * @param member gg.solarmc.loader.clans.ClanMember to compare
      * @return whether they are similar or not
      */
-    public boolean isSimilar(ClanMember member) {
+    boolean isSimilar(ClanMember member) {
         return member.getUserId() == this.userId;
     }
 

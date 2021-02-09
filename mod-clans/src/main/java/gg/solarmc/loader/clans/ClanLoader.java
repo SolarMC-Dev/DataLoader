@@ -19,12 +19,16 @@
  *
  */
 
-package gg.solarmc.loader.clans;import gg.solarmc.loader.Transaction;
+package gg.solarmc.loader.clans;
+import gg.solarmc.loader.Transaction;
 import gg.solarmc.loader.data.DataLoader;
 import gg.solarmc.loader.schema.tables.records.ClansClanMembershipRecord;
 import org.jooq.DSLContext;
 
 import static gg.solarmc.loader.schema.tables.ClansClanMembership.CLANS_CLAN_MEMBERSHIP;
+import static gg.solarmc.loader.schema.tables.ClansClanAlliances.CLANS_CLAN_ALLIANCES;
+import static gg.solarmc.loader.schema.tables.ClansClanEnemies.CLANS_CLAN_ENEMIES;
+import static gg.solarmc.loader.schema.tables.ClansClanInfo.CLANS_CLAN_INFO;
 
 public class ClanLoader implements DataLoader<ClanDataObject> {
 
@@ -35,11 +39,6 @@ public class ClanLoader implements DataLoader<ClanDataObject> {
     }
 
     @Override
-    public ClanDataObject createDefaultData(Transaction transaction, int userId) {
-        return new ClanDataObject(userId,null,manager);
-    }
-
-    @Override
     public ClanDataObject loadData(Transaction transaction, int userId) {
 
         ClansClanMembershipRecord rec = transaction.getProperty(DSLContext.class).fetchOne(CLANS_CLAN_MEMBERSHIP,CLANS_CLAN_MEMBERSHIP.USER_ID.eq(userId));
@@ -47,5 +46,14 @@ public class ClanLoader implements DataLoader<ClanDataObject> {
         if (rec == null) return new ClanDataObject(userId,null,manager);
 
         return new ClanDataObject(userId,manager.getClan(transaction,userId),manager);
+    }
+
+    @Override
+    public void wipeAllData(Transaction transaction) {
+        DSLContext dsl = transaction.getProperty(DSLContext.class);
+        dsl.deleteFrom(CLANS_CLAN_MEMBERSHIP).execute();
+        dsl.deleteFrom(CLANS_CLAN_ALLIANCES).execute();
+        dsl.deleteFrom(CLANS_CLAN_ENEMIES).execute();
+        dsl.deleteFrom(CLANS_CLAN_INFO).execute();
     }
 }

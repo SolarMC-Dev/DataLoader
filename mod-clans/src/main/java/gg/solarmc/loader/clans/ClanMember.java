@@ -59,13 +59,4 @@ public class ClanMember {
         ClanMember that = (ClanMember) o;
         return userId == that.userId;
     }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(userId);
-    }
-
-
-
-
 }

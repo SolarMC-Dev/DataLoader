@@ -70,7 +70,7 @@ class ClanDataObject implements DataObject {
         this.cachedClan = clan;
     }
 
-    public int getUserId() {
+    int getUserId() {
         return userId;
     }
 
@@ -91,7 +91,12 @@ class ClanDataObject implements DataObject {
         ClansClanMembershipRecord rec = transaction.getProperty(DSLContext.class)
                 .fetchOne(CLANS_CLAN_MEMBERSHIP,CLANS_CLAN_MEMBERSHIP.USER_ID.eq(this.userId));
 
-        if (rec == null) return Optional.empty();
+
+
+        if (rec == null)  {
+            this.cachedClan = null;
+            return Optional.empty();
+        }
 
         Clan fetched = manager.getClan(transaction,rec.getClanId());
 

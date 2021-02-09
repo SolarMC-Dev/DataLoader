@@ -80,7 +80,9 @@ public class ClanManager implements DataManager {
         });
     }
 
-    public Optional<Integer> getAllyFromCache(Integer clanId) { return Optional.ofNullable(allianceCache.getIfPresent(clanId)); }
+    Optional<Integer> getAllyFromCache(Integer clanId) {
+        return Optional.ofNullable(allianceCache.getIfPresent(clanId));
+    }
 
     /**
      * Returns an optional representing the allied clan
@@ -160,10 +162,12 @@ public class ClanManager implements DataManager {
                 .where(CLANS_CLAN_INFO.CLAN_ID.eq(clan.getID()))
                 .execute();
 
-        assert i == 1 : "Clan does not exist in table!";
+        if (i == 1) {
+            throw new IllegalStateException("Clan does not exist in table!");
+        }
 
-        clan.currentlyAlliedClanID().ifPresent(allyId -> {
-            this.invalidateAllianceCache(clan.getID(),allyId);
+        clan.getAlliedClan(transaction).ifPresent(ally -> {
+            this.invalidateAllianceCache(clan.getID(),ally.getID());
         });
 
         clans.invalidate(clan);

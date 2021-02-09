@@ -21,7 +21,6 @@ package gg.solarmc.loader.credits;
 
 import gg.solarmc.loader.data.DataLoader;
 import gg.solarmc.loader.Transaction;
-import gg.solarmc.loader.impl.SQLTransaction;
 import org.jooq.DSLContext;
 
 import java.math.BigDecimal;
@@ -37,19 +36,27 @@ class CreditsLoader implements DataLoader<Credits> {
 	}
 
 	@Override
-	public Credits createDefaultData(Transaction transaction, int userId) {
-		transaction.getProperty(DSLContext.class).insertInto(CREDITS)
-				.columns(CREDITS.USER_ID, CREDITS.BALANCE).values(userId, defaultBigDecimalBalance)
-				.execute();
-		return new Credits(userId, defaultBigDecimalBalance);
+	public Credits loadData(Transaction transaction, int userId) {
+		DSLContext context = transaction.getProperty(DSLContext.class);
+		BigDecimal balance = context
+				.select(CREDITS.BALANCE)
+				.from(CREDITS)
+				.where(CREDITS.USER_ID.eq(userId))
+				.fetchOne((rowRecord) -> rowRecord.get(CREDITS.BALANCE));
+		if (balance == null) {
+			context.insertInto(CREDITS)
+					.columns(CREDITS.USER_ID, CREDITS.BALANCE)
+					.values(userId, defaultBigDecimalBalance)
+					.execute();
+			balance = defaultBigDecimalBalance;
+		}
+		return new Credits(userId, balance);
 	}
 
 	@Override
-	public Credits loadData(Transaction transaction, int userId) {
-		BigDecimal balance = transaction.getProperty(DSLContext.class).select(CREDITS.BALANCE).from(CREDITS)
-				.where(CREDITS.USER_ID.eq(userId))
-				.fetchOne((rowRecord) -> rowRecord.get(CREDITS.BALANCE));
-		return new Credits(userId, balance);
+	public void wipeAllData(Transaction transaction) {
+		DSLContext context = transaction.getProperty(DSLContext.class);
+		context.deleteFrom(CREDITS).execute();
 	}
 
 }

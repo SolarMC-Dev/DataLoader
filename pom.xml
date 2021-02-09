@@ -6,7 +6,7 @@
 	<parent>
 		<groupId>gg.solarmc</groupId>
 		<artifactId>solar-parent</artifactId>
-		<version>0.2.0</version>
+		<version>0.3.2</version>
 	</parent>
 
 	<groupId>gg.solarmc.loader</groupId>
@@ -17,6 +17,9 @@
 	<name>Solar-DataLoader</name>
 
 	<properties>
+		<skipJavadoc>false</skipJavadoc>
+		<skipSources>false</skipSources>
+
 		<omnibus.version>1.0.0</omnibus.version>
 		<slf4j.version>1.7.30</slf4j.version>
 		<junit.version>5.7.0</junit.version>

@@ -17,28 +17,17 @@
  * and navigate to version 3 of the GNU Affero General Public License.
  */
 
-package gg.solarmc.loader.impl;
+package gg.solarmc.loader.kitpvp;
 
-public class OperationalSolarDataControl implements AutoCloseable {
+import gg.solarmc.loader.data.DataKeySpi;
 
-	private final LoginHandler loginHandler;
-	private final DataCenterLifecycle lifecycle;
+import java.util.Set;
 
-	public OperationalSolarDataControl(LoginHandler loginHandler, DataCenterLifecycle lifecycle) {
-		this.loginHandler = loginHandler;
-		this.lifecycle = lifecycle;
-	}
+public final class KitPvpKeySpi {
 
-	public LoginHandler loginHandler() {
-		return loginHandler;
-	}
+	private KitPvpKeySpi() {}
 
-	@Override
-	public void close() {
-		try {
-			lifecycle.close();
-		} catch (Exception ex) {
-			throw new RuntimeException("Failed to shut down properly", ex);
-		}
+	public static DataKeySpi provider() {
+		return () -> Set.of(KitPvpKey.INSTANCE);
 	}
 }

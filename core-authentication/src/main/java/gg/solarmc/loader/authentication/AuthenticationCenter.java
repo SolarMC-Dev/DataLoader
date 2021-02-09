@@ -20,20 +20,17 @@
 package gg.solarmc.loader.authentication;
 
 import gg.solarmc.loader.Transaction;
-import gg.solarmc.loader.impl.SQLExceptionHandler;
+
 import org.jooq.DSLContext;
 import org.jooq.Record1;
 import org.jooq.Record5;
 import space.arim.omnibus.util.UUIDUtil;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.UUID;
 import java.util.concurrent.ForkJoinPool;
 
+import static gg.solarmc.loader.schema.Routines.insertAutomaticAccountAndGetUserId;
+import static gg.solarmc.loader.schema.Routines.migrateToPremiumAndGetUserId;
 import static gg.solarmc.loader.schema.Tables.AUTH_PASSWORDS;
 import static gg.solarmc.loader.schema.Tables.USER_IDS;
 
@@ -90,7 +87,7 @@ public final class AuthenticationCenter {
 			}
 			// User must be permitted. This has to be the same premium user
 			int userId = fetchIdFromUuid(context, user);
-			user.loadExistingData(userId, transaction);
+			user.loadData(transaction, userId);
 			return InitialLoginAttempt.premiumPermitted();
 		}
 		// Existing cracked account
@@ -113,16 +110,21 @@ public final class AuthenticationCenter {
 	}
 
 	private int fetchIdFromUuid(DSLContext context, UnauthenticatedUser user) {
-		return fetchIdFromUuid(context, UUIDUtil.toByteArray(user.mcUuid()), user);
-	}
-
-	private int fetchIdFromUuid(DSLContext context, byte[] uuidBytes, UnauthenticatedUser user) {
+		byte[] uuidBytes = UUIDUtil.toByteArray(user.mcUuid());
 		Integer userId = context.select(USER_IDS.ID)
 				.from(USER_IDS)
 				.where(USER_IDS.UUID.eq(uuidBytes))
 				.fetchOne(USER_IDS.ID);
 		if (userId == null) {
 			throw new IllegalStateException("User " + user + " does not have an ID");
+		}
+		return userId;
+	}
+
+	private int userIdFromRecord(Record1<Integer> userIdRecord, UnauthenticatedUser user) {
+		Integer userId;
+		if (userIdRecord == null || (userId = userIdRecord.value1()) == null) {
+			throw new IllegalStateException("Unable to get user ID for user " + user);
 		}
 		return userId;
 	}
@@ -134,43 +136,13 @@ public final class AuthenticationCenter {
 	 */
 	private void insertAutomaticAccount(Transaction transaction, UnauthenticatedUser user) {
 		DSLContext context = transaction.getProperty(DSLContext.class);
-		context.insertInto(AUTH_PASSWORDS)
-				// iterations and memory, being omitted, will be set to 0
-				.columns(AUTH_PASSWORDS.USERNAME, AUTH_PASSWORDS.PASSWORD_HASH, AUTH_PASSWORDS.PASSWORD_SALT)
-				.values(user.username(), passwordHasher.emptyHash(), passwordHasher.emptySalt())
-				.execute();
 		byte[] uuidBytes = UUIDUtil.toByteArray(user.mcUuid());
-		int updateCount;
-		int userId;
-		/*
-		JDBC is the only way to retrieve both the update count and the generated ID
-		at the same time
-		 */
-		try (PreparedStatement preparedStatement = transaction.getProperty(Connection.class).prepareStatement(
-				"INSERT IGNORE INTO user_ids (uuid) VALUES (?)", Statement.RETURN_GENERATED_KEYS)) {
-			preparedStatement.setBytes(1, uuidBytes);
-			updateCount = preparedStatement.executeUpdate();
-			if (updateCount == 0) {
-				preparedStatement.close(); // early release
-				userId = fetchIdFromUuid(context, uuidBytes, user);
-			} else {
-				try (ResultSet generatedKeys = preparedStatement.getGeneratedKeys()) {
-					if (!generatedKeys.next()) {
-						throw new IllegalStateException("Unable to generate ID for inserted user " + user);
-					}
-					userId = generatedKeys.getInt("id");
-				}
-			}
-		} catch (SQLException ex) {
-			throw transaction.getProperty(SQLExceptionHandler.class).handle(ex);
-		}
-		if (updateCount == 0) {
-			// Premium user has joined before, with a different name
-			user.loadExistingData(userId, transaction);
-		} else {
-			// Totally new user
-			user.loadNewData(userId, transaction);
-		}
+		String username = user.username();
+		Record1<Integer> userIdRecord = context
+				.select(insertAutomaticAccountAndGetUserId(uuidBytes, username))
+				.fetchOne();
+		int userId = userIdFromRecord(userIdRecord, user);
+		user.loadData(transaction, userId);
 	}
 
 	/**
@@ -200,16 +172,14 @@ public final class AuthenticationCenter {
 		if (updateCount == 0) {
 			return CreateAccountResult.CONFLICT;
 		}
-		Integer userId;
-		Record1<Integer> userIdRecord = context.insertInto(USER_IDS)
+		Record1<Integer> userIdRecord = context
+				.insertInto(USER_IDS)
 				.columns(USER_IDS.UUID)
 				.values(UUIDUtil.toByteArray(user.mcUuid()))
 				.returningResult(USER_IDS.ID)
 				.fetchOne();
-		if (userIdRecord == null || (userId = userIdRecord.value1()) == null) {
-			throw new IllegalStateException("Unable to generate user ID for user " + user);
-		}
-		user.loadNewData(userId, transaction);
+		int userId = userIdFromRecord(userIdRecord, user);
+		user.loadData(transaction, userId);
 		return CreateAccountResult.CREATED;
 	}
 
@@ -226,36 +196,24 @@ public final class AuthenticationCenter {
 		DSLContext context = transaction.getProperty(DSLContext.class);
 		if (user.isPremium()) {
 			// Migrate previous cracked account to premium
-			byte[] currentUuidBytes = UUIDUtil.toByteArray(user.mcUuid());
-			{
-				UUID offlineUuid = UUIDOperations.computeOfflineUuid(user.username());
-				int updateCountUserIds = context
-						.update(USER_IDS)
-						.set(USER_IDS.UUID, currentUuidBytes)
-						.where(USER_IDS.UUID.eq(UUIDUtil.toByteArray(offlineUuid)))
-						.execute();
-				assert updateCountUserIds == 1;
-			}
-			{
-				int updateCountAuthPasswords = context
-						.update(AUTH_PASSWORDS)
-						.set(AUTH_PASSWORDS.ITERATIONS, (byte) 0)
-						.set(AUTH_PASSWORDS.MEMORY, 0)
-						.set(AUTH_PASSWORDS.PASSWORD_HASH, passwordHasher.emptyHash())
-						.set(AUTH_PASSWORDS.PASSWORD_SALT, passwordHasher.emptySalt())
-						.where(AUTH_PASSWORDS.USERNAME.eq(user.username()))
-						.execute();
-				assert updateCountAuthPasswords == 1;
-			}
-			int userId = fetchIdFromUuid(context, currentUuidBytes, user);
-			user.loadExistingData(userId, transaction);
+			String username = user.username();
+			UUID offlineUuid = UUIDOperations.computeOfflineUuid(username);
+			byte[] offlineUuidBytes = UUIDUtil.toByteArray(offlineUuid);
+			byte[] onlineUuidBytes = UUIDUtil.toByteArray(user.mcUuid());
 
+			Record1<Integer> userIdRecord = context
+					.select(migrateToPremiumAndGetUserId(offlineUuidBytes, onlineUuidBytes, username))
+					.fetchOne();
+
+			int userId = userIdFromRecord(userIdRecord, user);
+			user.loadData(transaction, userId);
 			return CompleteLoginResult.MIGRATED_TO_PREMIUM;
 		}
 		assert user.mcUuid().equals(UUIDOperations.computeOfflineUuid(user.username()))
 				: "user is cracked";
+
 		int userId = fetchIdFromUuid(context, user);
-		user.loadExistingData(userId, transaction);
+		user.loadData(transaction, userId);
 		return CompleteLoginResult.NORMAL;
 	}
 

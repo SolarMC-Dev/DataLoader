@@ -34,20 +34,12 @@ public interface UnauthenticatedUser {
 	}
 
 	/**
-	 * Loads the data for the user, with the assumption that they have logged in before
+	 * Loads the data for the user
 	 *
-	 * @param userId the user ID
 	 * @param transaction the transaction
-	 */
-	void loadExistingData(int userId, Transaction transaction);
-
-	/**
-	 * Loads data for a brand new user
-	 *
 	 * @param userId the user ID
-	 * @param transaction the transaction
 	 */
-	void loadNewData(int userId, Transaction transaction);
+	void loadData(Transaction transaction, int userId);
 
 	/**
 	 * Whether this user is equal to another

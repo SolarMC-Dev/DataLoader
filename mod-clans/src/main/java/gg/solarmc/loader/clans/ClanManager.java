@@ -32,6 +32,7 @@ import org.jooq.DSLContext;
 
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static gg.solarmc.loader.schema.tables.ClansClanAlliances.CLANS_CLAN_ALLIANCES;
 import static gg.solarmc.loader.schema.tables.ClansClanInfo.CLANS_CLAN_INFO;
@@ -138,7 +139,7 @@ public class ClanManager implements DataManager {
         if (rec == null) throw new IllegalStateException("Failed to insert new gg.solarmc.loader.clans.Clan by name " + name);
 
         ClanMember ownerAsMember = owner.asClanMember(transaction);
-        Set<ClanMember> memberSet = new HashSet<>();
+        Set<ClanMember> memberSet = ConcurrentHashMap.newKeySet();
         memberSet.add(ownerAsMember);
 
         Clan returned = new Clan(rec.getClanId(),rec.getClanName(),rec.getClanKills(),rec.getClanDeaths(),rec.getClanAssists(),this,memberSet,ownerAsMember);
@@ -154,7 +155,7 @@ public class ClanManager implements DataManager {
      *
      * @param transaction the tx
      * @param clan the clan to delete
-     * @throws IllegalStateException if the clan does not exist in the table.
+     * @throws IllegalStateException if the clan does not exist.
      */
     public void deleteClan(Transaction transaction, Clan clan) {
         int i = transaction.getProperty(DSLContext.class)
@@ -166,8 +167,8 @@ public class ClanManager implements DataManager {
             throw new IllegalStateException("Clan does not exist in table!");
         }
 
-        clan.getAlliedClan(transaction).ifPresent(ally -> {
-            this.invalidateAllianceCache(clan.getID(),ally.getID());
+        clan.currentAllyClan().ifPresent(ally -> {
+            this.invalidateAllianceCache(clan.getID(),ally);
         });
 
         clans.invalidate(clan);

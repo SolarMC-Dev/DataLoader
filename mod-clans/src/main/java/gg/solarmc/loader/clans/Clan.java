@@ -52,6 +52,7 @@ import org.jooq.Record1;
 
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentSkipListSet;
 
 import static gg.solarmc.loader.schema.tables.ClansClanAlliances.CLANS_CLAN_ALLIANCES;
 import static gg.solarmc.loader.schema.tables.ClansClanEnemies.CLANS_CLAN_ENEMIES;
@@ -67,7 +68,7 @@ public class Clan {
     private final int clanID;
     private final String clanName;
 
-    private volatile Set<ClanMember> members;
+    private volatile Set<ClanMember> members; //concurrentSet
     private final ClanManager manager;
     private final ClanMember leader;
 
@@ -75,7 +76,7 @@ public class Clan {
     private volatile int clanDeaths;
     private volatile int clanAssists;
 
-    public Clan(int clanID, String clanName, int clanKills, int clanDeaths, int clanAssists,
+    Clan(int clanID, String clanName, int clanKills, int clanDeaths, int clanAssists,
                 ClanManager manager, Set<ClanMember> members, ClanMember leader) {
 
         this.clanID = clanID;
@@ -83,7 +84,7 @@ public class Clan {
         this.clanKills = clanKills;
         this.clanDeaths = clanDeaths;
         this.clanAssists = clanAssists;
-        this.members = Set.copyOf(members);
+        this.members = members;
         this.manager = manager;
         this.leader = leader;
     }
@@ -125,7 +126,7 @@ public class Clan {
      * @return all ClanMembers.
      */
     public Set<ClanMember> currentMembers() {
-        return this.members;
+        return Set.copyOf(this.members);
     }
 
     /**
@@ -150,7 +151,11 @@ public class Clan {
 
 
 
-        if (rec1 == null) return Optional.empty();
+        if (rec1 == null) { 
+            return Optional.empty();
+        }
+
+        manager.insertAllianceCache(this.clanID,rec1.value1());
 
         return Optional.of(manager.getClan(transaction,rec1.value1()));
     }
@@ -229,7 +234,7 @@ public class Clan {
     /**
      * Gets all clan members accurately
      * @param transaction the tx
-     * @return the clan members
+     * @return An immutable set containing the members of the clan
      */
     public Set<ClanMember> getClanMembers(Transaction transaction) {
         Set<ClanMember> bruh = transaction.getProperty(DSLContext.class)
@@ -244,6 +249,18 @@ public class Clan {
     }
 
     /**
+     * Method that exists because a248 told me to
+     *
+     * Gets size of clan members from table accurately
+     * @param transaction the tx
+     * @return size of clan
+     */
+    public int getClanSize(Transaction transaction) {
+        return transaction.getProperty(DSLContext.class)
+                .fetchCount(CLANS_CLAN_MEMBERSHIP,CLANS_CLAN_MEMBERSHIP.CLAN_ID.eq(this.clanID));
+    }
+
+    /**
      * Adds a member to the clan. Note that this does not have a built in limit, API implementer needs to implement
      * limit if we desire a limit on members
      *
@@ -252,7 +269,7 @@ public class Clan {
      *
      * @param transaction The tx
      * @param player player to add
-     * @return true if it went ok, false if the member is already in this or another clan or if the member is the leader
+     * @return true if it was added, false if the member is already in this or another clan
      */
     public boolean addClanMember(Transaction transaction, SolarPlayer player) {
         ClanDataObject receiver = player.getData(ClansKey.INSTANCE);
@@ -268,6 +285,8 @@ public class Clan {
                 .onDuplicateKeyIgnore()
                 .execute();
 
+        this.members.add(new ClanMember(this.clanID,receiver.getUserId(),manager));
+
         if (sec != 1) {
             return false;
         } else {
@@ -280,7 +299,7 @@ public class Clan {
      * Removes a member from the clan.
      * @param transaction The tx
      * @param player player to remove from the clan
-     * @return return true if it went ok, false if member is not part of clan or already in a clan.
+     * @return return true if added, false if member is not part of clan or already in a clan.
      * @throws IllegalArgumentException if member tried to remove was the leader of the clan
      */
     public boolean removeClanMember(Transaction transaction, SolarPlayer player) {
@@ -293,6 +312,10 @@ public class Clan {
                 .deleteFrom(CLANS_CLAN_MEMBERSHIP)
                 .where(CLANS_CLAN_MEMBERSHIP.CLAN_ID.eq(this.clanID).and(CLANS_CLAN_MEMBERSHIP.USER_ID.eq(receiver.getUserId())))
                 .execute();
+
+        this.members.removeIf(member -> {
+            return member.getUserId() == receiver.getUserId();
+        });
 
         if (res != 1)  {
             return false;
@@ -307,14 +330,11 @@ public class Clan {
      *
      * @param transaction the tx
      * @param receiver the receiver
-     * @throws IllegalArgumentException if receiver is already allied with this clan or another clan, or if sender already has an ally.
+     * @throws IllegalArgumentException if provided clan was this clan
      * @return true if ok, false if clans are already allied or already have separate allies in the table.
      */
     public boolean addClanAsAlly(Transaction transaction, Clan receiver) {
-        if (receiver.getID() == this.clanID) throw new IllegalArgumentException("Tried to mark clan ally as same clan!");
-
-        if (this.getAlliedClan(transaction).isPresent()) throw new IllegalArgumentException("Sender already have an ally!");
-        if (receiver.getAlliedClan(transaction).isPresent()) throw new IllegalArgumentException("Selected clan already has an ally!");
+        if (receiver.getID() == this.clanID) throw new IllegalArgumentException("Tried to mark clan ally as this clan!");
 
         //note to aurium - these are now okay to do becaue we run the checks previous
         int res = transaction.getProperty(DSLContext.class)
@@ -337,18 +357,19 @@ public class Clan {
      * Revokes ally. Can be called from either clan. Revokes alliance for both.
      * @param transaction the tx
      * @return true if ok, false if one of the clans or both of the clans has no ally
-     * @throws IllegalArgumentException if the clan does not have an ally
      */
     public boolean revokeAlly(Transaction transaction) {
         Optional<Clan> localClan = this.getAlliedClan(transaction);
 
-        if (localClan.isEmpty()) throw new IllegalArgumentException("This clan has no ally!");
+        if (localClan.isEmpty()) return false;
 
         int i = transaction.getProperty(DSLContext.class)
                 .deleteFrom(CLANS_CLAN_ALLIANCES)
                 .where(CLANS_CLAN_ALLIANCES.CLAN_ID.eq(this.clanID))
                 .or(CLANS_CLAN_ALLIANCES.ALLY_ID.eq(this.clanID))
                 .execute();
+
+        //i want to do returning here except this would return 2 things and i could not tell which was this object's, so not happening.
 
         if (i != 2) {
             return false;
@@ -363,13 +384,13 @@ public class Clan {
      * @param transaction twix bar
      * @param receiver the clan to mark as an enemy.
      * @return true if the enemy was added, false if the clans are already enemies
-     * @throws IllegalArgumentException if the presented clan is an ally or is the same object (what?)
+     * @throws IllegalArgumentException if the specified clan is an ally or this clan
      */
     public boolean addClanAsEnemy(Transaction transaction, Clan receiver) {
         if (receiver.getID() == this.clanID) throw new IllegalArgumentException("Tried to mark clan enemy as same clan!");
 
         this.getAlliedClan(transaction).ifPresent(ally -> {
-            if (receiver.getID() == ally.getID()) throw new IllegalArgumentException("Tried to add allied clan as enemy");
+            if (receiver.getID() == ally.getID()) throw new IllegalArgumentException("Tried to remove allied clan as enemy");
         });
 
         int res = transaction.getProperty(DSLContext.class)
@@ -396,15 +417,13 @@ public class Clan {
             if (clan.getID() == ally.getID()) throw new IllegalArgumentException("Tried to add allied clan as enemy");
         });
 
-        ClansClanEnemiesRecord rec = transaction.getProperty(DSLContext.class)
-                .fetchOne(CLANS_CLAN_ENEMIES,CLANS_CLAN_ENEMIES.CLAN_ID.eq(this.clanID).and(CLANS_CLAN_ENEMIES.ENEMY_ID.eq(clan.getID())));
+        int res = transaction.getProperty(DSLContext.class)
+                .deleteFrom(CLANS_CLAN_ENEMIES)
+                .where(CLANS_CLAN_ENEMIES.CLAN_ID.eq(this.clanID))
+                .and(CLANS_CLAN_ENEMIES.ENEMY_ID.eq(clan.getID()))
+                .execute();
 
-        if (rec == null) {
-            return false;
-        } else {
-            rec.delete();
-            return true;
-        }
+        return res != 1;
     }
 
     /**

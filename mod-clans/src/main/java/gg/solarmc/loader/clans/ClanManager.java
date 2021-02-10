@@ -99,16 +99,6 @@ public class ClanManager implements DataManager {
     }
 
     /**
-     * Returns an optional representing the allied clan
-     * @param clan The clan you want to check for alliance
-     * @return the optional containing allied clan.
-     */
-
-    /*public Optional<Clan> s(Clan clan) {
-        return Optional.ofNullable(alliance.getIfPresent(clan));
-    }*/
-
-    /**
      * Invalidates an alliance, not order sensitive
      * Information for api users - this invalidates two rows in the cache.
      * @param clan1 the first clan id, ally of the second
@@ -177,7 +167,7 @@ public class ClanManager implements DataManager {
             throw new IllegalStateException("Clan does not exist in table!");
         }
 
-        clan.getAlliedClan(transaction).ifPresent(ally -> {
+        clan.currentAllyClan().ifPresent(ally -> {
             this.invalidateAllianceCache(clan.getID(),ally.getID());
         });
 

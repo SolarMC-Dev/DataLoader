@@ -358,24 +358,17 @@ public class Clan {
 
         //haha, it turns out you were right - we would need to use returningResult here, just
         //not for what i thought we would @A248
-        Result<Record2<Integer,Integer>> res = transaction.getProperty(DSLContext.class)
+        Result<Record1<Integer>> res = transaction.getProperty(DSLContext.class)
                 .deleteFrom(CLANS_CLAN_ALLIANCES)
                 .where(CLANS_CLAN_ALLIANCES.CLAN_ID.eq(this.clanID))
                 .or(CLANS_CLAN_ALLIANCES.ALLY_ID.eq(this.clanID))
-                .returningResult(CLANS_CLAN_ALLIANCES.CLAN_ID,CLANS_CLAN_ALLIANCES.ALLY_ID).fetch();
+                .returningResult(CLANS_CLAN_ALLIANCES.CLAN_ID).fetch();
 
         if (res.size() != 2) {
             return false;
         } else {
 
-            res.forEach(rec -> {
-                //calling this for both is redundant, but i don't care (shouldn't cause any issues as
-                // the values should simply be removed). Also, the alternative is to manually
-                //search through the two records and select one randomly OR select the one that starts with
-                //this object's clanID, so in the end i'm just gonna do this and see what happens.
-
-                manager.invalidateAllianceCache(rec.value1(),rec.value2());
-            });
+            manager.invalidateAllianceCache(this.clanID);
 
             return true;
         }

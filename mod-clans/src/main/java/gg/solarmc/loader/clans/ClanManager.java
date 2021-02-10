@@ -102,11 +102,12 @@ public class ClanManager implements DataManager {
      * Invalidates an alliance, not order sensitive
      * Information for api users - this invalidates two rows in the cache.
      * @param clan1 the first clan id, ally of the second
-     * @param clan2 the second clan id, ally of the first
      */
-    void invalidateAllianceCache(Integer clan1, Integer clan2) {
-        this.allianceCache.invalidate(clan1);
-        this.allianceCache.invalidate(clan2);
+    void invalidateAllianceCache(Integer clan1) {
+        Integer allyId = allianceCache.asMap().remove(clan1);
+        if (allyId != null) {
+            allianceCache.invalidate(allyId);
+        }
     }
 
     /**
@@ -168,7 +169,7 @@ public class ClanManager implements DataManager {
         }
 
         clan.currentAllyClan().ifPresent(ally -> {
-            this.invalidateAllianceCache(clan.getID(),ally.getID());
+            this.invalidateAllianceCache(clan.getID());
         });
 
         clans.invalidate(clan);

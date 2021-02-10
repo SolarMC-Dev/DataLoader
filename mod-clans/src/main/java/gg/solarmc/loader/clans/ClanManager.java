@@ -44,6 +44,16 @@ public class ClanManager implements DataManager {
     private final Cache<Integer,Clan> clans = Caffeine.newBuilder().expireAfterAccess(Duration.ofMinutes(10)).build();
     private final Cache<Integer,Integer> allianceCache = Caffeine.newBuilder().build();
 
+
+    /**
+     * Gets a clan from cache or returns empty if not present.
+     * @param id id of the clan
+     * @return Optional containing the clan if it was present in the local cache
+     */
+    Optional<Clan> getCachedClanOnly(int id) {
+        return Optional.ofNullable(clans.getIfPresent(id));
+    }
+
     /**
      * Gets a clan from memory cache or from table if not present.
      * @param transaction the tx
@@ -51,7 +61,7 @@ public class ClanManager implements DataManager {
      * @return the clan you asked for idiot
      * @throws IllegalStateException if the clan isn't present in table
      */
-    public Clan getClan(Transaction transaction, Integer id) {
+    public Clan getClan(Transaction transaction, int id) {
         return clans.get(id, i -> {
 
             var jooq = transaction.getProperty(DSLContext.class);
@@ -62,15 +72,18 @@ public class ClanManager implements DataManager {
                 throw new IllegalStateException("No such clan exists!");
             }
 
-            Set<ClanMember> members = jooq.select(CLANS_CLAN_MEMBERSHIP.USER_ID).from(CLANS_CLAN_MEMBERSHIP)
+            Set<ClanMember> bruh = jooq.select(CLANS_CLAN_MEMBERSHIP.USER_ID).from(CLANS_CLAN_MEMBERSHIP)
                     .where(CLANS_CLAN_MEMBERSHIP.CLAN_ID.eq(id)).fetchSet((rec1) -> new ClanMember(id,rec1.value1(),this));
+
+            ConcurrentHashMap.KeySetView<ClanMember,Boolean> view = ConcurrentHashMap.newKeySet();
+            view.addAll(bruh);
 
             ClansClanAlliancesRecord recAlly = jooq.fetchOne(CLANS_CLAN_ALLIANCES,CLANS_CLAN_ALLIANCES.CLAN_ID.eq(id));
 
             ClanMember owner = new ClanMember(id,rec.getClanLeader(),this);
 
             Clan returned = new Clan(rec.getClanId(), rec.getClanName(),rec.getClanKills(),
-                    rec.getClanDeaths(),rec.getClanAssists(),this,members,owner);
+                    rec.getClanDeaths(),rec.getClanAssists(),this,view,owner);
 
             if (recAlly != null) {
                 this.insertAllianceCache(recAlly.getClanId(),recAlly.getAllyId());
@@ -107,10 +120,6 @@ public class ClanManager implements DataManager {
     }
 
     /**
-     * (a248 please review this method, i'm not sure if inserting two rows here is an issue
-     * because it will be called on clan generation for the first and for the second clan,
-     * and i'm not sure if this will lead to 2 rows {cache ignores duplicate} or to 4 rows { cache accepts duplicate} )
-     *
      * Inserts 2 rows into the alliance cache, not order sensitive
      * @param clan1 the first clan, ally of the second
      * @param clan2 the second clan, ally of the first
@@ -122,7 +131,7 @@ public class ClanManager implements DataManager {
 
     /**
      * Creates an empty clan with given name.
-     * @param name Name of the gg.solarmc.loader.clans.Clan to add
+     * @param name Name of the Clan to add
      * @param transaction the tx
      * @param player the to be owner of the clan
      * @return created clan.
@@ -139,10 +148,11 @@ public class ClanManager implements DataManager {
         if (rec == null) throw new IllegalStateException("Failed to insert new gg.solarmc.loader.clans.Clan by name " + name);
 
         ClanMember ownerAsMember = owner.asClanMember(transaction);
-        Set<ClanMember> memberSet = ConcurrentHashMap.newKeySet();
-        memberSet.add(ownerAsMember);
 
-        Clan returned = new Clan(rec.getClanId(),rec.getClanName(),rec.getClanKills(),rec.getClanDeaths(),rec.getClanAssists(),this,memberSet,ownerAsMember);
+        ConcurrentHashMap.KeySetView<ClanMember,Boolean> view = ConcurrentHashMap.newKeySet();
+        view.add(ownerAsMember);
+
+        Clan returned = new Clan(rec.getClanId(),rec.getClanName(),rec.getClanKills(),rec.getClanDeaths(),rec.getClanAssists(),this,view,ownerAsMember);
 
         clans.put(returned.getID(),returned);
 
@@ -167,8 +177,8 @@ public class ClanManager implements DataManager {
             throw new IllegalStateException("Clan does not exist in table!");
         }
 
-        clan.currentAllyClan().ifPresent(ally -> {
-            this.invalidateAllianceCache(clan.getID(),ally);
+        clan.getAlliedClan(transaction).ifPresent(ally -> {
+            this.invalidateAllianceCache(clan.getID(),ally.getID());
         });
 
         clans.invalidate(clan);

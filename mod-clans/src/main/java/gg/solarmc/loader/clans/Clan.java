@@ -27,9 +27,12 @@ import gg.solarmc.loader.Transaction;
 import gg.solarmc.loader.schema.tables.records.ClansClanInfoRecord;
 import org.jooq.DSLContext;
 import org.jooq.Record1;
+import org.jooq.Record2;
+import org.jooq.Result;
 
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static gg.solarmc.loader.schema.tables.ClansClanAlliances.CLANS_CLAN_ALLIANCES;
 import static gg.solarmc.loader.schema.tables.ClansClanEnemies.CLANS_CLAN_ENEMIES;
@@ -44,7 +47,7 @@ public class Clan {
     private final int clanID;
     private final String clanName;
 
-    private volatile Set<ClanMember> members; //concurrentSet
+    private volatile ConcurrentHashMap.KeySetView<ClanMember,Boolean> members; //concurrentSet
     private final ClanManager manager;
     private final ClanMember leader;
 
@@ -53,7 +56,7 @@ public class Clan {
     private volatile int clanAssists;
 
     Clan(int clanID, String clanName, int clanKills, int clanDeaths, int clanAssists,
-                ClanManager manager, Set<ClanMember> members, ClanMember leader) {
+         ClanManager manager, ConcurrentHashMap.KeySetView<ClanMember,Boolean> members, ClanMember leader) {
 
         this.clanID = clanID;
         this.clanName = clanName;
@@ -106,11 +109,23 @@ public class Clan {
     }
 
     /**
-     * Returns a number representing the currently allied clan by cache.
-     * @return currently allied clan ID.
+     * Returns an optional representing allied clan IF it is present in the local cache.
+     * Warning: Does not check the database for clan presensce, only the local cache.
+     *
+     * This operation is not likely to be accurate and as a result it is better to use
+     * method getAlliedClan() for operations requiring accuracy.
+     *
+     * @return Optional containing allied can if present locally. The optional can be empty if the clan
+     * is not present locally, or if the clan present locally has no ally.
      */
-    public Optional<Integer> currentAllyClan() {
-        return manager.getAllyFromCache(this.getID());
+    public Optional<Clan> currentAllyClan() {
+       Optional<Integer> s = manager.getAllyFromCache(this.getID());
+
+       if (s.isEmpty()) {
+           return Optional.empty();
+       }
+
+       return manager.getCachedClanOnly(s.orElseThrow());
     }
 
     /**
@@ -219,9 +234,13 @@ public class Clan {
                 .where(CLANS_CLAN_MEMBERSHIP.CLAN_ID.eq(this.clanID))
                 .fetchSet((rec) -> new ClanMember(this.clanID,rec.value1(),manager));
 
-        this.members = bruh;
+        //this feels like a clumsy way of doing this but i can't figure out any others
 
-        return bruh;
+        ConcurrentHashMap.KeySetView<ClanMember,Boolean> view = ConcurrentHashMap.newKeySet();
+        view.addAll(bruh);
+        this.members = view;
+
+        return Set.copyOf(bruh);
     }
 
     /**
@@ -333,22 +352,31 @@ public class Clan {
      * @return true if revoked, false if one of the clans or both of the clans has no ally
      */
     public boolean revokeAlly(Transaction transaction) {
-        Optional<Integer> localClan = this.currentAllyClan();
+        Optional<Clan> localClan = this.currentAllyClan();
 
         if (localClan.isEmpty()) return false;
 
-        int i = transaction.getProperty(DSLContext.class)
+        //haha, it turns out you were right - we would need to use returningResult here, just
+        //not for what i thought we would @A248
+        Result<Record2<Integer,Integer>> res = transaction.getProperty(DSLContext.class)
                 .deleteFrom(CLANS_CLAN_ALLIANCES)
                 .where(CLANS_CLAN_ALLIANCES.CLAN_ID.eq(this.clanID))
                 .or(CLANS_CLAN_ALLIANCES.ALLY_ID.eq(this.clanID))
-                .execute();
+                .returningResult(CLANS_CLAN_ALLIANCES.CLAN_ID,CLANS_CLAN_ALLIANCES.ALLY_ID).fetch();
 
-        //i want to do returning here except this would return 2 things and i could not tell which was this object's, so not happening.
-
-        if (i != 2) {
+        if (res.size() != 2) {
             return false;
         } else {
-            manager.invalidateAllianceCache(this.getID(),localClan.orElseThrow());
+
+            res.forEach(rec -> {
+                //calling this for both is redundant, but i don't care (shouldn't cause any issues as
+                // the values should simply be removed). Also, the alternative is to manually
+                //search through the two records and select one randomly OR select the one that starts with
+                //this object's clanID, so in the end i'm just gonna do this and see what happens.
+
+                manager.invalidateAllianceCache(rec.value1(),rec.value2());
+            });
+
             return true;
         }
     }

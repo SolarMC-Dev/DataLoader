@@ -25,7 +25,8 @@ import java.util.Set;
 
 public final class KitPvpKeySpi {
 
-	KitPvpKeySpi() {}
+	private KitPvpKeySpi() {}
+
 
 	public static DataKeySpi provider() {
 		return () -> Set.of(KitPvpKey.INSTANCE);

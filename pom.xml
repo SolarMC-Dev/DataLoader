@@ -72,13 +72,14 @@
 
 	<modules>
 		<module>core</module>
+		<module>core-schema</module>
 		<module>core-implementation</module>
 		<module>mod-credits</module>
 		<module>mod-prefs</module>
 		<module>mod-kitpvp</module>
 		<module>mod-friends</module>
-        <module>core-schema</module>
-	</modules>
+		<module>core-authentication</module>
+    </modules>
 
 	<dependencyManagement>
 		<dependencies>

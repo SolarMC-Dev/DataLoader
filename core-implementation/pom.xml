@@ -12,7 +12,7 @@
 	<artifactId>loader-core-implementation</artifactId>
 
 	<properties>
-		<hikaricp.version>3.4.5</hikaricp.version>
+		<hikaricp.version>4.0.1</hikaricp.version>
 	</properties>
 
 	<dependencies>

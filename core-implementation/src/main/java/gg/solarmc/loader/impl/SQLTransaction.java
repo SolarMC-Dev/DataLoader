@@ -34,7 +34,6 @@ public class SQLTransaction implements Transaction, AutoCloseable {
 
     private final Connection connection;
 
-
     SQLTransaction(Connection connection) {
         this.connection = connection;
     }
@@ -44,28 +43,28 @@ public class SQLTransaction implements Transaction, AutoCloseable {
         try {
             connection.setReadOnly(true);
         } catch (SQLException ex) {
-            throw rethrow(ex);
+            throw handler().handle(ex);
         }
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public <T> T getProperty(Class<T> cls) {
         if (cls.equals(Connection.class)) {
             return (T)connection;
-        } else if (cls.equals(DSLContext.class)) {
-            return (T) DSL.using(connection,SQLDialect.MARIADB);
-        } else {
-            throw new IllegalArgumentException("Transaction implementation SQLTransaction does not provide property of " + cls.getName());
         }
-
+        if (cls.equals(DSLContext.class)) {
+            return (T) DSL.using(connection, SQLDialect.MARIADB);
+        }
+        if (cls.equals(SQLExceptionHandler.class)) {
+            return (T) handler();
+        }
+        throw new IllegalArgumentException(
+                "Transaction implementation SQLTransaction does not provide property of " + cls.getName());
     }
 
-    public RuntimeException rethrow(SQLException cause) {
-        return new UncheckedSQLException(cause);
-    }
-
-    public RuntimeException rethrow(String message, SQLException cause) {
-        return new UncheckedSQLException(message, cause);
+    private SQLExceptionHandler handler() {
+        return new SQLExceptionHandler();
     }
 
     @Override

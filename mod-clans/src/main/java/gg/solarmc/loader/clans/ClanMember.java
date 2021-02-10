@@ -19,7 +19,7 @@
  *
  */
 
-package gg.solarmc.loader.clans;import java.util.Objects;
+package gg.solarmc.loader.clans;
 
 /**
  * Represents something that can be in a clan. Always compare with #equals

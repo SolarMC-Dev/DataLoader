@@ -19,50 +19,26 @@
  *
  */
 
-package gg.solarmc.loader.clans;/*
- *
- *  * dataloader
- *  * Copyright © 2021 SolarMC Developers
- *  *
- *  * dataloader is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU Affero General Public License as
- *  * published by the Free Software Foundation, either version 3 of the
- *  * License, or (at your option) any later version.
- *  *
- *  * dataloader is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- *  * GNU Affero General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU Affero General Public License
- *  * along with dataloader. If not, see <https://www.gnu.org/licenses/>
- *  * and navigate to version 3 of the GNU Affero General Public License.
- *
- */
+package gg.solarmc.loader.clans;
+
 
 import gg.solarmc.loader.SolarPlayer;
 import gg.solarmc.loader.Transaction;
-import gg.solarmc.loader.schema.tables.records.ClansClanAlliancesRecord;
-import gg.solarmc.loader.schema.tables.records.ClansClanEnemiesRecord;
 import gg.solarmc.loader.schema.tables.records.ClansClanInfoRecord;
-import gg.solarmc.loader.schema.tables.records.ClansClanMembershipRecord;
 import org.jooq.DSLContext;
-import org.jooq.Record;
 import org.jooq.Record1;
 
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentSkipListSet;
 
 import static gg.solarmc.loader.schema.tables.ClansClanAlliances.CLANS_CLAN_ALLIANCES;
 import static gg.solarmc.loader.schema.tables.ClansClanEnemies.CLANS_CLAN_ENEMIES;
-import static gg.solarmc.loader.schema.tables.ClansClanMembership.CLANS_CLAN_MEMBERSHIP;
 import static gg.solarmc.loader.schema.tables.ClansClanInfo.CLANS_CLAN_INFO;
+import static gg.solarmc.loader.schema.tables.ClansClanMembership.CLANS_CLAN_MEMBERSHIP;
 
 /**
  * Note to reader of this source code: Come play SolarMC!
  */
-@SuppressWarnings("unused")
 public class Clan {
 
     private final int clanID;
@@ -123,7 +99,7 @@ public class Clan {
 
     /**
      * Gets all current members currently in the clan. Not accurate.
-     * @return all ClanMembers.
+     * @return all ClanMembers, unmodifiable.
      */
     public Set<ClanMember> currentMembers() {
         return Set.copyOf(this.members);
@@ -234,7 +210,7 @@ public class Clan {
     /**
      * Gets all clan members accurately
      * @param transaction the tx
-     * @return An immutable set containing the members of the clan
+     * @return An immutable set containing the members of the clan, unmodifiable. immutable or readonly.
      */
     public Set<ClanMember> getClanMembers(Transaction transaction) {
         Set<ClanMember> bruh = transaction.getProperty(DSLContext.class)
@@ -243,7 +219,7 @@ public class Clan {
                 .where(CLANS_CLAN_MEMBERSHIP.CLAN_ID.eq(this.clanID))
                 .fetchSet((rec) -> new ClanMember(this.clanID,rec.value1(),manager));
 
-        this.members = Set.copyOf(bruh);
+        this.members = bruh;
 
         return bruh;
     }
@@ -313,9 +289,7 @@ public class Clan {
                 .where(CLANS_CLAN_MEMBERSHIP.CLAN_ID.eq(this.clanID).and(CLANS_CLAN_MEMBERSHIP.USER_ID.eq(receiver.getUserId())))
                 .execute();
 
-        this.members.removeIf(member -> {
-            return member.getUserId() == receiver.getUserId();
-        });
+        this.members.removeIf(receiver::isSimilar);
 
         if (res != 1)  {
             return false;
@@ -331,7 +305,7 @@ public class Clan {
      * @param transaction the tx
      * @param receiver the receiver
      * @throws IllegalArgumentException if provided clan was this clan
-     * @return true if ok, false if clans are already allied or already have separate allies in the table.
+     * @return true if added, false if clans are already allied or already have separate allies in the table.
      */
     public boolean addClanAsAlly(Transaction transaction, Clan receiver) {
         if (receiver.getID() == this.clanID) throw new IllegalArgumentException("Tried to mark clan ally as this clan!");
@@ -356,10 +330,10 @@ public class Clan {
     /**
      * Revokes ally. Can be called from either clan. Revokes alliance for both.
      * @param transaction the tx
-     * @return true if ok, false if one of the clans or both of the clans has no ally
+     * @return true if revoked, false if one of the clans or both of the clans has no ally
      */
     public boolean revokeAlly(Transaction transaction) {
-        Optional<Clan> localClan = this.getAlliedClan(transaction);
+        Optional<Integer> localClan = this.currentAllyClan();
 
         if (localClan.isEmpty()) return false;
 
@@ -374,7 +348,7 @@ public class Clan {
         if (i != 2) {
             return false;
         } else {
-            manager.invalidateAllianceCache(this.getID(),localClan.orElseThrow().getID());
+            manager.invalidateAllianceCache(this.getID(),localClan.orElseThrow());
             return true;
         }
     }

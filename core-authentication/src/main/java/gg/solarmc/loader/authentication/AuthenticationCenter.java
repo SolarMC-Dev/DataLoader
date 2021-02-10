@@ -94,7 +94,7 @@ public final class AuthenticationCenter {
 
 		if (!user.username().equals(passwordRecord.get(AUTH_PASSWORDS.USERNAME))) {
 			/*
-			MariaDB is case-insensitive, which is why we were able to select this password.
+			MariaDB is case-insensitive, which is why we were able to select this account.
 			However, we cannot permit multiple cracked users to have the same name ignoring case.
 			For premium users, it's OK because all we need to do is check if the UUID is premium.
 			For cracked users, it's not okay because the cracked users will have different UUIDs.

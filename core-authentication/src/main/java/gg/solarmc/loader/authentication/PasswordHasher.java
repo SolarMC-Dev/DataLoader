@@ -42,18 +42,10 @@ class PasswordHasher {
 		return new PasswordHash(hash);
 	}
 
-	byte[] emptyHash() {
-		return new byte[HASH_LENGTH];
-	}
-
 	PasswordSalt generateSalt() {
 		byte[] salt = argon2.generateSalt();
 		assert salt.length == SALT_LENGTH;
 		return new PasswordSalt(salt);
-	}
-
-	byte[] emptySalt() {
-		return new byte[SALT_LENGTH];
 	}
 
 }

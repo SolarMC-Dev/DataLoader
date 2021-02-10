@@ -24,7 +24,8 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import gg.solarmc.loader.Transaction;
 import gg.solarmc.loader.data.DataManager;
 
-import gg.solarmc.loader.schema.tables.records.KitpvpKitsNamesRecord;
+import gg.solarmc.loader.schema.tables.records.KitpvpKitsIdsRecord;
+
 import org.jooq.DSLContext;
 import org.jooq.Query;
 
@@ -33,7 +34,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import static gg.solarmc.loader.schema.Tables.KITPVP_KITS_NAMES;
+
+import static gg.solarmc.loader.schema.Tables.KITPVP_KITS_IDS;
+
 import static gg.solarmc.loader.schema.tables.KitpvpKitsContents.KITPVP_KITS_CONTENTS;
 
 public class KitPvpManager implements DataManager {
@@ -57,8 +60,9 @@ public class KitPvpManager implements DataManager {
 			var jooq = transaction.getProperty(DSLContext.class);
 
 			String kitName = jooq
-					.select(KITPVP_KITS_NAMES.KIT_NAME).from(KITPVP_KITS_NAMES)
-					.where(KITPVP_KITS_NAMES.KIT_ID.eq(id)).fetchOne(KITPVP_KITS_NAMES.KIT_NAME);
+					.select(KITPVP_KITS_IDS.KIT_NAME).from(KITPVP_KITS_IDS)
+					.where(KITPVP_KITS_IDS.KIT_ID.eq(id)).fetchOne(KITPVP_KITS_IDS.KIT_NAME);
+
 			if (kitName == null) {
 				throw new IllegalStateException("Kit by id " + id + " does not exist");
 			}
@@ -76,8 +80,6 @@ public class KitPvpManager implements DataManager {
 
 	/**
 	 * Creates a kit with given arguments
-	 * Reminder for aurium the next time he gets confused from aurium - you will never have
-	 * duplicate kit IDs because kit is autoincrement :eye_roll:
 	 * @param transaction is the transaction
 	 * @param name name of the kit, must be unique
 	 * @param contents of the kit
@@ -86,8 +88,9 @@ public class KitPvpManager implements DataManager {
 	public Kit createKit(Transaction transaction, String name, Set<ItemInSlot> contents) {
 		var jooq = transaction.getProperty(DSLContext.class);
 
-		KitpvpKitsNamesRecord result = jooq.insertInto(KITPVP_KITS_NAMES)
-				.columns(KITPVP_KITS_NAMES.KIT_NAME).values(name)
+
+		KitpvpKitsIdsRecord result = jooq.insertInto(KITPVP_KITS_IDS)
+				.columns(KITPVP_KITS_IDS.KIT_NAME).values(name)
 				.returning().fetchOne();
 		if (result == null) {
 			throw new IllegalStateException("Failed to insert kit by name " + name);
@@ -117,7 +120,7 @@ public class KitPvpManager implements DataManager {
 	public void deleteKit(Transaction transaction, Kit kit) {
 		int kitId = kit.getId();
 		transaction.getProperty(DSLContext.class)
-				.deleteFrom(KITPVP_KITS_NAMES).where(KITPVP_KITS_NAMES.KIT_ID.eq(kitId))
+				.deleteFrom(KITPVP_KITS_IDS).where(KITPVP_KITS_IDS.KIT_ID.eq(kitId))
 				.execute();
 		existingKits.invalidate(kitId);
 	}

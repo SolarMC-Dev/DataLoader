@@ -49,18 +49,18 @@ public class SQLTransaction implements Transaction, AutoCloseable {
 
     @Override
     @SuppressWarnings("unchecked")
-    public <T> T getProperty(Class<T> cls) {
-        if (cls.equals(Connection.class)) {
+    public <T> T getProperty(Class<T> propertyClass) {
+        if (propertyClass.equals(Connection.class)) {
             return (T)connection;
         }
-        if (cls.equals(DSLContext.class)) {
+        if (propertyClass.equals(DSLContext.class)) {
             return (T) DSL.using(connection, SQLDialect.MARIADB);
         }
-        if (cls.equals(SQLExceptionHandler.class)) {
+        if (propertyClass.equals(SQLExceptionHandler.class)) {
             return (T) handler();
         }
         throw new IllegalArgumentException(
-                "Transaction implementation SQLTransaction does not provide property of " + cls.getName());
+                "Transaction implementation SQLTransaction does not provide property of " + propertyClass.getName());
     }
 
     private SQLExceptionHandler handler() {

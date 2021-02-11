@@ -23,6 +23,9 @@ import gg.solarmc.loader.data.DataKey;
 import gg.solarmc.loader.data.DataManager;
 import space.arim.omnibus.util.concurrent.CentralisedFuture;
 
+import java.util.Optional;
+import java.util.UUID;
+
 public interface DataCenter {
 
 	/**
@@ -71,6 +74,26 @@ public interface DataCenter {
 	 * @param <M> the manager type
 	 * @return the data manager
 	 */
-	<M extends DataManager> M getDataManager(DataKey<?, M> key);
+	<M extends DataManager> M getDataManager(DataKey<?, ?, M> key);
+
+	/**
+	 * Looks up a solar player by name. Case insensitive with respect to the name. <br>
+	 * <br>
+	 * (Does not do anything silly such as look for users with similar names)
+	 *
+	 * @param name the username
+	 * @return the solar player if there is one within the system. May be an online or an offline
+	 * solar player.
+	 */
+	CentralisedFuture<Optional<SolarPlayer>> lookupPlayer(String name);
+
+	/**
+	 * Looks up a solar player by UUID.
+	 *
+	 * @param uuid the user UUID
+	 * @return the solar player if there is one within the system. May be an online or an offline
+	 * solar player.
+	 */
+	CentralisedFuture<Optional<SolarPlayer>> lookupPlayer(UUID uuid);
 
 }

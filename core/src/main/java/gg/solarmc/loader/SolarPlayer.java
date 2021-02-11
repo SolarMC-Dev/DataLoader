@@ -22,8 +22,16 @@ package gg.solarmc.loader;
 import gg.solarmc.loader.data.DataKey;
 import gg.solarmc.loader.data.DataObject;
 
+import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * A player whose data may be manipulated. <br>
+ * <br>
+ * Instances of {@code SolarPlayer}, whether online or offline, should not be retained
+ * in memory by API users. Only framework implementors should do so.
+ *
+ */
 public interface SolarPlayer {
 
 	/**
@@ -31,12 +39,12 @@ public interface SolarPlayer {
 	 *
 	 * @return the user ID
 	 */
-	int getUserID();
+	int getUserId();
 
 	/**
 	 * Gets the minecraft UUID of this player. <br>
 	 * <br>
-	 * Note: It is more effective to utilize the ID of the player returned from {@link #getUserID()}
+	 * Note: It is more effective to utilize the ID of the player returned from {@link #getUserId()}
 	 * than to use the UUID
 	 *
 	 * @return the player's minecraft UUID
@@ -44,11 +52,31 @@ public interface SolarPlayer {
 	UUID getMinecraftUUID();
 
 	/**
+	 * Determines whether the underlying player is online in the running JVM. <br>
+	 * <br>
+	 * It is possible for this method to return {@code false} if the user is online
+	 * on another server or proxy.
+	 *
+	 * @return true if online, false otherwise
+	 */
+	boolean isLive();
+
+	/**
+	 * If this solar player is online, converts to a {@code OnlineSolarPlayer}. Otherwise
+	 * returns an empty optional.
+	 *
+	 * @return the online solar player if possible
+	 */
+	Optional<OnlineSolarPlayer> toLivePlayer();
+
+	/**
 	 * Gets a container of data attached to this player.
 	 *
 	 * @param key the data key
 	 * @param <D> the data object type
-	 * @return the data object
+	 * @param <O> the offline data object type
+	 * @return the offline data object, may be the online object if this player is live
 	 */
-	<D extends DataObject> D getData(DataKey<D, ?> key);
+	<D extends O, O extends DataObject> O getData(DataKey<D, O, ?> key);
+
 }

@@ -30,6 +30,6 @@ public interface DataKeySpi {
 	 *
 	 * @return the data keys
 	 */
-	Iterable<DataKey<?, ?>> getKeys();
+	Iterable<DataKey<?, ?, ?>> getKeys();
 
 }

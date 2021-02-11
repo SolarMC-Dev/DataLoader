@@ -28,24 +28,15 @@ import java.math.BigDecimal;
 
 import static gg.solarmc.loader.schema.tables.Credits.CREDITS;
 
-public class Credits implements DataObject {
+public abstract class Credits implements DataObject {
 
 	private final int userId;
-	private volatile BigDecimal currentBalance;
 
-	Credits(int userId, BigDecimal currentBalance) {
+	Credits(int userId) {
 		this.userId = userId;
-		this.currentBalance = currentBalance;
 	}
 
-	/**
-	 * The user's cached current balance. Should not be relied upon for correctness; see {@link DataObject}
-	 *
-	 * @return the cached current balance
-	 */
-	public BigDecimal currentBalance() {
-		return currentBalance;
-	}
+	abstract void updateBalance(BigDecimal newBalance);
 
 	private CreditsRecord getBalance(Transaction transaction) {
 		CreditsRecord creditsRecord = transaction.getProperty(DSLContext.class).fetchOne(CREDITS, CREDITS.USER_ID.eq(userId));
@@ -74,7 +65,7 @@ public class Credits implements DataObject {
 		}
 		creditsRecord.setBalance(newBalance);
 		creditsRecord.store(CREDITS.BALANCE);
-		currentBalance = newBalance;
+		updateBalance(newBalance);
 		return new WithdrawResult(newBalance, true);
 	}
 
@@ -94,7 +85,7 @@ public class Credits implements DataObject {
 		BigDecimal newBalance = existingBalance.add(depositAmount);
 		creditsRecord.setBalance(newBalance);
 		creditsRecord.store(CREDITS.BALANCE);
-		currentBalance = newBalance;
+		updateBalance(newBalance);
 		return new DepositResult(newBalance);
 	}
 
@@ -111,7 +102,7 @@ public class Credits implements DataObject {
 		CreditsRecord creditsRecord = getBalance(transaction);
 		creditsRecord.setBalance(newAmount);
 		creditsRecord.store(CREDITS.BALANCE);
-		currentBalance = newAmount;
+		updateBalance(newAmount);
 	}
 
 }

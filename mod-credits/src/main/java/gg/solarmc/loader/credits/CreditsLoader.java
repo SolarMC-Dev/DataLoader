@@ -27,7 +27,7 @@ import java.math.BigDecimal;
 
 import static gg.solarmc.loader.schema.tables.Credits.CREDITS;
 
-class CreditsLoader implements DataLoader<Credits> {
+class CreditsLoader implements DataLoader<OnlineCredits, Credits> {
 
 	private final BigDecimal defaultBigDecimalBalance;
 
@@ -36,7 +36,7 @@ class CreditsLoader implements DataLoader<Credits> {
 	}
 
 	@Override
-	public Credits loadData(Transaction transaction, int userId) {
+	public OnlineCredits loadData(Transaction transaction, int userId) {
 		DSLContext context = transaction.getProperty(DSLContext.class);
 		BigDecimal balance = context
 				.select(CREDITS.BALANCE)
@@ -50,7 +50,12 @@ class CreditsLoader implements DataLoader<Credits> {
 					.execute();
 			balance = defaultBigDecimalBalance;
 		}
-		return new Credits(userId, balance);
+		return new OnlineCredits(userId, balance);
+	}
+
+	@Override
+	public Credits createOfflineData(int userId) {
+		return new OfflineCredits(userId);
 	}
 
 	@Override

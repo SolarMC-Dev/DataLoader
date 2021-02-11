@@ -29,22 +29,15 @@ import java.util.Set;
 import static gg.solarmc.loader.schema.tables.KitpvpKitsOwnership.KITPVP_KITS_OWNERSHIP;
 import static gg.solarmc.loader.schema.tables.KitpvpStatistics.KITPVP_STATISTICS;
 
-public class KitPvp implements DataObject {
+public abstract class KitPvp implements DataObject {
 
-    private volatile int kills;
-    private volatile int deaths;
-    private volatile int assists;
+
 
     private final int userID;
     private final KitPvpManager manager;
 
-    public KitPvp(int userID, int kills, int deaths, int assists, KitPvpManager manager) {
+    public KitPvp(int userID, KitPvpManager manager) {
         this.userID = userID;
-
-        this.kills = kills;
-        this.deaths = deaths;
-        this.assists = assists;
-
         this.manager = manager;
     }
 
@@ -58,29 +51,9 @@ public class KitPvp implements DataObject {
         return record;
     }
 
-    /**
-     * Cached kills. Not reliable.
-     * @return kills
-     */
-    public int currentKills() {
-        return kills;
-    }
-
-    /**
-     * Cached deaths. Not reliable.
-     * @return deaths
-     */
-    public int currentDeaths() {
-        return deaths;
-    }
-
-    /**
-     * Cached assists. Not reliable
-     * @return assists
-     */
-    public int currentAssists() {
-        return assists;
-    }
+    abstract void updateKills(int i);
+    abstract void updateDeaths(int i);
+    abstract void updateAssists(int i);
 
     /**
      * Adds kills to the user account. Infallible.
@@ -99,7 +72,7 @@ public class KitPvp implements DataObject {
 
         statisticsRecord.setKills(newValue);
         statisticsRecord.store(KITPVP_STATISTICS.KILLS);
-        this.kills = newValue;
+        this.updateKills(newValue);
 
         return new StatisticResult(newValue);
     }
@@ -121,7 +94,7 @@ public class KitPvp implements DataObject {
 
         statisticsRecord.setKills(newValue);
         statisticsRecord.store(KITPVP_STATISTICS.DEATHS);
-        this.deaths = newValue;
+        this.updateDeaths(newValue);
 
         return new StatisticResult(newValue);
     }
@@ -144,7 +117,7 @@ public class KitPvp implements DataObject {
         statisticsRecord.setKills(newValue);
         statisticsRecord.store(KITPVP_STATISTICS.ASSISTS);
 
-        this.assists = newValue;
+        this.updateAssists(newValue);
 
         return new StatisticResult(newValue);
     }

@@ -19,23 +19,29 @@
  *
  */
 
-package gg.solarmc.loader.clans;import gg.solarmc.loader.data.DataKey;
-import gg.solarmc.loader.data.DataKeyInitializationContext;
-import gg.solarmc.loader.data.DataLoader;
+package gg.solarmc.loader.clans;
 
-public class ClansKey implements DataKey<OnlineClanDataObject,ClanDataObject,ClanManager> {
+import java.util.Optional;
 
-    public static final ClansKey INSTANCE = new ClansKey();
+public class OnlineClanDataObject extends ClanDataObject {
 
-    ClansKey() {} // private constr
+    private volatile Clan cachedClan;
+    public OnlineClanDataObject(int userId, ClanManager manager, Clan cached) {
+        super(userId, manager);
+        this.cachedClan = cached;
 
-    @Override
-    public DataLoader<OnlineClanDataObject,ClanDataObject> createLoader(ClanManager dataManager, DataKeyInitializationContext context) {
-        return new ClanLoader(dataManager);
+    }
+
+    /**
+     * Gets current cached clan. Not accurate.
+     * @return Optional containing cached value
+     */
+    public Optional<Clan> currentClan() {
+        return Optional.ofNullable(cachedClan);
     }
 
     @Override
-    public ClanManager createDataManager(DataKeyInitializationContext context) {
-        return new ClanManager();
+    void updateCachedClan(Clan clan) {
+        this.cachedClan = clan;
     }
 }

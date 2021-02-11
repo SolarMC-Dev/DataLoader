@@ -33,9 +33,9 @@ class DataCenterLifecycle implements AutoCloseable {
 
 	private final ExecutorService executor;
 	private final HikariDataSource dataSource;
-	private final Set<DataGroup<?, ?>> groups;
+	private final Set<DataGroup<?, ?, ?>> groups;
 
-	DataCenterLifecycle(ExecutorService executor, HikariDataSource dataSource, Set<DataGroup<?, ?>> groups) {
+	DataCenterLifecycle(ExecutorService executor, HikariDataSource dataSource, Set<DataGroup<?, ?, ?>> groups) {
 		this.executor = executor;
 		this.dataSource = dataSource;
 		this.groups = Set.copyOf(groups);
@@ -65,7 +65,7 @@ class DataCenterLifecycle implements AutoCloseable {
 		} catch (RuntimeException ex) {
 			exceptions.add(ex);
 		}
-		for (DataGroup<?, ?> group : groups) {
+		for (DataGroup<?, ?, ?> group : groups) {
 			try {
 				group.manager().close();
 			} catch (Exception ex) {

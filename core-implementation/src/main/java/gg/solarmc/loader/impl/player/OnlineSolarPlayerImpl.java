@@ -17,43 +17,36 @@
  * and navigate to version 3 of the GNU Affero General Public License.
  */
 
-package gg.solarmc.loader.impl;
+package gg.solarmc.loader.impl.player;
 
+import gg.solarmc.loader.OnlineSolarPlayer;
 import gg.solarmc.loader.data.DataKey;
-import gg.solarmc.loader.SolarPlayer;
 import gg.solarmc.loader.data.DataObject;
 
-import java.util.Map;
 import java.util.UUID;
 
-class SolarPlayerImpl implements SolarPlayer {
+public final class OnlineSolarPlayerImpl implements OnlineSolarPlayer {
 
-    private final Map<DataKey<?, ?>, DataObject> storedData;
-    private final int userID;
-    private final UUID mcUuid;
+	private final SolarPlayerId id;
+	private final SolarPlayerData onlineData;
 
-    SolarPlayerImpl(Map<DataKey<?, ?>, DataObject> storedData, int userID, UUID mcUuid) {
-        this.storedData = Map.copyOf(storedData);
-        this.userID = userID;
-        this.mcUuid = mcUuid;
-    }
+	public OnlineSolarPlayerImpl(SolarPlayerId id, SolarPlayerData onlineData) {
+		this.id = id;
+		this.onlineData = onlineData;
+	}
 
-    @Override
-    public int getUserID() {
-        return userID;
-    }
+	@Override
+	public int getUserId() {
+		return id.userId();
+	}
 
-    @Override
-    public UUID getMinecraftUUID() {
-        return mcUuid;
-    }
+	@Override
+	public UUID getMinecraftUUID() {
+		return id.mcUuid();
+	}
 
-    @Override
-    public <D extends DataObject> D getData(DataKey<D, ?> key) {
-        @SuppressWarnings("unchecked")
-        D data = (D) storedData.get(key);
-        assert data != null : "No data loaded at " + key;
-        return data;
-    }
-
+	@Override
+	public <D extends O, O extends DataObject> D getData(DataKey<D, O, ?> key) {
+		return onlineData.getDataOnline(key);
+	}
 }

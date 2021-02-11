@@ -19,32 +19,15 @@
 
 package gg.solarmc.loader.impl;
 
-import gg.solarmc.loader.data.DataKey;
-import gg.solarmc.loader.data.DataLoader;
-import gg.solarmc.loader.data.DataManager;
-import gg.solarmc.loader.data.DataObject;
+import gg.solarmc.loader.OnlineSolarPlayer;
 
-class DataGroup<D extends O, O extends DataObject, M extends DataManager> {
+import java.util.Optional;
+import java.util.UUID;
 
-	private final DataKey<D, O, ?> key;
-	private final M manager;
-	private final DataLoader<D, O> loader;
+public interface PlayerTracker {
 
-	DataGroup(DataKey<D, O, ?> key, M manager, DataLoader<D, O> loader) {
-		this.key = key;
-		this.manager = manager;
-		this.loader = loader;
-	}
+	Optional<OnlineSolarPlayer> getOnlinePlayerForUuid(UUID uuid);
 
-	DataKey<D, O, ?> key() {
-		return key;
-	}
+	Optional<OnlineSolarPlayer> getOnlinePlayerForName(String name);
 
-	M manager() {
-		return manager;
-	}
-
-	DataLoader<D, O> loader() {
-		return loader;
-	}
 }

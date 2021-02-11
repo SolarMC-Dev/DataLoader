@@ -37,15 +37,15 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
-public class DataCenterLauncher {
+public class IcarusLauncher {
 
 	private final Path folder;
 	private final FactoryOfTheFuture futuresFactory;
 	private final Omnibus omnibus;
 	private final ExecutorServiceFactory executorServiceFactory;
 
-	public DataCenterLauncher(Path folder, FactoryOfTheFuture futuresFactory,
-							  Omnibus omnibus, ExecutorServiceFactory executorServiceFactory) {
+	public IcarusLauncher(Path folder, FactoryOfTheFuture futuresFactory,
+						  Omnibus omnibus, ExecutorServiceFactory executorServiceFactory) {
 		this.folder = folder;
 		this.futuresFactory = futuresFactory;
 		this.omnibus = omnibus;
@@ -64,7 +64,13 @@ public class DataCenterLauncher {
 		}
 	}
 
-	public Icarus launch() {
+	/**
+	 * Launches
+	 *
+	 * @param playerTracker the player tracker, provided by the platform
+	 * @return the icarus
+	 */
+	public Icarus launch(PlayerTracker playerTracker) {
 		HikariDataSource dataSource = new DatabaseSettings(loadConfig()).createDataSource();
 
 		Flyway flyway = Flyway.configure(getClass().getClassLoader())
@@ -78,15 +84,15 @@ public class DataCenterLauncher {
 
 		TransactionSource transactionSource = new TransactionSource(futuresFactory, executor, dataSource);
 
-		Map<DataKey<?, ?>, DataGroup<?, ?>> groupsMap = transactionSource.transact((transaction) -> {
+		Map<DataKey<?, ?, ?>, DataGroup<?, ?, ?>> groupsMap = transactionSource.transact((transaction) -> {
 			return new DataGroupLoader(
 					new DataKeyInitializationContextImpl(omnibus, futuresFactory, folder, transaction)
 			).loadGroups();
 		}).join();
-		Set<DataGroup<?, ?>> groupsSet = Set.copyOf(groupsMap.values());
+		Set<DataGroup<?, ?, ?>> groupsSet = Set.copyOf(groupsMap.values());
 
 		return new Icarus(
-				new LoginHandler(transactionSource, groupsSet),
+				new LoginHandler(transactionSource, groupsSet, playerTracker),
 				transactionSource,
 				new DataManagementCenter(groupsMap),
 				new DataCenterLifecycle(executor, dataSource, groupsSet));

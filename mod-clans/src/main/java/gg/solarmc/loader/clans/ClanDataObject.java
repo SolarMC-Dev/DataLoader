@@ -38,7 +38,7 @@ import static gg.solarmc.loader.schema.tables.ClansClanMembership.CLANS_CLAN_MEM
  * (gg.solarmc.loader.clans.Clan membership is stored in the clan membership table, not alongside the dataobject,
  * and furthermore this dataobject isn't stored in a table)
  */
-class ClanDataObject implements DataObject {
+public class ClanDataObject implements DataObject {
 
     private final int userId;
     private final ClanManager manager;

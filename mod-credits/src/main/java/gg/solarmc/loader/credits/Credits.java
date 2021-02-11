@@ -98,4 +98,20 @@ public class Credits implements DataObject {
 		return new DepositResult(newBalance);
 	}
 
+	/**
+	 * Sets the user's account balance. Cannot fail
+	 * @param transaction the transaction
+	 * @param newAmount amount to set to
+	 */
+	public void setBalance(Transaction transaction, BigDecimal newAmount) {
+		if (newAmount.compareTo(BigDecimal.ZERO) <= 0) {
+			throw new IllegalArgumentException("newAmount must be positive");
+		}
+
+		CreditsRecord creditsRecord = getBalance(transaction);
+		creditsRecord.setBalance(newAmount);
+		creditsRecord.store(CREDITS.BALANCE);
+		currentBalance = newAmount;
+	}
+
 }

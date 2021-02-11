@@ -23,6 +23,7 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import gg.solarmc.loader.Transaction;
 import gg.solarmc.loader.data.DataManager;
+
 import gg.solarmc.loader.schema.tables.records.KitpvpKitsIdsRecord;
 
 import org.jooq.DSLContext;
@@ -33,7 +34,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+
 import static gg.solarmc.loader.schema.Tables.KITPVP_KITS_IDS;
+
 import static gg.solarmc.loader.schema.tables.KitpvpKitsContents.KITPVP_KITS_CONTENTS;
 
 public class KitPvpManager implements DataManager {
@@ -59,6 +62,7 @@ public class KitPvpManager implements DataManager {
 			String kitName = jooq
 					.select(KITPVP_KITS_IDS.KIT_NAME).from(KITPVP_KITS_IDS)
 					.where(KITPVP_KITS_IDS.KIT_ID.eq(id)).fetchOne(KITPVP_KITS_IDS.KIT_NAME);
+
 			if (kitName == null) {
 				throw new IllegalStateException("Kit by id " + id + " does not exist");
 			}
@@ -83,6 +87,7 @@ public class KitPvpManager implements DataManager {
 	 */
 	public Kit createKit(Transaction transaction, String name, Set<ItemInSlot> contents) {
 		var jooq = transaction.getProperty(DSLContext.class);
+
 
 		KitpvpKitsIdsRecord result = jooq.insertInto(KITPVP_KITS_IDS)
 				.columns(KITPVP_KITS_IDS.KIT_NAME).values(name)

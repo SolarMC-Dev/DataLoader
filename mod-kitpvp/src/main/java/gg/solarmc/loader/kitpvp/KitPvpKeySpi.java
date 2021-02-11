@@ -27,6 +27,7 @@ public final class KitPvpKeySpi {
 
 	private KitPvpKeySpi() {}
 
+
 	public static DataKeySpi provider() {
 		return () -> Set.of(KitPvpKey.INSTANCE);
 	}

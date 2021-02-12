@@ -52,7 +52,7 @@ public interface SolarPlayer {
 	UUID getMinecraftUUID();
 
 	/**
-	 * Determines whether the underlying player is online in the running JVM. <br>
+	 * Determines whether the underlying player is online in the running server instance. <br>
 	 * <br>
 	 * It is possible for this method to return {@code false} if the user is online
 	 * on another server or proxy.

@@ -19,8 +19,8 @@
 
 package gg.solarmc.loader.kitpvp;
 
-import gg.solarmc.loader.data.DataLoader;
 import gg.solarmc.loader.Transaction;
+import gg.solarmc.loader.data.DataLoader;
 import gg.solarmc.loader.schema.tables.records.KitpvpStatisticsRecord;
 import org.jooq.DSLContext;
 
@@ -29,7 +29,7 @@ import static gg.solarmc.loader.schema.tables.KitpvpKitsIds.KITPVP_KITS_IDS;
 import static gg.solarmc.loader.schema.tables.KitpvpKitsOwnership.KITPVP_KITS_OWNERSHIP;
 import static gg.solarmc.loader.schema.tables.KitpvpStatistics.KITPVP_STATISTICS;
 
-class KitPvpLoader implements DataLoader<KitPvp> {
+class KitPvpLoader implements DataLoader<OnlineKitPvp, KitPvp> {
 
     private final KitPvpManager manager;
 
@@ -38,22 +38,26 @@ class KitPvpLoader implements DataLoader<KitPvp> {
     }
 
     @Override
-    public KitPvp loadData(Transaction transaction, int userId) {
+    public OnlineKitPvp loadData(Transaction transaction, int userId) {
         DSLContext context = transaction.getProperty(DSLContext.class);
         KitpvpStatisticsRecord kitpvpRecord = context
                 .fetchOne(KITPVP_STATISTICS, KITPVP_STATISTICS.USER_ID.eq(userId));
         if (kitpvpRecord != null) {
-            return new KitPvp(
-                    userId,
-                    kitpvpRecord.getKills(), kitpvpRecord.getDeaths(), kitpvpRecord.getAssists(),
-                    manager);
+            return new OnlineKitPvp(
+                    userId, manager,
+                    kitpvpRecord.getKills(), kitpvpRecord.getDeaths(), kitpvpRecord.getAssists());
         }
         context.insertInto(KITPVP_STATISTICS)
                 .columns(KITPVP_STATISTICS.USER_ID, KITPVP_STATISTICS.KILLS,
                         KITPVP_STATISTICS.DEATHS,KITPVP_STATISTICS.ASSISTS)
                 .values(userId,0,0,0)
                 .execute();
-        return new KitPvp(userId, 0, 0, 0, manager);
+        return new OnlineKitPvp(userId, manager, 0, 0, 0);
+    }
+
+    @Override
+    public OfflineKitPvp createOfflineData(int userId) {
+        return new OfflineKitPvp(userId,manager);
     }
 
     @Override

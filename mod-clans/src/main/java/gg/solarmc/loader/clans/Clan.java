@@ -285,7 +285,7 @@ public class Clan {
         if (sec != 1) {
             return false;
         } else {
-            receiver.setCachedClan(this);
+            receiver.updateCachedClan(this);
             return true;
         }
     }
@@ -313,7 +313,7 @@ public class Clan {
         if (res != 1)  {
             return false;
         } else {
-            receiver.setCachedClan(null);
+            receiver.updateCachedClan(null);
             return true;
         }
     }

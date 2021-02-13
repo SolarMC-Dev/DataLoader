@@ -19,23 +19,17 @@
  *
  */
 
-package gg.solarmc.loader.clans;import gg.solarmc.loader.data.DataKey;
-import gg.solarmc.loader.data.DataKeyInitializationContext;
-import gg.solarmc.loader.data.DataLoader;
+package gg.solarmc.loader.clans;
 
-public class ClansKey implements DataKey<OnlineClanDataObject,ClanDataObject,ClanManager> {
+public class OfflineClanDataObject extends ClanDataObject {
 
-    public static final ClansKey INSTANCE = new ClansKey();
-
-    ClansKey() {} // private constr
-
-    @Override
-    public DataLoader<OnlineClanDataObject,ClanDataObject> createLoader(ClanManager dataManager, DataKeyInitializationContext context) {
-        return new ClanLoader(dataManager);
+    public OfflineClanDataObject(int userId, ClanManager manager) {
+        super(userId, manager);
     }
 
     @Override
-    public ClanManager createDataManager(DataKeyInitializationContext context) {
-        return new ClanManager();
+    void updateCachedClan(Clan clan) {
+
     }
+
 }

@@ -43,7 +43,6 @@ public abstract class ClanDataObject implements DataObject {
     private final int userId;
     private final ClanManager manager;
 
-     //nullable
 
     public ClanDataObject(int userId, ClanManager manager) {
         this.userId = userId;

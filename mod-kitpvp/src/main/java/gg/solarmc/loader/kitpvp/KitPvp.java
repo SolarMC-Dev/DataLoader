@@ -36,7 +36,7 @@ public abstract class KitPvp implements DataObject {
     private final int userID;
     private final KitPvpManager manager;
 
-    public KitPvp(int userID, KitPvpManager manager) {
+    KitPvp(int userID, KitPvpManager manager) {
         this.userID = userID;
         this.manager = manager;
     }

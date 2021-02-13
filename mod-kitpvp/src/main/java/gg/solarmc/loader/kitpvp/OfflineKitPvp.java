@@ -21,10 +21,10 @@
 
 package gg.solarmc.loader.kitpvp;
 
-public class OfflineKitPvp extends KitPvp{
+class OfflineKitPvp extends KitPvp {
 
-    public OfflineKitPvp(int userId,KitPvpManager manager) {
-        super(userId,manager);
+    OfflineKitPvp(int userId, KitPvpManager manager) {
+        super(userId, manager);
     }
 
     @Override

@@ -57,7 +57,7 @@ class KitPvpLoader implements DataLoader<OnlineKitPvp, KitPvp> {
 
     @Override
     public OfflineKitPvp createOfflineData(int userId) {
-        return null;
+        return new OfflineKitPvp(userId,manager);
     }
 
     @Override

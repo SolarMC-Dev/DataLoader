@@ -49,7 +49,7 @@ public interface SolarPlayer {
 	 *
 	 * @return the player's minecraft UUID
 	 */
-	UUID getMinecraftUUID();
+	UUID getMcUuid();
 
 	/**
 	 * Determines whether the underlying player is online in the running JVM. <br>

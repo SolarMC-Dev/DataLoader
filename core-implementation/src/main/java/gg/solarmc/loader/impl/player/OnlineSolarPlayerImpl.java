@@ -41,7 +41,7 @@ public final class OnlineSolarPlayerImpl implements OnlineSolarPlayer {
 	}
 
 	@Override
-	public UUID getMinecraftUUID() {
+	public UUID getMcUuid() {
 		return id.mcUuid();
 	}
 

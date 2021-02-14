@@ -46,7 +46,7 @@ public final class DelegatingSolarPlayer implements SolarPlayer {
 	}
 
 	@Override
-	public UUID getMinecraftUUID() {
+	public UUID getMcUuid() {
 		return id.mcUuid();
 	}
 
@@ -57,12 +57,12 @@ public final class DelegatingSolarPlayer implements SolarPlayer {
 
 	@Override
 	public Optional<OnlineSolarPlayer> toLivePlayer() {
-		return playerTracker.getOnlinePlayerForUuid(getMinecraftUUID());
+		return playerTracker.getOnlinePlayerForUuid(getMcUuid());
 	}
 
 	@Override
 	public <D extends O, O extends DataObject> O getData(DataKey<D, O, ?> key) {
-		Optional<OnlineSolarPlayer> onlineDelegate = playerTracker.getOnlinePlayerForUuid(getMinecraftUUID());
+		Optional<OnlineSolarPlayer> onlineDelegate = playerTracker.getOnlinePlayerForUuid(getMcUuid());
 		if (onlineDelegate.isPresent()) {
 			return onlineDelegate.get().getData(key);
 		}

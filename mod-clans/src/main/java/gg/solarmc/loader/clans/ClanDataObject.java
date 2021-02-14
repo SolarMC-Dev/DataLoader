@@ -38,30 +38,22 @@ import static gg.solarmc.loader.schema.tables.ClansClanMembership.CLANS_CLAN_MEM
  * (gg.solarmc.loader.clans.Clan membership is stored in the clan membership table, not alongside the dataobject,
  * and furthermore this dataobject isn't stored in a table)
  */
-public class ClanDataObject implements DataObject {
+public abstract class ClanDataObject implements DataObject {
 
     private final int userId;
     private final ClanManager manager;
 
-    private volatile Clan cachedClan; //nullable
 
-    public ClanDataObject(int userId, Clan clan, ClanManager manager) {
+    public ClanDataObject(int userId, ClanManager manager) {
         this.userId = userId;
         this.manager = manager;
-        this.cachedClan = clan;
     }
 
     int getUserId() {
         return userId;
     }
 
-    /**
-     * Gets current cached clan. Not accurate.
-     * @return Optional containing cached value
-     */
-    public Optional<Clan> currentClan() {
-        return Optional.ofNullable(cachedClan);
-    }
+    abstract void updateCachedClan(Clan clan);
 
     /**
      * Gets current clan the object belongs to accurately
@@ -75,13 +67,13 @@ public class ClanDataObject implements DataObject {
 
 
         if (rec == null)  {
-            this.cachedClan = null;
+            updateCachedClan(null);
             return Optional.empty();
         }
 
         Clan fetched = manager.getClan(transaction,rec.getClanId());
 
-        this.cachedClan = fetched;
+        updateCachedClan(fetched);
 
         return Optional.of(fetched);
     }
@@ -110,14 +102,6 @@ public class ClanDataObject implements DataObject {
      */
     boolean isSimilar(ClanMember member) {
         return member.getUserId() == this.userId;
-    }
-
-    /**
-     * Internal method to change cached clan.
-     * @param clan clan to change to
-     */
-    void setCachedClan(Clan clan) {
-        this.cachedClan = clan;
     }
 
 }

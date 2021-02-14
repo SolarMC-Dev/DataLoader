@@ -26,15 +26,15 @@ import java.util.Map;
 
 public final class DataManagementCenter {
 
-	private final Map<DataKey<?, ?>, DataGroup<?, ?>> groups;
+	private final Map<DataKey<?, ?, ?>, DataGroup<?, ?, ?>> groups;
 
-	DataManagementCenter(Map<DataKey<?, ?>, DataGroup<?, ?>> groups) {
+	DataManagementCenter(Map<DataKey<?, ?, ?>, DataGroup<?, ?, ?>> groups) {
 		this.groups = groups;
 	}
 
-	public <M extends DataManager> M getDataManager(DataKey<?, M> key) {
+	public <M extends DataManager> M getDataManager(DataKey<?, ?, M> key) {
 		@SuppressWarnings("unchecked")
-		DataGroup<?, M> group = (DataGroup<?, M>) groups.get(key);
+		DataGroup<?, ?, M> group = (DataGroup<?, ?, M>) groups.get(key);
 		return group.manager();
 	}
 }

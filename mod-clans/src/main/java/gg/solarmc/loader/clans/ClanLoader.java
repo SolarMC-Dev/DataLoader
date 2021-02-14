@@ -30,7 +30,7 @@ import static gg.solarmc.loader.schema.tables.ClansClanAlliances.CLANS_CLAN_ALLI
 import static gg.solarmc.loader.schema.tables.ClansClanEnemies.CLANS_CLAN_ENEMIES;
 import static gg.solarmc.loader.schema.tables.ClansClanInfo.CLANS_CLAN_INFO;
 
-public class ClanLoader implements DataLoader<ClanDataObject> {
+public class ClanLoader implements DataLoader<OnlineClanDataObject,ClanDataObject> {
 
     private final ClanManager manager;
 
@@ -39,13 +39,18 @@ public class ClanLoader implements DataLoader<ClanDataObject> {
     }
 
     @Override
-    public ClanDataObject loadData(Transaction transaction, int userId) {
+    public OnlineClanDataObject loadData(Transaction transaction, int userId) {
 
         ClansClanMembershipRecord rec = transaction.getProperty(DSLContext.class).fetchOne(CLANS_CLAN_MEMBERSHIP,CLANS_CLAN_MEMBERSHIP.USER_ID.eq(userId));
 
-        if (rec == null) return new ClanDataObject(userId,null,manager);
+        if (rec == null) return new OnlineClanDataObject(userId,manager,null);
 
-        return new ClanDataObject(userId,manager.getClan(transaction,userId),manager);
+        return new OnlineClanDataObject(userId,manager,manager.getClan(transaction,userId));
+    }
+
+    @Override
+    public OfflineClanDataObject createOfflineData(int userId) {
+        return new OfflineClanDataObject(userId,manager);
     }
 
     @Override

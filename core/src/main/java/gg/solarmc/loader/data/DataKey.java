@@ -23,11 +23,12 @@ package gg.solarmc.loader.data;
  * A key used to retrieve certain player data
  *
  * @param <D> the data object type
+ * @param <O> the offline data object type
  * @param <M> the data manager type
  */
-public interface DataKey<D extends DataObject, M extends DataManager> {
+public interface DataKey<D extends O, O extends DataObject, M extends DataManager> {
 
-	DataLoader<D> createLoader(M dataManager, DataKeyInitializationContext context);
+	DataLoader<D, O> createLoader(M dataManager, DataKeyInitializationContext context);
 
 	M createDataManager(DataKeyInitializationContext context);
 

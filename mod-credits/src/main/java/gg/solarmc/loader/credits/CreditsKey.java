@@ -33,14 +33,14 @@ import java.io.UncheckedIOException;
 import java.math.BigDecimal;
 import java.nio.file.Path;
 
-public class CreditsKey implements DataKey<Credits, CreditsManager> {
+public class CreditsKey implements DataKey<OnlineCredits, Credits, CreditsManager> {
 
-	CreditsKey(){}
+	CreditsKey() {}
 
 	public static final CreditsKey INSTANCE = new CreditsKey(); //specifying it as creditskey since it already implements the specification
 
 	@Override
-	public DataLoader<Credits> createLoader(CreditsManager dataManager, DataKeyInitializationContext context) {
+	public DataLoader<OnlineCredits, Credits> createLoader(CreditsManager dataManager, DataKeyInitializationContext context) {
 		return new CreditsLoader(BigDecimal.valueOf(dataManager.getConfiguration().defaultBalance()));
 	}
 

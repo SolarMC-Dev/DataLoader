@@ -21,7 +21,13 @@ package gg.solarmc.loader.data;
 
 import gg.solarmc.loader.Transaction;
 
-public interface DataLoader<D> {
+/**
+ * Interface for data modules to implement; used by the framework
+ *
+ * @param <D> the data object
+ * @param <O> the offline data object
+ */
+public interface DataLoader<D extends O, O extends DataObject> {
 
 	/**
 	 * Performs the data load for a specific user. Implementations should accomodate
@@ -30,9 +36,17 @@ public interface DataLoader<D> {
 	 *
 	 * @param transaction the enclosing transaction
 	 * @param userId the user's ID
-	 * @return the loaded data
+	 * @return the online data object
 	 */
 	D loadData(Transaction transaction, int userId);
+
+	/**
+	 * Creates offline data for a specific user.
+	 *
+	 * @param userId the user's ID
+	 * @return the offline data object
+	 */
+	O createOfflineData(int userId);
 
 	/**
 	 * Drops any and all data relating to this loader for all users. Used for testing purposes. <br>

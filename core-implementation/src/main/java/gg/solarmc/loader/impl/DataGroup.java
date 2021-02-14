@@ -24,19 +24,19 @@ import gg.solarmc.loader.data.DataLoader;
 import gg.solarmc.loader.data.DataManager;
 import gg.solarmc.loader.data.DataObject;
 
-class DataGroup<D extends DataObject, M extends DataManager> {
+class DataGroup<D extends O, O extends DataObject, M extends DataManager> {
 
-	private final DataKey<D, ?> key;
+	private final DataKey<D, O, ?> key;
 	private final M manager;
-	private final DataLoader<D> loader;
+	private final DataLoader<D, O> loader;
 
-	DataGroup(DataKey<D, ?> key, M manager, DataLoader<D> loader) {
+	DataGroup(DataKey<D, O, ?> key, M manager, DataLoader<D, O> loader) {
 		this.key = key;
 		this.manager = manager;
 		this.loader = loader;
 	}
 
-	DataKey<D, ?> key() {
+	DataKey<D, O, ?> key() {
 		return key;
 	}
 
@@ -44,7 +44,7 @@ class DataGroup<D extends DataObject, M extends DataManager> {
 		return manager;
 	}
 
-	DataLoader<D> loader() {
+	DataLoader<D, O> loader() {
 		return loader;
 	}
 }

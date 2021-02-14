@@ -17,19 +17,32 @@
  * and navigate to version 3 of the GNU Affero General Public License.
  */
 
-package gg.solarmc.loader.data;
+package gg.solarmc.loader.credits;
 
-/**
- * Interface of which instances are loaded via the service loader.
- *
- */
-public interface DataKeySpi {
+import java.math.BigDecimal;
+
+public final class OnlineCredits extends Credits {
+
+	private volatile BigDecimal currentBalance;
+
+	OnlineCredits(int userId, BigDecimal currentBalance) {
+		super(userId);
+		this.currentBalance = currentBalance;
+	}
+
+	@Override
+	void updateBalance(BigDecimal newBalance) {
+		currentBalance = newBalance;
+	}
 
 	/**
-	 * Gets all the keys which are to be registered and available
+	 * The user's cached current balance. Should not be relied upon for correctness
 	 *
-	 * @return the data keys
+	 * @return the cached current balance
 	 */
-	Iterable<DataKey<?, ?, ?>> getKeys();
+	public BigDecimal currentBalance() {
+		return currentBalance;
+	}
 
 }
+

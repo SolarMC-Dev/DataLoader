@@ -39,10 +39,10 @@ public interface Transaction {
 	/**
 	 * Retrieves a property of this transaction
 	 *
-	 * @param cls the class of the property
+	 * @param propertyClass the class of the property
 	 * @param <T> the type of the property
 	 * @return the property
 	 */
-	<T> T getProperty(Class<T> cls);
+	<T> T getProperty(Class<T> propertyClass);
 
 }

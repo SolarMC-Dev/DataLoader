@@ -37,21 +37,21 @@ class DataGroupLoader {
 		this.context = context;
 	}
 
-	Map<DataKey<?, ?>, DataGroup<?, ?>> loadGroups() {
-		Map<DataKey<?, ?>, DataGroup<?, ?>> groups = new HashMap<>();
+	Map<DataKey<?, ?, ?>, DataGroup<?, ?, ?>> loadGroups() {
+		Map<DataKey<?, ?, ?>, DataGroup<?, ?, ?>> groups = new HashMap<>();
 		ModuleLayer thisLayer = getClass().getModule().getLayer();
 		if (thisLayer == null) {
 			throw new IllegalStateException("Not in a named module");
 		}
 		for (DataKeySpi spi : ServiceLoader.load(thisLayer, DataKeySpi.class)) {
-			for (DataKey<?, ?> key : spi.getKeys()) {
+			for (DataKey<?, ?, ?> key : spi.getKeys()) {
 				groups.put(key, createGroup(key));
 			}
 		}
 		return Map.copyOf(groups);
 	}
 
-	private <D extends DataObject, M extends DataManager> DataGroup<D, M> createGroup(DataKey<D, M> key) {
+	private <D extends O, O extends DataObject, M extends DataManager> DataGroup<D, O, M> createGroup(DataKey<D, O, M> key) {
 		M manager = key.createDataManager(context);
 		return new DataGroup<>(key, manager, key.createLoader(manager, context));
 	}

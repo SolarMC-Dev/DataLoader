@@ -19,23 +19,27 @@
  *
  */
 
-package gg.solarmc.loader.clans;import gg.solarmc.loader.data.DataKey;
-import gg.solarmc.loader.data.DataKeyInitializationContext;
-import gg.solarmc.loader.data.DataLoader;
+package gg.solarmc.loader.kitpvp;
 
-public class ClansKey implements DataKey<OnlineClanDataObject,ClanDataObject,ClanManager> {
+class OfflineKitPvp extends KitPvp {
 
-    public static final ClansKey INSTANCE = new ClansKey();
-
-    ClansKey() {} // private constr
-
-    @Override
-    public DataLoader<OnlineClanDataObject,ClanDataObject> createLoader(ClanManager dataManager, DataKeyInitializationContext context) {
-        return new ClanLoader(dataManager);
+    OfflineKitPvp(int userId, KitPvpManager manager) {
+        super(userId, manager);
     }
 
     @Override
-    public ClanManager createDataManager(DataKeyInitializationContext context) {
-        return new ClanManager();
+    void updateKills(int i) {
+
     }
+
+    @Override
+    void updateDeaths(int i) {
+
+    }
+
+    @Override
+    void updateAssists(int i) {
+
+    }
+
 }

@@ -17,7 +17,7 @@
  * and navigate to version 3 of the GNU Affero General Public License.
  */
 
-package gg.solarmc.loader.impl;
+package gg.solarmc.loader.impl.launch;
 
 import gg.solarmc.loader.Transaction;
 import gg.solarmc.loader.data.DataKeyInitializationContext;
@@ -26,14 +26,14 @@ import space.arim.omnibus.util.concurrent.FactoryOfTheFuture;
 
 import java.nio.file.Path;
 
-class DataKeyInitializationContextImpl implements DataKeyInitializationContext {
+public class DataKeyInitializationContextImpl implements DataKeyInitializationContext {
 
 	private final Omnibus omnibus;
 	private final FactoryOfTheFuture futuresFactory;
 	private final Path configFolder;
 	private final Transaction transaction;
 
-	DataKeyInitializationContextImpl(Omnibus omnibus, FactoryOfTheFuture futuresFactory,
+	public DataKeyInitializationContextImpl(Omnibus omnibus, FactoryOfTheFuture futuresFactory,
 									 Path configFolder, Transaction transaction) {
 		this.omnibus = omnibus;
 		this.futuresFactory = futuresFactory;

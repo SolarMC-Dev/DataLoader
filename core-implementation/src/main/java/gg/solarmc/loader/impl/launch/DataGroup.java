@@ -17,29 +17,34 @@
  * and navigate to version 3 of the GNU Affero General Public License.
  */
 
-package gg.solarmc.loader.impl;
+package gg.solarmc.loader.impl.launch;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import gg.solarmc.loader.data.DataKey;
+import gg.solarmc.loader.data.DataLoader;
+import gg.solarmc.loader.data.DataManager;
+import gg.solarmc.loader.data.DataObject;
 
-class ConnectionProperties {
+public class DataGroup<D extends O, O extends DataObject, M extends DataManager> {
 
-	private final char urlPropertyPrefix;
-	private final char urlPropertySeparator;
+	private final DataKey<D, O, ?> key;
+	private final M manager;
+	private final DataLoader<D, O> loader;
 
-	ConnectionProperties(char urlPropertyPrefix, char urlPropertySeparator) {
-		this.urlPropertyPrefix = urlPropertyPrefix;
-		this.urlPropertySeparator = urlPropertySeparator;
+	public DataGroup(DataKey<D, O, ?> key, M manager, DataLoader<D, O> loader) {
+		this.key = key;
+		this.manager = manager;
+		this.loader = loader;
 	}
 
-	String formatProperties(Map<String, Object> properties) {
-		if (properties.isEmpty()) {
-			return "";
-		}
-		List<String> connectProps = new ArrayList<>(properties.size());
-		properties.forEach((key, value) -> connectProps.add(key + "=" + value));
+	public DataKey<D, O, ?> key() {
+		return key;
+	}
 
-		return urlPropertyPrefix + String.join(Character.toString(urlPropertySeparator), connectProps);
+	public M manager() {
+		return manager;
+	}
+
+	public DataLoader<D, O> loader() {
+		return loader;
 	}
 }

@@ -19,23 +19,24 @@
 
 package gg.solarmc.loader.impl;
 
+import gg.solarmc.loader.impl.launch.DataGroup;
+import gg.solarmc.loader.impl.login.LoginHandlerBuilderImpl;
+
+import java.util.Set;
+
 public class Icarus implements AutoCloseable {
 
-	private final LoginHandler loginHandler;
 	private final TransactionSource transactionSource;
 	private final DataManagementCenter dataManagement;
+	private final Set<DataGroup<?, ?, ?>> groups;
 	private final DataCenterLifecycle lifecycle;
 
-	Icarus(LoginHandler loginHandler, TransactionSource transactionSource,
-		   DataManagementCenter dataManagement, DataCenterLifecycle lifecycle) {
-		this.loginHandler = loginHandler;
+	Icarus(TransactionSource transactionSource, DataManagementCenter dataManagement,
+		   Set<DataGroup<?, ?, ?>> groups, DataCenterLifecycle lifecycle) {
 		this.transactionSource = transactionSource;
 		this.dataManagement = dataManagement;
+		this.groups = groups;
 		this.lifecycle = lifecycle;
-	}
-
-	public LoginHandler loginHandler() {
-		return loginHandler;
 	}
 
 	public TransactionSource transactionSource() {
@@ -44,6 +45,15 @@ public class Icarus implements AutoCloseable {
 
 	public DataManagementCenter dataManagement() {
 		return dataManagement;
+	}
+
+	/**
+	 * Obtains a login handler builder
+	 *
+	 * @return a login handler builder
+	 */
+	public LoginHandler.Builder loginHandlerBuilder() {
+		return new LoginHandlerBuilderImpl(transactionSource, groups);
 	}
 
 	@Override

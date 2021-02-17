@@ -17,7 +17,7 @@
  * and navigate to version 3 of the GNU Affero General Public License.
  */
 
-package gg.solarmc.loader.impl;
+package gg.solarmc.loader.impl.launch;
 
 import gg.solarmc.loader.data.DataKey;
 import gg.solarmc.loader.data.DataKeyInitializationContext;
@@ -29,15 +29,15 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.ServiceLoader;
 
-class DataGroupLoader {
+public class DataGroupLoader {
 
 	private final DataKeyInitializationContext context;
 
-	DataGroupLoader(DataKeyInitializationContext context) {
+	public DataGroupLoader(DataKeyInitializationContext context) {
 		this.context = context;
 	}
 
-	Map<DataKey<?, ?, ?>, DataGroup<?, ?, ?>> loadGroups() {
+	public Map<DataKey<?, ?, ?>, DataGroup<?, ?, ?>> loadGroups() {
 		Map<DataKey<?, ?, ?>, DataGroup<?, ?, ?>> groups = new HashMap<>();
 		ModuleLayer thisLayer = getClass().getModule().getLayer();
 		if (thisLayer == null) {

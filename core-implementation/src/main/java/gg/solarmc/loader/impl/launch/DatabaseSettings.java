@@ -17,23 +17,24 @@
  * and navigate to version 3 of the GNU Affero General Public License.
  */
 
-package gg.solarmc.loader.impl;
+package gg.solarmc.loader.impl.launch;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import gg.solarmc.loader.impl.SolarDataConfig;
 
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-class DatabaseSettings {
+public class DatabaseSettings {
 
-	private final SolarDataConfig config;
+	private final SolarDataConfig.DatabaseCredentials config;
 
 	private static final AtomicInteger instanceNumber = new AtomicInteger();
 
-	DatabaseSettings(SolarDataConfig config) {
+	public DatabaseSettings(SolarDataConfig.DatabaseCredentials config) {
 		this.config = config;
 	}
 
@@ -88,7 +89,7 @@ class DatabaseSettings {
 		return new ConnectionProperties('?', '&').formatProperties(properties);
 	}
 
-	HikariDataSource createDataSource() {
+	public HikariDataSource createDataSource() {
 		String connectionProperties = getConnectionProperties();
 		HikariConfig hikariConf = setUnderlyingDataSource(connectionProperties);
 		return new HikariDataSource(hikariConf);

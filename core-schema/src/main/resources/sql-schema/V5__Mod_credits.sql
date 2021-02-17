@@ -1,7 +1,7 @@
 
 CREATE TABLE credits (
   user_id INT PRIMARY KEY,
-  balance NUMERIC(12, 3) NOT NULL,
+  balance NUMERIC(12, 3) NOT NULL CHECK (balance >= 0),
   FOREIGN KEY (user_id) REFERENCES user_ids (id) ON DELETE CASCADE
 );
 

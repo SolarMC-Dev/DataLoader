@@ -21,6 +21,7 @@ package gg.solarmc.loader.impl;
 
 import gg.solarmc.loader.data.DataKey;
 import gg.solarmc.loader.data.DataManager;
+import gg.solarmc.loader.impl.launch.DataGroup;
 
 import java.util.Map;
 

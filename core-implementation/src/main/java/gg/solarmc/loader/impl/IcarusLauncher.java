@@ -21,6 +21,10 @@ package gg.solarmc.loader.impl;
 
 import com.zaxxer.hikari.HikariDataSource;
 import gg.solarmc.loader.data.DataKey;
+import gg.solarmc.loader.impl.launch.DataGroup;
+import gg.solarmc.loader.impl.launch.DataGroupLoader;
+import gg.solarmc.loader.impl.launch.DataKeyInitializationContextImpl;
+import gg.solarmc.loader.impl.launch.DatabaseSettings;
 import org.flywaydb.core.Flyway;
 import space.arim.dazzleconf.ConfigurationOptions;
 import space.arim.dazzleconf.error.InvalidConfigException;
@@ -44,6 +48,14 @@ public class IcarusLauncher {
 	private final Omnibus omnibus;
 	private final ExecutorServiceFactory executorServiceFactory;
 
+	/**
+	 * Creates the launcher
+	 *
+	 * @param folder the launch directory used for configuration
+	 * @param futuresFactory the futures factory
+	 * @param omnibus the omnibus
+	 * @param executorServiceFactory the thread pool factory
+	 */
 	public IcarusLauncher(Path folder, FactoryOfTheFuture futuresFactory,
 						  Omnibus omnibus, ExecutorServiceFactory executorServiceFactory) {
 		this.folder = folder;
@@ -52,9 +64,15 @@ public class IcarusLauncher {
 		this.executorServiceFactory = executorServiceFactory;
 	}
 
-	private SolarDataConfig loadConfig() {
+	/**
+	 * Loads the configuration from a "dataloader.yml" in the same directory
+	 * given to this launcher
+	 *
+	 * @return the configuration
+	 */
+	public SolarDataConfig loadConfig() {
 		try {
-			return new ConfigurationHelper<>(folder, "credentials.yml",
+			return new ConfigurationHelper<>(folder, "dataloader.yml",
 					new SnakeYamlConfigurationFactory<>(SolarDataConfig.class, ConfigurationOptions.defaults(),
 							new SnakeYamlOptions.Builder().useCommentingWriter(true).build())).reloadConfigData();
 		} catch (IOException ex) {
@@ -65,13 +83,13 @@ public class IcarusLauncher {
 	}
 
 	/**
-	 * Launches
+	 * Launches using the given credentials
 	 *
-	 * @param playerTracker the player tracker, provided by the platform
+	 * @param credentials the database credentials
 	 * @return the icarus
 	 */
-	public Icarus launch(PlayerTracker playerTracker) {
-		HikariDataSource dataSource = new DatabaseSettings(loadConfig()).createDataSource();
+	public Icarus launch(SolarDataConfig.DatabaseCredentials credentials) {
+		HikariDataSource dataSource = new DatabaseSettings(credentials).createDataSource();
 
 		Flyway flyway = Flyway.configure(getClass().getClassLoader())
 				.dataSource(dataSource)
@@ -92,9 +110,9 @@ public class IcarusLauncher {
 		Set<DataGroup<?, ?, ?>> groupsSet = Set.copyOf(groupsMap.values());
 
 		return new Icarus(
-				new LoginHandler(transactionSource, groupsSet, playerTracker),
 				transactionSource,
 				new DataManagementCenter(groupsMap),
+				groupsSet,
 				new DataCenterLifecycle(executor, dataSource, groupsSet));
 	}
 

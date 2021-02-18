@@ -20,6 +20,7 @@
 package gg.solarmc.loader.impl;
 
 import com.zaxxer.hikari.HikariDataSource;
+import gg.solarmc.loader.impl.launch.DataGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

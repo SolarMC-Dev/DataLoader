@@ -36,7 +36,7 @@ import java.util.UUID;
 import static gg.solarmc.loader.schema.tables.LatestNames.LATEST_NAMES;
 
 /**
- * A {@link DataCenter} which uses a {@link PlayerTracker}
+ * Data center implementation
  *
  */
 public final class SimpleDataCenter implements DataCenter {
@@ -44,11 +44,22 @@ public final class SimpleDataCenter implements DataCenter {
 	private final FactoryOfTheFuture futuresFactory;
 	private final Icarus icarus;
 	private final PlayerTracker playerTracker;
+	private final LoginHandler loginHandler;
 
-	public SimpleDataCenter(FactoryOfTheFuture futuresFactory, Icarus icarus, PlayerTracker playerTracker) {
+	/**
+	 * Creates
+	 *
+	 * @param futuresFactory the futures factory
+	 * @param icarus the icarus
+	 * @param playerTracker the player tracker
+	 * @param loginHandler the login handler used to create offline users
+	 */
+	public SimpleDataCenter(FactoryOfTheFuture futuresFactory, Icarus icarus,
+							PlayerTracker playerTracker, LoginHandler loginHandler) {
 		this.futuresFactory = futuresFactory;
 		this.icarus = icarus;
 		this.playerTracker = playerTracker;
+		this.loginHandler = loginHandler;
 	}
 
 	@Override
@@ -83,7 +94,7 @@ public final class SimpleDataCenter implements DataCenter {
 			}
 			int userId = latestNamesRecord.value1();
 			UUID mcUuid = UUIDUtil.fromByteArray(latestNamesRecord.value2());
-			return Optional.of(icarus.loginHandler().createOfflineUser(userId, mcUuid));
+			return Optional.of(loginHandler.createOfflineUser(userId, mcUuid));
 		});
 	}
 
@@ -102,7 +113,7 @@ public final class SimpleDataCenter implements DataCenter {
 			if (userId == null) {
 				return Optional.empty();
 			}
-			return Optional.of(icarus.loginHandler().createOfflineUser(userId, uuid));
+			return Optional.of(loginHandler.createOfflineUser(userId, uuid));
 		});
 	}
 

@@ -15,6 +15,6 @@ CREATE VIEW latest_names AS
   SELECT nh1.user_id, nh1.uuid, nh1.username, nh1.updated
   FROM name_history nh1
   LEFT JOIN name_history nh2
-  ON nh1.user_id = nh2.user_id
+  ON nh1.uuid = nh2.uuid
   AND nh1.updated < nh2.updated
   WHERE nh2.user_id IS NULL;

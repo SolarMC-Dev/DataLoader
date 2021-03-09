@@ -42,4 +42,19 @@ class OfflineKitPvp extends KitPvp {
 
     }
 
+    @Override
+    void updateExperience(int i) {
+
+    }
+
+    @Override
+    void updateCurrentKillstreak(int i) {
+
+    }
+
+    @Override
+    void updateHighestKillstreak(int i) {
+
+    }
+
 }

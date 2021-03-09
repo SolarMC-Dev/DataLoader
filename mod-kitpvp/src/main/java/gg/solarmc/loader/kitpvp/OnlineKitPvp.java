@@ -25,13 +25,19 @@ public class OnlineKitPvp extends KitPvp {
     private volatile int kills;
     private volatile int deaths;
     private volatile int assists;
+    private volatile int experience;
+    private volatile int currentKillstreaks;
+    private volatile int highestKillstreaks;
 
-    public OnlineKitPvp(int userID, KitPvpManager manager, Integer kills, Integer deaths, Integer assists) {
+    public OnlineKitPvp(int userID, KitPvpManager manager, Integer kills, Integer deaths, Integer assists, Integer experience, Integer currentKillstreaks, Integer highestKillstreaks) {
         super(userID, manager);
 
         this.kills = kills;
         this.deaths = deaths;
         this.assists = assists;
+        this.experience = experience;
+        this.currentKillstreaks = currentKillstreaks;
+        this.highestKillstreaks = highestKillstreaks;
 
     }
 
@@ -48,6 +54,21 @@ public class OnlineKitPvp extends KitPvp {
     @Override
     void updateAssists(int i) {
         this.assists = i;
+    }
+
+    @Override
+    void updateExperience(int i) {
+        this.experience = i;
+    }
+
+    @Override
+    void updateCurrentKillstreak(int i) {
+        this.currentKillstreaks = i;
+    }
+
+    @Override
+    void updateHighestKillstreak(int i) {
+        this.highestKillstreaks = i;
     }
 
     /**

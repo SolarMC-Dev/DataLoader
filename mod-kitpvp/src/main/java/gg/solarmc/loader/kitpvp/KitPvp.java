@@ -148,11 +148,14 @@ public abstract class KitPvp implements DataObject {
 
     /**
      * Adds current killstreaks to the user account. Infallible.
+     *
+     * This will increment both current and highest killstreaks.
+     *
      * @param transaction represents the current killstreak
      * @param amount represents the amount of killstreak to add
      * @return a result with the new value of killstreak
      */
-    public StatisticResult addCurrentKillstreaks(Transaction transaction, int amount) {
+    public StatisticResult addKillstreaks(Transaction transaction, int amount) {
         if (amount <= 0) {
             throw new IllegalArgumentException("amount must be positive");
         }
@@ -160,17 +163,24 @@ public abstract class KitPvp implements DataObject {
 
         int existingValue = statisticsRecord.getCurrentKillstreak();
         int newValue = existingValue + amount;
+        int existingTwo = statisticsRecord.getHighestKillstreak();
+        int newTwo = existingTwo + amount;
 
         statisticsRecord.setCurrentKillstreak(newValue);
-        statisticsRecord.store(KITPVP_STATISTICS.CURRENT_KILLSTREAK);
+        statisticsRecord.setHighestKillstreak(newTwo);
+        statisticsRecord.store(KITPVP_STATISTICS.HIGHEST_KILLSTREAK,KITPVP_STATISTICS.CURRENT_KILLSTREAK);
 
         this.updateCurrentKillstreak(newValue);
+        this.updateHighestKillstreak(newTwo);
 
         return new StatisticResult(newValue);
     }
 
     /**
-     * Sets the killstreak amouont. Infallible
+     * Sets the current killstreak amouont. Infallible
+     *
+     * Used to reset the current killstreak
+     *
      * @param transaction represents the current transaction
      * @param amount represents the amount of killstreak to set to
      */
@@ -184,29 +194,6 @@ public abstract class KitPvp implements DataObject {
         statisticsRecord.store(KITPVP_STATISTICS.CURRENT_KILLSTREAK);
 
         this.updateCurrentKillstreak(amount);
-    }
-
-    /**
-     * Adds highest killstreaks to the user account. Infallible.
-     * @param transaction represents the current transaction
-     * @param amount represents the amount of killstreak to add
-     * @return a result with the new value of killstreak
-     */
-    public StatisticResult addHighestKillstreaks(Transaction transaction, int amount) {
-        if (amount <= 0) {
-            throw new IllegalArgumentException("amount must be positive");
-        }
-        KitpvpStatisticsRecord statisticsRecord = getStatistics(transaction);
-
-        int existingValue = statisticsRecord.getHighestKillstreak();
-        int newValue = existingValue + amount;
-
-        statisticsRecord.setHighestKillstreak(newValue);
-        statisticsRecord.store(KITPVP_STATISTICS.HIGHEST_KILLSTREAK);
-
-        this.updateHighestKillstreak(newValue);
-
-        return new StatisticResult(newValue);
     }
 
     /**

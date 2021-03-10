@@ -94,4 +94,12 @@ public class OnlineKitPvp extends KitPvp {
     public int currentAssists() {
         return assists;
     }
+
+    public int currentCurrentKillstreak() {
+        return currentKillstreaks;
+    }
+
+    public int currentHighestKillstreak() {
+        return highestKillstreaks;
+    }
 }

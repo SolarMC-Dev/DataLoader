@@ -195,7 +195,7 @@ public abstract class KitPvp implements DataObject {
         }
 
         transaction.getProperty(DSLContext.class).update(KITPVP_STATISTICS)
-                .set(KITPVP_STATISTICS.HIGHEST_KILLSTREAK,greatest(KITPVP_STATISTICS.HIGHEST_KILLSTREAK,amount))
+                .set(KITPVP_STATISTICS.HIGHEST_KILLSTREAK,KITPVP_STATISTICS.HIGHEST_KILLSTREAK.greatest(amount))
                 .set(KITPVP_STATISTICS.CURRENT_KILLSTREAK,amount)
                 .execute();
 

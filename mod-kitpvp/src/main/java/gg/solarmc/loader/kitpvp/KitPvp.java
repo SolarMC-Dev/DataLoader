@@ -161,23 +161,25 @@ public abstract class KitPvp implements DataObject {
         }
         KitpvpStatisticsRecord statisticsRecord = getStatistics(transaction);
 
-        int existingValue = statisticsRecord.getCurrentKillstreak();
-        int newValue = existingValue + amount;
+        int existingKillstreaks = statisticsRecord.getCurrentKillstreak();
+        int newKillstreaks = existingKillstreaks + amount;
 
-        int existingTwo = statisticsRecord.getHighestKillstreak();
+        int existingHighKillstreaks = statisticsRecord.getHighestKillstreak();
 
-        if (newValue > existingTwo) {
-            int newTwo = existingTwo + amount;
+        if (newKillstreaks > existingHighKillstreaks) {
+            int newTwo = existingHighKillstreaks + amount;
+
             statisticsRecord.setHighestKillstreak(newTwo);
             this.updateHighestKillstreak(newTwo);
+            statisticsRecord.store(KITPVP_STATISTICS.HIGHEST_KILLSTREAK);
         }
 
-        statisticsRecord.setCurrentKillstreak(newValue);
-        statisticsRecord.store(KITPVP_STATISTICS.HIGHEST_KILLSTREAK,KITPVP_STATISTICS.CURRENT_KILLSTREAK);
+        statisticsRecord.setCurrentKillstreak(newKillstreaks);
+        statisticsRecord.store(KITPVP_STATISTICS.CURRENT_KILLSTREAK);
 
-        this.updateCurrentKillstreak(newValue);
+        this.updateCurrentKillstreak(newKillstreaks);
 
-        return new StatisticResult(newValue);
+        return new StatisticResult(newKillstreaks);
     }
 
     /**
@@ -193,6 +195,11 @@ public abstract class KitPvp implements DataObject {
             throw new IllegalArgumentException("amount must be positive");
         }
         KitpvpStatisticsRecord statisticsRecord = getStatistics(transaction);
+
+        if (statisticsRecord.get(KITPVP_STATISTICS.HIGHEST_KILLSTREAK) < amount) {
+            statisticsRecord.setHighestKillstreak(amount);
+            statisticsRecord.store(KITPVP_STATISTICS.HIGHEST_KILLSTREAK);
+        }
 
         statisticsRecord.setCurrentKillstreak(amount);
         statisticsRecord.store(KITPVP_STATISTICS.CURRENT_KILLSTREAK);

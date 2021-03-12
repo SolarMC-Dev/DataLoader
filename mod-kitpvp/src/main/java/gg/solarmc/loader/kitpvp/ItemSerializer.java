@@ -24,10 +24,10 @@ package gg.solarmc.loader.kitpvp;
 /**
  * SPI that handles serialization of KitItem implementation to byte and back.
  */
-public interface ItemSerializer<T> {
+public interface ItemSerializer {
 
     byte[] serialize(KitItem<?> item);
 
-    KitItem<T> deserialize(byte[] serialized);
+    KitItem<?> deserialize(byte[] serialized);
 
 }

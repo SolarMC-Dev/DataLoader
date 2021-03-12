@@ -102,4 +102,8 @@ public class OnlineKitPvp extends KitPvp {
     public int currentHighestKillstreak() {
         return highestKillstreaks;
     }
+
+    public int currentExperience() {
+        return experience;
+    }
 }

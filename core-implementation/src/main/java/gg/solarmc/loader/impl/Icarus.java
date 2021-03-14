@@ -51,9 +51,23 @@ public class Icarus implements AutoCloseable {
 	 * Obtains a login handler builder
 	 *
 	 * @return a login handler builder
+	 * @deprecated the login handler builder should be configured, use the overloaded method
 	 */
+	@Deprecated
 	public LoginHandler.Builder loginHandlerBuilder() {
 		return new LoginHandlerBuilderImpl(transactionSource, groups);
+	}
+
+	/**
+	 * Obtains a login handler builder using the configuration
+	 *
+	 * @param loginConfig the configuration
+	 * @return a preconfigured login handler builder
+	 */
+	public LoginHandler.Builder loginHandlerBuilder(SolarDataConfig.Logins loginConfig) {
+		LoginHandler.Builder loginHandlerBuilder = new LoginHandlerBuilderImpl(transactionSource, groups);
+		loginConfig.configureLoginHandlerBuilder(loginHandlerBuilder);
+		return loginHandlerBuilder;
 	}
 
 	@Override

@@ -22,7 +22,7 @@
 				<executions>
 					<execution>
 						<id>create-stuff</id>
-						<phase>initialize</phase>
+						<phase>generate-sources</phase>
 						<goals>
 							<goal>generate</goal>
 						</goals>
@@ -31,7 +31,7 @@
 
 				<configuration>
 					<packageName>gg.solarmc.loader.schema</packageName>
-					<outputDirectory>filesystem:target/generated/</outputDirectory>
+					<outputDirectory>filesystem:target/generated-sources/</outputDirectory>
 					<locations>
 						<location>filesystem:src/main/resources/sql-schema</location>
 						<location>filesystem:flyway-libertybans</location>

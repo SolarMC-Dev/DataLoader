@@ -79,6 +79,13 @@
 						</dependency>
 					</dependencies>
 				</plugin>
+				<plugin>
+					<artifactId>maven-javadoc-plugin</artifactId>
+					<configuration>
+						<release>15</release>
+						<additionalOptions>--enable-preview</additionalOptions>
+					</configuration>
+				</plugin>
 			</plugins>
 		</pluginManagement>
 	</build>

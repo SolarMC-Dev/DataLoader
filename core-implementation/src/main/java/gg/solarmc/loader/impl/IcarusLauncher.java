@@ -24,6 +24,7 @@ import gg.solarmc.loader.data.DataKey;
 import gg.solarmc.loader.impl.launch.DataGroup;
 import gg.solarmc.loader.impl.launch.DataGroupLoader;
 import gg.solarmc.loader.impl.launch.DataKeyInitializationContextImpl;
+import gg.solarmc.loader.impl.launch.DataLoaderThreadFactory;
 import gg.solarmc.loader.impl.launch.DatabaseSettings;
 import org.flywaydb.core.Flyway;
 import space.arim.dazzleconf.ConfigurationOptions;
@@ -98,7 +99,8 @@ public class IcarusLauncher {
 				.load();
 		flyway.migrate();
 
-		ExecutorService executor = executorServiceFactory.newFixedThreadPool(dataSource.getMaximumPoolSize());
+		ExecutorService executor = executorServiceFactory.newFixedThreadPool(
+				dataSource.getMaximumPoolSize(), new DataLoaderThreadFactory());
 
 		TransactionSource transactionSource = new TransactionSource(futuresFactory, executor, dataSource);
 

@@ -31,8 +31,8 @@ public enum CreateAccountResult {
 	CREATED,
 	/**
 	 * The account for the username already exists. This is a likely race condition,
-	 * because you should be tracking the state of the user in-memory.
-	 * Be sure to implement rate limiting so a user cannot spam account creation!
+	 * assuming the caller has implemented everything correctly. The implementor
+	 * should be sure to implement rate limiting so a user cannot spam account creation.
 	 */
 	CONFLICT
 

@@ -19,35 +19,23 @@
 
 package gg.solarmc.loader.authentication;
 
-import gg.solarmc.loader.Transaction;
-
+import java.util.Objects;
 import java.util.UUID;
 
-public interface UnauthenticatedUser {
+public record UserDetails(UUID mcUuid, String username) {
 
-	UUID mcUuid();
+    public UserDetails {
+        Objects.requireNonNull(mcUuid, "mcUuid");
+        Objects.requireNonNull(username, "username");
+    }
 
-	String username();
-
-	default boolean isPremium() {
-		return UUIDOperations.isPremium(mcUuid());
-	}
-
-	/**
-	 * Loads the data for the user
-	 *
-	 * @param transaction the transaction
-	 * @param userId the user ID
-	 */
-	void loadData(Transaction transaction, int userId);
-
-	/**
-	 * Whether this user is equal to another
-	 *
-	 * @param o the object to determine equality with
-	 * @return true if equal, false otherwise
-	 */
-	@Override
-	boolean equals(Object o);
+    /**
+     * Determines whether the UUID is premium
+     *
+     * @return true if the uuid is premium, false otherwise
+     */
+    public boolean isPremium() {
+        return UUIDOperations.isPremium(mcUuid());
+    }
 
 }

@@ -22,29 +22,27 @@ package gg.solarmc.loader.authentication;
 import java.util.Objects;
 
 /**
- * A combination of hashed password, a salt used to help create the hash,
- * and hashing instructions also used to create the hash.
- *
+ * A combination of hashed password, a salt used to help create the hash, and hashing instructions also used to create
+ * the hash. <br>
+ * <br>
+ * Consider this a hashed password with instructions for how to recreate it given user input.
  */
-public final class VerifiablePassword {
+public record VerifiablePassword(PasswordHash passwordHash,
+								 PasswordSalt passwordSalt,
+								 HashingInstructions instructions) {
 
-	private final PasswordHash passwordHash;
-	private final PasswordSalt passwordSalt;
-	private final HashingInstructions instructions;
-
-	VerifiablePassword(PasswordHash passwordHash, PasswordSalt passwordSalt, HashingInstructions instructions) {
-		this.passwordHash = Objects.requireNonNull(passwordHash, "passwordHash");
-		this.passwordSalt = Objects.requireNonNull(passwordSalt, "passwordSalt");
-		this.instructions = Objects.requireNonNull(instructions, "instructions");
+	public VerifiablePassword {
+		Objects.requireNonNull(passwordHash, "passwordHash");
+		Objects.requireNonNull(passwordSalt, "passwordSalt");
+		Objects.requireNonNull(instructions, "instructions");
 	}
 
 	/**
-	 * Whether this password's hash matches another. Equivalent to
-	 * {@code passwordHash().equals(other.passwordHash())}<br>
+	 * Whether this password's hash matches another. Equivalent to {@code passwordHash().equals(other.passwordHash())}<br>
 	 * <br>
-	 * In practice, this will be {@code true} if {@code equals} is true, but note that {@code equals}
-	 * also compares the salt and hashing instructions. Practically speaking, if the salt and
-	 * hashing instructions differ, the password hash will also differ.
+	 * In practice, this will be {@code true} if {@code equals} is true, but note that {@code equals} also compares the
+	 * salt and hashing instructions. Practically speaking, if the salt and hashing instructions differ, the password
+	 * hash will also differ.
 	 *
 	 * @param other the other password
 	 * @return true if matched, false otherwise
@@ -53,40 +51,4 @@ public final class VerifiablePassword {
 		return passwordHash.equals(other.passwordHash);
 	}
 
-	public PasswordHash passwordHash() {
-		return passwordHash;
-	}
-
-	public PasswordSalt passwordSalt() {
-		return passwordSalt;
-	}
-
-	public HashingInstructions instructions() {
-		return instructions;
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
-		VerifiablePassword that = (VerifiablePassword) o;
-		return passwordHash.equals(that.passwordHash) && passwordSalt.equals(that.passwordSalt) && instructions.equals(that.instructions);
-	}
-
-	@Override
-	public int hashCode() {
-		int result = passwordHash.hashCode();
-		result = 31 * result + passwordSalt.hashCode();
-		result = 31 * result + instructions.hashCode();
-		return result;
-	}
-
-	@Override
-	public String toString() {
-		return "VerifiablePassword{" +
-				"passwordHash=" + passwordHash +
-				", passwordSalt=" + passwordSalt +
-				", instructions=" + instructions +
-				'}';
-	}
 }

@@ -3,4 +3,5 @@ module gg.solarmc.loader.authentication {
 
 	requires gg.solarmc.loader.impl;
 	requires de.mkammerer.argon2;
+	requires org.slf4j;
 }

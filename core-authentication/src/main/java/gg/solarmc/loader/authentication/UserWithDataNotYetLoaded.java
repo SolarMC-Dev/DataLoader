@@ -19,21 +19,39 @@
 
 package gg.solarmc.loader.authentication;
 
-public enum CompleteLoginResult {
+import gg.solarmc.loader.Transaction;
+
+import java.util.UUID;
+
+/**
+ * A user whose data has not been loaded yet. The user may not be authenticated either
+ *
+ */
+public interface UserWithDataNotYetLoaded {
+
+	UUID mcUuid();
+
+	String username();
+
+	default boolean isPremium() {
+		return UUIDOperations.isPremium(mcUuid());
+	}
 
 	/**
-	 * The user logged in as cracked
-	 */
-	NORMAL,
-	/**
-	 * The user's cracked data was migrated to the premium account they are now logging in with
-	 */
-	MIGRATED_TO_PREMIUM,
-	/**
-	 * User ID is missing. This can only happen if someone else migrated this user's account.
-	 * Is that considered a forced migration?
+	 * Loads the data for the user
 	 *
+	 * @param transaction the transaction
+	 * @param userId the user ID
 	 */
-	USER_ID_MISSING;
+	void loadData(Transaction transaction, int userId);
+
+	/**
+	 * Whether this user is equal to another
+	 *
+	 * @param o the object to determine equality with
+	 * @return true if equal, false otherwise
+	 */
+	@Override
+	boolean equals(Object o);
 
 }

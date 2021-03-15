@@ -19,21 +19,14 @@
 
 package gg.solarmc.loader.authentication;
 
-public final class HashingInstructions {
-
-	private final int iterations;
-	private final int memory;
-
-	HashingInstructions(int iterations, int memory) {
-		this.iterations = iterations;
-		this.memory = memory;
-	}
+public record HashingInstructions(int iterations, int memory) {
 
 	/**
 	 * Gets the amount of algorithm iterations
 	 *
 	 * @return the iteration
 	 */
+	@Override
 	public int iterations() {
 		return iterations;
 	}
@@ -43,30 +36,9 @@ public final class HashingInstructions {
 	 *
 	 * @return the kb of memory to use
 	 */
+	@Override
 	public int memory() {
 		return memory;
 	}
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
-		HashingInstructions that = (HashingInstructions) o;
-		return iterations == that.iterations && memory == that.memory;
-	}
-
-	@Override
-	public int hashCode() {
-		int result = iterations;
-		result = 31 * result + memory;
-		return result;
-	}
-
-	@Override
-	public String toString() {
-		return "PasswordDetails{" +
-				"iterations=" + iterations +
-				", memory=" + memory +
-				'}';
-	}
 }

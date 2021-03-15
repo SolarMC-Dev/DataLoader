@@ -199,6 +199,9 @@ public abstract class KitPvp implements DataObject {
                 .set(KITPVP_STATISTICS.CURRENT_KILLSTREAK,amount)
                 .execute();
 
+        greatest(KITPVP_STATISTICS.HIGHEST_KILLSTREAK)
+
+
         this.updateCurrentKillstreak(amount);
     }
 

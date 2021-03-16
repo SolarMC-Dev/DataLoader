@@ -26,8 +26,6 @@ import org.jooq.DSLContext;
 
 import static gg.solarmc.loader.schema.tables.KitpvpStatistics.KITPVP_STATISTICS;
 import static gg.solarmc.loader.schema.tables.KitpvpKitsOwnership.KITPVP_KITS_OWNERSHIP;
-import static org.jooq.impl.DSL.*;
-
 import java.util.Set;
 
 public abstract class KitPvp implements DataObject {
@@ -194,15 +192,18 @@ public abstract class KitPvp implements DataObject {
             throw new IllegalArgumentException("amount must be positive");
         }
 
-        transaction.getProperty(DSLContext.class).update(KITPVP_STATISTICS)
-                .set(KITPVP_STATISTICS.HIGHEST_KILLSTREAK,KITPVP_STATISTICS.HIGHEST_KILLSTREAK.greatest(amount))
-                .set(KITPVP_STATISTICS.CURRENT_KILLSTREAK,amount)
-                .execute();
 
-        greatest(KITPVP_STATISTICS.HIGHEST_KILLSTREAK)
+        KitpvpStatisticsRecord record = getStatistics(transaction);
 
+        int highest = Math.max(record.getHighestKillstreak(),amount);
+
+        record.setHighestKillstreak(highest);
+        record.setCurrentKillstreak(amount);
+
+        record.store(KITPVP_STATISTICS.HIGHEST_KILLSTREAK,KITPVP_STATISTICS.CURRENT_KILLSTREAK);
 
         this.updateCurrentKillstreak(amount);
+        this.updateHighestKillstreak(amount);
     }
 
     /**
@@ -265,5 +266,6 @@ public abstract class KitPvp implements DataObject {
                 .where(KITPVP_KITS_OWNERSHIP.USER_ID.eq(this.userID))
                 .and(KITPVP_KITS_OWNERSHIP.KIT_ID.eq(kit.getId())));
     }
+
 
 }

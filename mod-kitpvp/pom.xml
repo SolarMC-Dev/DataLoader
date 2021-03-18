@@ -15,7 +15,6 @@
 		<dependency>
 			<groupId>gg.solarmc.loader</groupId>
 			<artifactId>loader-core</artifactId>
-			<version>0.3.1-SNAPSHOT</version>
 		</dependency>
         <dependency>
             <groupId>gg.solarmc.loader</groupId>

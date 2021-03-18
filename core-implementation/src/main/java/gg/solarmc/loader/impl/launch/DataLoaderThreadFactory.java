@@ -17,13 +17,17 @@
  * and navigate to version 3 of the GNU Affero General Public License.
  */
 
-package gg.solarmc.loader.impl;
+package gg.solarmc.loader.impl.launch;
 
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
 
-public interface ExecutorServiceFactory {
+public final class DataLoaderThreadFactory implements ThreadFactory {
 
-	ExecutorService newFixedThreadPool(int threads, ThreadFactory threadFactory);
+    private final AtomicInteger threadNumber = new AtomicInteger();
 
+    @Override
+    public Thread newThread(Runnable r) {
+        return new Thread(r, "DataLoader-" + threadNumber.incrementAndGet());
+    }
 }

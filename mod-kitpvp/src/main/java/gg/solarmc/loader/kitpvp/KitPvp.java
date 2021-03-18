@@ -195,15 +195,10 @@ public abstract class KitPvp implements DataObject {
 
         KitpvpStatisticsRecord record = getStatistics(transaction);
 
-        int highest = Math.max(record.getHighestKillstreak(),amount);
-
-        record.setHighestKillstreak(highest);
         record.setCurrentKillstreak(amount);
-
-        record.store(KITPVP_STATISTICS.HIGHEST_KILLSTREAK,KITPVP_STATISTICS.CURRENT_KILLSTREAK);
+        record.store(KITPVP_STATISTICS.CURRENT_KILLSTREAK);
 
         this.updateCurrentKillstreak(amount);
-        this.updateHighestKillstreak(amount);
     }
 
     /**

@@ -44,7 +44,7 @@ public abstract class KitPvp implements DataObject {
                 .getProperty(DSLContext.class)
                 .fetchOne(KITPVP_STATISTICS,KITPVP_STATISTICS.USER_ID.eq(userID));
 
-        assert record != null : "Data is missing!";
+        assert record != null : "Data is missing from the stats!";
 
         return record;
     }

@@ -181,23 +181,19 @@ public abstract class KitPvp implements DataObject {
     }
 
     /**
-     * Sets the current killstreak amouont. Infallible
+     * Resets the current killstreak amouont. Infallible
      *
      * Used to reset the current killstreak
      *
      * @param transaction represents the current transaction
-     * @param amount represents the amount of killstreak to set to
      */
-    public void setCurrentKillstreaks(Transaction transaction, int amount) {
-        if (amount <= 0) {
-            throw new IllegalArgumentException("amount must be positive");
-        }
+    public void resetCurrentKillstreaks(Transaction transaction) {
         KitpvpStatisticsRecord statisticsRecord = getStatistics(transaction);
 
-        statisticsRecord.setCurrentKillstreak(amount);
+        statisticsRecord.setCurrentKillstreak(0);
         statisticsRecord.store(KITPVP_STATISTICS.CURRENT_KILLSTREAK);
 
-        this.updateCurrentKillstreak(amount);
+        this.updateCurrentKillstreak(0);
     }
 
     /**

@@ -24,11 +24,17 @@ import gg.solarmc.loader.data.DataObject;
 import gg.solarmc.loader.schema.tables.records.KitpvpStatisticsRecord;
 import org.jooq.DSLContext;
 
+
 import static gg.solarmc.loader.schema.tables.KitpvpStatistics.KITPVP_STATISTICS;
 import static gg.solarmc.loader.schema.tables.KitpvpKitsOwnership.KITPVP_KITS_OWNERSHIP;
-import java.util.Set;
+
+
+import static gg.solarmc.loader.schema.tables.KitpvpKitsOwnership.KITPVP_KITS_OWNERSHIP;
+import static gg.solarmc.loader.schema.tables.KitpvpStatistics.KITPVP_STATISTICS;
 
 public abstract class KitPvp implements DataObject {
+
+
 
     private final int userID;
     private final KitPvpManager manager;
@@ -51,9 +57,6 @@ public abstract class KitPvp implements DataObject {
     abstract void updateKills(int i);
     abstract void updateDeaths(int i);
     abstract void updateAssists(int i);
-    abstract void updateExperience(int i);
-    abstract void updateCurrentKillstreak(int i);
-    abstract void updateHighestKillstreak(int i);
 
     /**
      * Adds kills to the user account. Infallible.
@@ -123,6 +126,7 @@ public abstract class KitPvp implements DataObject {
     }
 
     /**
+
      * Adds experience to the user account. Infallible.
      * @param transaction represents the transaction
      * @param amount represents the amount of xp to add
@@ -202,6 +206,7 @@ public abstract class KitPvp implements DataObject {
     }
 
     /**
+
      * Adds an existing kit to the player's kit list
      * @param transaction represents the transaction
      * @param kit represents the kit to add

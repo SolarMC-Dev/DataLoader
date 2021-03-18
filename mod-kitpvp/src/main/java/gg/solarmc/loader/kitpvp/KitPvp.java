@@ -54,6 +54,9 @@ public abstract class KitPvp implements DataObject {
     abstract void updateKills(int i);
     abstract void updateDeaths(int i);
     abstract void updateAssists(int i);
+    abstract void updateExperience(int i);
+    abstract void updateHighestKillstreak(int i);
+    abstract void updateCurrentKillstreak(int i);
 
     /**
      * Adds kills to the user account. Infallible.

@@ -45,14 +45,14 @@ class KitPvpLoader implements DataLoader<OnlineKitPvp, KitPvp> {
         if (kitpvpRecord != null) {
             return new OnlineKitPvp(
                     userId, manager,
-                    kitpvpRecord.getKills(), kitpvpRecord.getDeaths(), kitpvpRecord.getAssists());
+                    kitpvpRecord.getKills(), kitpvpRecord.getDeaths(), kitpvpRecord.getAssists(), kitpvpRecord.getExperience(), kitpvpRecord.getCurrentKillstreak(), kitpvpRecord.getHighestKillstreak());
         }
         context.insertInto(KITPVP_STATISTICS)
                 .columns(KITPVP_STATISTICS.USER_ID, KITPVP_STATISTICS.KILLS,
                         KITPVP_STATISTICS.DEATHS,KITPVP_STATISTICS.ASSISTS)
                 .values(userId,0,0,0)
                 .execute();
-        return new OnlineKitPvp(userId, manager, 0, 0, 0);
+        return new OnlineKitPvp(userId, manager, 0, 0, 0,0,0,0);
     }
 
     @Override

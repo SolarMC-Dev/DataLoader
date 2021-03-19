@@ -46,7 +46,7 @@ public abstract class KitPvp implements DataObject {
                 .getProperty(DSLContext.class)
                 .fetchOne(KITPVP_STATISTICS,KITPVP_STATISTICS.USER_ID.eq(userID));
 
-        assert record != null : "Data is missing!";
+        assert record != null : "Data is missing from the stats!";
 
         return record;
     }
@@ -54,6 +54,9 @@ public abstract class KitPvp implements DataObject {
     abstract void updateKills(int i);
     abstract void updateDeaths(int i);
     abstract void updateAssists(int i);
+    abstract void updateExperience(int i);
+    abstract void updateHighestKillstreak(int i);
+    abstract void updateCurrentKillstreak(int i);
 
     /**
      * Adds kills to the user account. Infallible.
@@ -123,6 +126,81 @@ public abstract class KitPvp implements DataObject {
     }
 
     /**
+
+     * Adds experience to the user account. Infallible.
+     * @param transaction represents the transaction
+     * @param amount represents the amount of xp to add
+     * @return a result with the new value of xp
+     */
+    public StatisticResult addExperience(Transaction transaction, int amount) {
+        if (amount <= 0) {
+            throw new IllegalArgumentException("amount must be positive");
+        }
+        KitpvpStatisticsRecord statisticsRecord = getStatistics(transaction);
+
+        int existingValue = statisticsRecord.getExperience();
+        int newValue = existingValue + amount;
+
+        statisticsRecord.setExperience(newValue);
+        statisticsRecord.store(KITPVP_STATISTICS.EXPERIENCE);
+
+        this.updateExperience(newValue);
+
+        return new StatisticResult(newValue);
+    }
+
+    /**
+     * Adds current killstreaks to the user account. Infallible.
+     *
+     * This will increment both current and highest killstreaks.
+     *
+     * @param transaction represents the current killstreak
+     * @param amount represents the amount of killstreak to add
+     * @return a result with the new value of killstreak
+     */
+    public StatisticResult addKillstreaks(Transaction transaction, int amount) {
+        if (amount <= 0) {
+            throw new IllegalArgumentException("amount must be positive");
+        }
+        KitpvpStatisticsRecord statisticsRecord = getStatistics(transaction);
+
+        int existingValue = statisticsRecord.getCurrentKillstreak();
+        int newValue = existingValue + amount;
+
+        int existingTwo = statisticsRecord.getHighestKillstreak();
+
+        if (newValue > existingTwo) {
+            int newTwo = existingTwo + amount;
+            statisticsRecord.setHighestKillstreak(newTwo);
+            this.updateHighestKillstreak(newTwo);
+        }
+
+        statisticsRecord.setCurrentKillstreak(newValue);
+        statisticsRecord.store(KITPVP_STATISTICS.HIGHEST_KILLSTREAK,KITPVP_STATISTICS.CURRENT_KILLSTREAK);
+
+        this.updateCurrentKillstreak(newValue);
+
+        return new StatisticResult(newValue);
+    }
+
+    /**
+     * Resets the current killstreak amouont. Infallible
+     *
+     * Used to reset the current killstreak
+     *
+     * @param transaction represents the current transaction
+     */
+    public void resetCurrentKillstreaks(Transaction transaction) {
+        KitpvpStatisticsRecord statisticsRecord = getStatistics(transaction);
+
+        statisticsRecord.setCurrentKillstreak(0);
+        statisticsRecord.store(KITPVP_STATISTICS.CURRENT_KILLSTREAK);
+
+        this.updateCurrentKillstreak(0);
+    }
+
+    /**
+
      * Adds an existing kit to the player's kit list
      * @param transaction represents the transaction
      * @param kit represents the kit to add

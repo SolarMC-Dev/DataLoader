@@ -64,7 +64,7 @@ public final class LoginAttempt {
 	/**
 	 * Gets the hashed password which must be verified against
 	 *
-	 * @return the hashed password with instructions, or an empty optional if this is not {@code NEEDS_PASSWORD}
+	 * @return the verifiable password, or an empty optional if this is not {@code NEEDS_PASSWORD}
 	 */
 	public Optional<VerifiablePassword> verifiablePassword() {
 		return Optional.ofNullable(verifiablePassword);

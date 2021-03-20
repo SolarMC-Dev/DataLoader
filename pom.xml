@@ -6,7 +6,7 @@
 	<parent>
 		<groupId>gg.solarmc</groupId>
 		<artifactId>solar-parent</artifactId>
-		<version>0.3.2</version>
+		<version>0.5.1</version>
 	</parent>
 
 	<groupId>gg.solarmc.loader</groupId>
@@ -17,8 +17,8 @@
 	<name>Solar-DataLoader</name>
 
 	<properties>
-		<skipJavadoc>false</skipJavadoc>
-		<skipSources>false</skipSources>
+		<solar-parent.skipJavadoc>false</solar-parent.skipJavadoc>
+		<solar-parent.skipSources>false</solar-parent.skipSources>
 
 		<omnibus.version>1.0.0</omnibus.version>
 		<slf4j.version>1.7.30</slf4j.version>
@@ -45,19 +45,8 @@
 		<pluginManagement>
 			<plugins>
 				<plugin>
-          <artifactId>maven-compiler-plugin</artifactId>
-					<configuration>
-						<source>15</source>
-						<target>15</target>
-						<compilerArgs>--enable-preview</compilerArgs>
-					</configuration>
-        </plugin>
-				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-surefire-plugin</artifactId>
-					<configuration>
-						<argLine>-XX:TieredStopAtLevel=1 -XX:-TieredCompilation --enable-preview</argLine>
-					</configuration>
 					<dependencies>
 						<dependency>
 							<groupId>org.junit.jupiter</groupId>
@@ -78,13 +67,6 @@
 							<scope>runtime</scope>
 						</dependency>
 					</dependencies>
-				</plugin>
-				<plugin>
-					<artifactId>maven-javadoc-plugin</artifactId>
-					<configuration>
-						<release>15</release>
-						<additionalOptions>--enable-preview</additionalOptions>
-					</configuration>
 				</plugin>
 			</plugins>
 		</pluginManagement>

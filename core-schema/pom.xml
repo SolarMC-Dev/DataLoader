@@ -11,144 +11,52 @@
 
 	<artifactId>loader-core-schema</artifactId>
 
-	<properties>
-		<flyway.version>7.5.0</flyway.version>
-		<jooq.version>3.14.4</jooq.version>
-
-        <!--
-        JDBC connection settings for the temporary database
-        Any changes made here must be likewise updated in jooq.xml -->
-		<jdbc.mariadb-port>50000</jdbc.mariadb-port>
-		<jdbc.dbname>solardata</jdbc.dbname>
-		<jdbc.url>jdbc:mariadb://localhost:50000/solardata</jdbc.url>
-	</properties>
-
 	<build>
 		<plugins>
-			<!--
-			These 3 plugins handle the development lifecycle with respect to flyway and jooq.
-			First, mariadb4j-maven-plugin starts a temporary MariaDB instance.
-			Second, flyway applies migrations to this database.
-			Third, jooq reads the schema and generates table and column references based on it.
-			Finally, mariadb4-maven-plugin stops the MariaDB instance.
+			<!-- literally use tick + testcontainers lol !-->
+			<plugin>
+				<groupId>me.aurium</groupId>
+				<artifactId>tick-full</artifactId>
+				<version>1.0.0</version>
 
-			Points of interest:
-			* The flyway and jooq plugins are both run in the generate-sources phase. As a result,
-			  the ordering of the plugin declarations is significant.
-			* There are no 'pre-generate-sources' or 'post-generate-sources' phases in Maven,
-			  so 'initialize' and 'generate-resources' are instead used for starting and stopping
-			  the temporary MariaDB instance.
-			-->
-			<plugin>
-				<groupId>ch.vorburger.mariaDB4j</groupId>
-				<artifactId>mariaDB4j-maven-plugin</artifactId>
-				<version>${mariadb4j.version}</version>
 				<executions>
 					<execution>
-						<id>setup</id>
-						<!-- Pre generate-sources = initialize -->
-						<phase>initialize</phase>
-						<goals>
-							<goal>start</goal>
-						</goals>
-					</execution>
-					<execution>
-						<id>teardown</id>
-						<!-- Post generate-sources = generate-resources -->
-						<phase>generate-resources</phase>
-						<goals>
-							<goal>stop</goal>
-						</goals>
-					</execution>
-				</executions>
-				<configuration>
-					<dataDir>${project.build.outputDirectory}/mariadb4j-temporary-database</dataDir>
-					<port>${jdbc.mariadb-port}</port>
-					<databaseName>${jdbc.dbname}</databaseName>
-				</configuration>
-			</plugin>
-			<plugin>
-				<groupId>org.flywaydb</groupId>
-				<artifactId>flyway-maven-plugin</artifactId>
-				<version>${flyway.version}</version>
-				<dependencies>
-					<dependency>
-						<groupId>org.mariadb.jdbc</groupId>
-						<artifactId>mariadb-java-client</artifactId>
-						<version>${mariadb-connector.version}</version>
-					</dependency>
-				</dependencies>
-				<executions>
-					<execution>
-						<phase>generate-sources</phase>
-						<goals>
-							<goal>migrate</goal>
-						</goals>
-					</execution>
-				</executions>
-				<configuration>
-					<ignoreFutureMigrations>false</ignoreFutureMigrations>
-					<validateMigrationNaming>true</validateMigrationNaming>
-					<group>true</group>
-
-					<url>${jdbc.url}</url>
-					<user>root</user>
-					<!--
-					Maven does not allow setting an empty string as the password, so flyway-password.conf is used
-					-->
-					<configFiles>flyway-password.conf</configFiles>
-					<locations>
-						<location>filesystem:src/main/resources/sql-schema</location>
-						<location>filesystem:flyway-libertybans</location>
-					</locations>
-				</configuration>
-			</plugin>
-			<plugin>
-				<groupId>org.jooq</groupId>
-				<artifactId>jooq-codegen-maven</artifactId>
-				<version>${jooq.version}</version>
-				<dependencies>
-					<dependency>
-						<groupId>org.mariadb.jdbc</groupId>
-						<artifactId>mariadb-java-client</artifactId>
-						<version>${mariadb-connector.version}</version>
-					</dependency>
-				</dependencies>
-				<executions>
-					<execution>
+						<id>create-stuff</id>
 						<phase>generate-sources</phase>
 						<goals>
 							<goal>generate</goal>
 						</goals>
 					</execution>
 				</executions>
+
 				<configuration>
-					<configurationFile>jooq.xml</configurationFile>
+					<packageName>gg.solarmc.loader.schema</packageName>
+					<outputDirectory>filesystem:target/generated-sources/</outputDirectory>
+					<locations>
+						<location>filesystem:src/main/resources/sql-schema</location>
+						<location>filesystem:flyway-libertybans</location>
+					</locations>
 				</configuration>
+
+
+
+				<dependencies>
+					<dependency>
+						<groupId>org.mariadb.jdbc</groupId>
+						<artifactId>mariadb-java-client</artifactId>
+						<version>${mariadb-connector.version}</version>
+					</dependency>
+				</dependencies>
 			</plugin>
 		</plugins>
 	</build>
 
-	<dependencies>
-		<dependency>
-			<groupId>org.flywaydb</groupId>
-			<artifactId>flyway-core</artifactId>
-			<version>${flyway.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.jooq</groupId>
-			<artifactId>jooq</artifactId>
-			<version>${jooq.version}</version>
-		</dependency>
-		<!--<dependency>
-			<groupId>org.jooq</groupId>
-			<artifactId>jooq-meta</artifactId>
-			<version>${jooq.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.jooq</groupId>
-			<artifactId>jooq-codegen</artifactId>
-			<version>${jooq.version}</version>
-		</dependency>-->
-	</dependencies>
+
+	<repositories>
+		<repository>
+			<id>repsy</id>
+			<url>https://repo.repsy.io/mvn/elytraforce/default</url>
+		</repository>
+	</repositories>
+
 </project>

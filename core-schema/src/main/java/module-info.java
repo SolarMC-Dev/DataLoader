@@ -1,6 +1,5 @@
 module gg.solarmc.loader.schema {
 
-	requires transitive org.jooq;
 	requires java.xml;
 
 	exports gg.solarmc.loader.schema;

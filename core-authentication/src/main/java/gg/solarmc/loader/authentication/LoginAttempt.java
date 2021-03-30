@@ -78,7 +78,11 @@ public final class LoginAttempt {
 		PREMIUM_PERMITTED,
 		/**
 		 * The user needs to enter a password to login. The details
-		 * relating to the password are given by {@link #verifiablePassword()}
+		 * relating to the password are given by {@link #verifiablePassword()}. <br>
+		 * <br>
+		 * This can only be encountered via a race condition. Usually the state
+		 * {@link AutoLoginPreparation.ResultType#CRACKED} indicates the user
+		 * is cracked and has to enter the associated password.
 		 */
 		NEEDS_PASSWORD,
 		/**
@@ -89,8 +93,8 @@ public final class LoginAttempt {
 		 * The user is cracked, but a premium user already holds their username. <br>
 		 * <br>
 		 * This can only be encountered via a race condition. Usually the state
-		 * {@link AutoLoginPreparation.ResultType#PREMIUM} is returned, and so
-		 * the joining user is assumed to be premium, and is therefore unfortunately
+		 * {@link AutoLoginPreparation.ResultType#PREMIUM} indicates that the
+		 * user should be presumed premium and must complete the login protocol
 		 */
 		DENIED_PREMIUM_TOOK_NAME,
 		/**

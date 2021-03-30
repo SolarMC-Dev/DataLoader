@@ -30,7 +30,8 @@ CREATE TABLE auth_passwords (
   iterations TINYINT NOT NULL,
   memory INT NOT NULL,
   password_hash BINARY(64) NULL,
-  password_salt BINARY(32) NULL
+  password_salt BINARY(32) NULL,
+  wants_migration BIT(1) NOT NULL
 );
 
 CREATE FUNCTION insert_automatic_account_and_get_user_id

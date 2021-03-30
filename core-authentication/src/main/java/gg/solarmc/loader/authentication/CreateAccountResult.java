@@ -32,7 +32,8 @@ public enum CreateAccountResult {
 	/**
 	 * The account for the username already exists. This is a likely race condition,
 	 * assuming the caller has implemented everything correctly. The implementor
-	 * should be sure to implement rate limiting so a user cannot spam account creation.
+	 * should enforce rate limiting so a user cannot spam account creation through
+	 * a user-facing interface.
 	 */
 	CONFLICT
 

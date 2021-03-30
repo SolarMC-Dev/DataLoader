@@ -24,7 +24,7 @@ import gg.solarmc.loader.Transaction;
 import org.jooq.DSLContext;
 import org.jooq.Record1;
 import org.jooq.Record5;
-import org.jooq.Record6;
+import org.jooq.Record7;
 import org.slf4j.LoggerFactory;
 import space.arim.omnibus.util.UUIDUtil;
 
@@ -92,10 +92,11 @@ public final class AuthenticationCenter {
 		 *
 		 * This query also relies on the case insensitivity of MariaDB
 		 */
-		Record6<byte[], String, Byte, Integer, byte[], byte[]> accountRecord = context
+		Record7<byte[], String, Byte, Integer, byte[], byte[], Boolean> accountRecord = context
 				.select(LATEST_NAMES.UUID, LATEST_NAMES.USERNAME,
 						AUTH_PASSWORDS.ITERATIONS, AUTH_PASSWORDS.MEMORY,
-						AUTH_PASSWORDS.PASSWORD_HASH, AUTH_PASSWORDS.PASSWORD_SALT)
+						AUTH_PASSWORDS.PASSWORD_HASH, AUTH_PASSWORDS.PASSWORD_SALT,
+						AUTH_PASSWORDS.WANTS_MIGRATION)
 				.from(LATEST_NAMES)
 				.innerJoin(AUTH_PASSWORDS)
 				.on(AUTH_PASSWORDS.USERNAME.eq(LATEST_NAMES.USERNAME))
@@ -122,13 +123,12 @@ public final class AuthenticationCenter {
 						new HashingInstructions(
 								accountRecord.get(AUTH_PASSWORDS.ITERATIONS),
 								accountRecord.get(AUTH_PASSWORDS.MEMORY))
-				));
+				),
+				accountRecord.get(AUTH_PASSWORDS.WANTS_MIGRATION));
 	}
 
 	/**
-	 * Determines whether the new user needs to enter a password. The user is deemed new on the
-	 * basis that {@link #findExistingUserWithName(Transaction, String)} does not find an existing
-	 * user. <br>
+	 * Determines whether a new user, who is now identified by a UUID, needs to enter a password. <br>
 	 * <br>
 	 *  By now, the caller should either have a premium user who has authenticated via the login protocol,
 	 * or a cracked user. If the user is premium, they may still need to enter a password if there is
@@ -139,7 +139,7 @@ public final class AuthenticationCenter {
 	 * @param user the unauthenticated user
 	 * @return the login attempt result
 	 */
-	public LoginAttempt attemptLoginFromNewUsername(Transaction transaction, UserWithDataNotYetLoaded user) {
+	public LoginAttempt attemptLoginOfIdentifiedUser(Transaction transaction, UserWithDataNotYetLoaded user) {
 		DSLContext context = transaction.getProperty(DSLContext.class);
 
 		Record5<String, Byte, Integer, byte[], byte[]> passwordRecord = context
@@ -276,8 +276,15 @@ public final class AuthenticationCenter {
 	/**
 	 * Assuming the user has entered the password correctly, complete their login. <br>
 	 * <br>
-	 * The user may in fact be premium or cracked. If the joining user is premium,
-	 * their data will be migrated
+	 * This method covers both the case that the user was cracked and has now
+	 * entered their password from a premium account, and their data will be migrated,
+	 * and the case that the user is simply cracked. <br>
+	 * <br>
+	 * There are 3 possible results: <br>
+	 * 1. The user is simply cracked and is now authenticated and ready to play <br>
+	 * 2. The user is premium, and their past cracked account has been migrated <br>
+	 * 3. The user is cracked but their user ID is missing, possibly indicating
+	 * that someone else migrated their account via #2
 	 *
 	 * @param transaction the transaction
 	 * @param user the user
@@ -309,6 +316,24 @@ public final class AuthenticationCenter {
 		}
 		user.loadData(transaction, userId);
 		return CompleteLoginResult.NORMAL;
+	}
+
+	/**
+	 * Marks that a user wants to migrate their account from cracked to premium
+	 *
+	 * @param transaction the transaction
+	 * @param userDetails the user details
+	 * @throws IllegalArgumentException if the user is premium
+	 */
+	public void desiresAccountMigration(Transaction transaction, UserDetails userDetails) {
+		if (userDetails.isPremium()) {
+			throw new IllegalArgumentException("User is premium");
+		}
+		transaction.getProperty(DSLContext.class)
+				.update(AUTH_PASSWORDS)
+				.set(AUTH_PASSWORDS.WANTS_MIGRATION, true)
+				.where(AUTH_PASSWORDS.USERNAME.eq(userDetails.username()))
+				.execute();
 	}
 
 	/**

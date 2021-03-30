@@ -49,11 +49,13 @@ public final class AutoLoginPreparation {
     }
 
     static AutoLoginPreparation forExistingCrackedUser(UserDetails userDetails,
-                                                       VerifiablePassword verifiablePassword) {
+                                                       VerifiablePassword verifiablePassword,
+                                                       boolean wantsMigration) {
         assert !userDetails.isPremium();
-        return new AutoLoginPreparation(Objects.requireNonNull(userDetails, "userDetails"),
-                                        Objects.requireNonNull(verifiablePassword, "verifiablePassword"),
-                                        ResultType.CRACKED);
+        return new AutoLoginPreparation(
+                Objects.requireNonNull(userDetails, "userDetails"),
+                Objects.requireNonNull(verifiablePassword, "verifiablePassword"),
+                (wantsMigration) ? ResultType.CRACKED_BUT_DESIRES_MIGRATION : ResultType.CRACKED);
     }
 
     static AutoLoginPreparation noneFound() {
@@ -102,31 +104,48 @@ public final class AutoLoginPreparation {
     public enum ResultType {
 
         /**
-         * An existing user was found and the existing user is premium. The caller
-         * should proceed to verify the premium user via the login protocol, and
-         * once that is successful, allow the player to play
+         * An existing user was found and the existing user is premium. <br>
+         * <br>
+         * The caller should verify the user via the premium login protocol,
+         * and once that is successful, confirm the user's authentication via
+         * {@link AuthenticationCenter#attemptLoginOfIdentifiedUser(Transaction, UserWithDataNotYetLoaded)}
          *
          */
         PREMIUM,
         /**
-         * An existing user was found and the existing user is cracked. The caller
-         * should proceed to authenticate the user against their password and
+         * An existing user was found and the existing user is cracked. <br>
+         * <br>
+         * The caller should proceed to authenticate the user against their password and
          * then call
          * {@link AuthenticationCenter#completeLoginAndPossiblyMigrate(Transaction, UserWithDataNotYetLoaded)}
          *
          */
         CRACKED,
         /**
-         * No existing user was found. The caller should proceed to lookup whether
-         * the username belongs to a premium user according to the Mojang API. If
-         * that is the case, the user should be assumed to be premium and must
-         * complete the login protocol. Otherwise the user is cracked.
+         * An existing user was found and the existing user is cracked. However, the
+         * user has specified that they are migrating to a premium account. <br>
+         * <br>
+         * The caller should verify the user via the premium login protocol, and once
+         * that is successful, have the user authenticate against the existing account,
+         * finally calling
+         * {@link AuthenticationCenter#completeLoginAndPossiblyMigrate(Transaction, UserWithDataNotYetLoaded)}
+         *
+         */
+        CRACKED_BUT_DESIRES_MIGRATION,
+        /**
+         * No existing user was found. <br>
+         * <br>
+         * The caller should proceed to lookup whether the username belongs to a premium user
+         * according to the Mojang API. If that is the case, the user should be presumed
+         * premium and verified via the premium login protocol. Otherwise the user is cracked.
          *
          */
         NONE_FOUND,
         /**
          * An existing user was found, but the name of the joining user is the same as
-         * the existing name ignoring case but different than the existing name including case.
+         * the existing name ignoring case but different than the existing name including case. <br>
+         * <br>
+         * The caller should deny the user.
          *
          */
         DENIED_CASE_SENSITIVITY_OF_NAME

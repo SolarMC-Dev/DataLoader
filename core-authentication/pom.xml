@@ -10,7 +10,7 @@
         <version>0.3.1-SNAPSHOT</version>
     </parent>
 
-    <artifactId>core-authentication</artifactId>
+    <artifactId>loader-core-authentication</artifactId>
 
     <dependencies>
         <dependency>

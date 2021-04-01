@@ -12,9 +12,6 @@
 	<artifactId>loader-core-schema</artifactId>
 
 	<properties>
-		<flyway.version>7.5.0</flyway.version>
-		<jooq.version>3.14.4</jooq.version>
-
         <!--
         JDBC connection settings for the temporary database
         Any changes made here must be likewise updated in jooq.xml -->

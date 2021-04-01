@@ -172,7 +172,7 @@ public class ClanManager implements DataManager {
             this.invalidateAllianceCache(clan.getID());
         });
 
-        clans.invalidate(clan);
+        clans.invalidate(clan.getID());
     }
 
 

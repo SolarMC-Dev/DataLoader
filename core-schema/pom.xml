@@ -6,7 +6,7 @@
 	<parent>
 		<groupId>gg.solarmc.loader</groupId>
 		<artifactId>dataloader</artifactId>
-		<version>0.4.0</version>
+		<version>0.4.1-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>loader-core-schema</artifactId>

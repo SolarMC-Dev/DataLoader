@@ -164,7 +164,7 @@ public class ClanManager implements DataManager {
                 .where(CLANS_CLAN_INFO.CLAN_ID.eq(clan.getID()))
                 .execute();
 
-        if (i == 1) {
+        if (i == 0) {
             throw new IllegalStateException("Clan does not exist in table!");
         }
 

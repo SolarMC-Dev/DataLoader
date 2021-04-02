@@ -102,6 +102,10 @@
 				<artifactId>dazzleconf-ext-snakeyaml</artifactId>
 				<version>${dazzleconf.version}</version>
 			</dependency>
+			<dependency>
+				<groupId>com.github.ben-manes.caffeine</groupId>
+				<artifactId>caffeine</artifactId>
+			</dependency>
 			<!-- Self Dependencies -->
 			<dependency>
 				<groupId>gg.solarmc.loader</groupId>
@@ -112,7 +116,6 @@
 				<groupId>gg.solarmc.loader</groupId>
 				<artifactId>loader-core-implementation</artifactId>
 				<version>${project.version}</version>
-				<scope>provided</scope>
 			</dependency>
 			<dependency>
 				<groupId>gg.solarmc.loader</groupId>

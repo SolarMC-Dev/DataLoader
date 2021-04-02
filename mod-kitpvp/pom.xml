@@ -23,12 +23,10 @@
 		<dependency>
 			<groupId>gg.solarmc.loader</groupId>
 			<artifactId>loader-core-implementation</artifactId>
-			<scope>compile</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.github.ben-manes.caffeine</groupId>
 			<artifactId>caffeine</artifactId>
-			<version>${caffeine.version}</version>
 		</dependency>
 	</dependencies>
 </project>

@@ -34,6 +34,10 @@
 		<caffeine.version>3.0.1</caffeine.version>
 	</properties>
 
+	<scm>
+		<developerConnection>scm:git:https://github.com/SolarMC-Dev/DataLoader.git</developerConnection>
+	</scm>
+
 	<licenses>
 		<license>
 			<name>GNU Affero General Public License, Version 3</name>

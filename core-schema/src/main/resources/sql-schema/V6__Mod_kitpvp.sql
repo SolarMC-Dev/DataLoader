@@ -31,3 +31,10 @@ CREATE TABLE kitpvp_kits_contents (
   FOREIGN KEY (kit_id) REFERENCES kitpvp_kits_ids (kit_id) ON DELETE CASCADE,
   PRIMARY KEY (kit_id, slot)
 );
+
+CREATE TABLE kitpvp_player_bounties (
+  user_id INT NOT NULL,
+  bounty_amount INT NOT NULL,
+  FOREIGN KEY (user_id) REFERENCES user_ids (id) ON DELETE CASCADE,
+  PRIMARY KEY (user_id)
+);

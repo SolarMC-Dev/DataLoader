@@ -6,7 +6,7 @@
 	<parent>
 		<groupId>gg.solarmc.loader</groupId>
 		<artifactId>dataloader</artifactId>
-		<version>0.4.1-SNAPSHOT</version>
+		<version>0.4.2-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>loader-core-schema</artifactId>
@@ -121,6 +121,15 @@
 				</executions>
 				<configuration>
 					<configurationFile>jooq.xml</configurationFile>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<source>15</source>
+					<target>15</target>
+					<compilerArgs>--enable-preview</compilerArgs>
 				</configuration>
 			</plugin>
 		</plugins>

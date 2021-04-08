@@ -31,8 +31,6 @@ import static gg.solarmc.loader.schema.tables.KitpvpStatistics.KITPVP_STATISTICS
 
 public abstract class KitPvp implements DataObject {
 
-
-
     private final int userID;
     private final KitPvpManager manager;
 
@@ -57,6 +55,8 @@ public abstract class KitPvp implements DataObject {
     abstract void updateExperience(int i);
     abstract void updateHighestKillstreak(int i);
     abstract void updateCurrentKillstreak(int i);
+
+    abstract void updateBounty(int i);
 
     /**
      * Adds kills to the user account. Infallible.
@@ -197,6 +197,14 @@ public abstract class KitPvp implements DataObject {
         statisticsRecord.store(KITPVP_STATISTICS.CURRENT_KILLSTREAK);
 
         this.updateCurrentKillstreak(0);
+    }
+
+    public void addOrInsertBounty(Transaction transaction, int amount) {
+
+    }
+
+    public void resetBounty(Transaction transaction) {
+
     }
 
     /**

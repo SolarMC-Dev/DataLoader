@@ -204,6 +204,7 @@ public abstract class KitPvp implements DataObject {
      *
      * @param transaction the transaction
      * @param amount amount to add
+     * @throws IllegalArgumentException if the amount is negative
      */
     public void addBounty(Transaction transaction, int amount) {
         if (amount <= 0) {

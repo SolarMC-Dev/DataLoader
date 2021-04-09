@@ -200,6 +200,21 @@ public abstract class KitPvp implements DataObject {
     }
 
     /**
+     * Gets the mounty
+     * @param transaction trans
+     * @return bounty
+     */
+    public int getBounty(Transaction transaction) {
+        KitpvpStatisticsRecord statisticsRecord = getStatistics(transaction);
+
+        int existingValue = statisticsRecord.getBounty();
+
+        this.updateBounty(existingValue);
+
+        return existingValue;
+    }
+
+    /**
      * Adds bounty currency to the player. Infallible.
      *
      * @param transaction transa

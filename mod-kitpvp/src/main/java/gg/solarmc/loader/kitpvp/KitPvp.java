@@ -202,7 +202,7 @@ public abstract class KitPvp implements DataObject {
     /**
      * Adds bounty currency to the player. Infallible.
      *
-     * @param transaction transa
+     * @param transaction the transaction
      * @param amount amount to add
      */
     public void addBounty(Transaction transaction, int amount) {

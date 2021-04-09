@@ -199,6 +199,12 @@ public abstract class KitPvp implements DataObject {
         this.updateCurrentKillstreak(0);
     }
 
+    /**
+     * Adds bounty currency to the player. Infallible.
+     *
+     * @param transaction transa
+     * @param amount amount to add
+     */
     public void addBounty(Transaction transaction, int amount) {
         if (amount <= 0) {
             throw new IllegalArgumentException("Amount cannot be negative!");
@@ -215,6 +221,11 @@ public abstract class KitPvp implements DataObject {
         this.updateBounty(amount);
     }
 
+    /**
+     * resets the bounty. infallible.
+     *
+     * @param transaction the transaction
+     */
     public void resetBounty(Transaction transaction) {
         KitpvpStatisticsRecord statisticsRecord = getStatistics(transaction);
 

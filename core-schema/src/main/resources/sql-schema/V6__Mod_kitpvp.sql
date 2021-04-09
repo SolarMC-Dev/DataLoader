@@ -7,6 +7,7 @@ CREATE TABLE kitpvp_statistics (
   current_killstreak INT NOT NULL,
   highest_killstreak INT NOT NULL,
   experience INT NOT NULL,
+  bounty INT NOT NULL,
 
   FOREIGN KEY (user_id) REFERENCES user_ids (id) ON DELETE CASCADE
 );
@@ -30,11 +31,4 @@ CREATE TABLE kitpvp_kits_contents (
   item BLOB NOT NULL,
   FOREIGN KEY (kit_id) REFERENCES kitpvp_kits_ids (kit_id) ON DELETE CASCADE,
   PRIMARY KEY (kit_id, slot)
-);
-
-CREATE TABLE kitpvp_player_bounties (
-  user_id INT NOT NULL,
-  bounty_amount INT NOT NULL,
-  FOREIGN KEY (user_id) REFERENCES user_ids (id) ON DELETE CASCADE,
-  PRIMARY KEY (user_id)
 );

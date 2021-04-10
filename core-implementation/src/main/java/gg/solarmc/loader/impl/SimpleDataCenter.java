@@ -22,6 +22,7 @@ package gg.solarmc.loader.impl;
 import gg.solarmc.loader.DataCenter;
 import gg.solarmc.loader.OnlineSolarPlayer;
 import gg.solarmc.loader.SolarPlayer;
+import gg.solarmc.loader.Transaction;
 import gg.solarmc.loader.data.DataKey;
 import gg.solarmc.loader.data.DataManager;
 import org.jooq.DSLContext;
@@ -60,6 +61,11 @@ public final class SimpleDataCenter implements DataCenter {
 		this.icarus = icarus;
 		this.playerTracker = playerTracker;
 		this.loginHandler = loginHandler;
+	}
+
+	@Override
+	public CentralisedFuture<Transaction> provideTransact() {
+		return icarus.transactionSource().transact(transact -> transact);
 	}
 
 	@Override

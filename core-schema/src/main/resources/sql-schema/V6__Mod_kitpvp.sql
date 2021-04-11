@@ -7,6 +7,7 @@ CREATE TABLE kitpvp_statistics (
   current_killstreak INT NOT NULL,
   highest_killstreak INT NOT NULL,
   experience INT NOT NULL,
+  bounty INT NOT NULL,
 
   FOREIGN KEY (user_id) REFERENCES user_ids (id) ON DELETE CASCADE
 );

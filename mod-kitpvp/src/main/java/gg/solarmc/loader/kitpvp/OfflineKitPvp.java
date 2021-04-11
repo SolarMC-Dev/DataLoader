@@ -57,4 +57,9 @@ class OfflineKitPvp extends KitPvp {
 
     }
 
+    @Override
+    void updateBounty(int i) {
+
+    }
+
 }

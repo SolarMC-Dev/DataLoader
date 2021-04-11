@@ -31,8 +31,6 @@ import static gg.solarmc.loader.schema.tables.KitpvpStatistics.KITPVP_STATISTICS
 
 public abstract class KitPvp implements DataObject {
 
-
-
     private final int userID;
     private final KitPvpManager manager;
 
@@ -57,6 +55,8 @@ public abstract class KitPvp implements DataObject {
     abstract void updateExperience(int i);
     abstract void updateHighestKillstreak(int i);
     abstract void updateCurrentKillstreak(int i);
+
+    abstract void updateBounty(int i);
 
     /**
      * Adds kills to the user account. Infallible.
@@ -197,6 +197,58 @@ public abstract class KitPvp implements DataObject {
         statisticsRecord.store(KITPVP_STATISTICS.CURRENT_KILLSTREAK);
 
         this.updateCurrentKillstreak(0);
+    }
+
+    /**
+     * Gets the bounty
+     * @param transaction the transaction
+     * @return bounty
+     */
+    public int getBounty(Transaction transaction) {
+        KitpvpStatisticsRecord statisticsRecord = getStatistics(transaction);
+
+        int existingValue = statisticsRecord.getBounty();
+
+        this.updateBounty(existingValue);
+
+        return existingValue;
+    }
+
+    /**
+     * Adds bounty currency to the player. Infallible.
+     *
+     * @param transaction the transaction
+     * @param amount amount to add
+     * @throws IllegalArgumentException if the amount is negative
+     */
+    public void addBounty(Transaction transaction, int amount) {
+        if (amount <= 0) {
+            throw new IllegalArgumentException("Amount cannot be negative!");
+        }
+
+        KitpvpStatisticsRecord statisticsRecord = getStatistics(transaction);
+
+        int existingValue = statisticsRecord.getBounty();
+        int newValue = existingValue + amount;
+
+        statisticsRecord.setBounty(newValue);
+        statisticsRecord.store(KITPVP_STATISTICS.BOUNTY);
+
+        this.updateBounty(amount);
+    }
+
+    /**
+     * Resets the bounty. infallible.
+     *
+     * @param transaction the transaction
+     */
+    public void resetBounty(Transaction transaction) {
+        KitpvpStatisticsRecord statisticsRecord = getStatistics(transaction);
+
+        statisticsRecord.setBounty(0);
+        statisticsRecord.store(KITPVP_STATISTICS.BOUNTY);
+
+        this.updateBounty(0);
     }
 
     /**

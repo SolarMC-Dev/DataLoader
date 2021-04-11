@@ -28,8 +28,9 @@ public class OnlineKitPvp extends KitPvp {
     private volatile int experience;
     private volatile int currentKillstreaks;
     private volatile int highestKillstreaks;
+    private volatile int bounty;
 
-    public OnlineKitPvp(int userID, KitPvpManager manager, int kills, int deaths, int assists, int experience, int currentKillstreaks, int highestKillstreaks) {
+    public OnlineKitPvp(int userID, KitPvpManager manager, int kills, int deaths, int assists, int experience, int currentKillstreaks, int highestKillstreaks, int bounty) {
         super(userID, manager);
         this.kills = kills;
         this.deaths = deaths;
@@ -37,6 +38,7 @@ public class OnlineKitPvp extends KitPvp {
         this.experience = experience;
         this.currentKillstreaks = currentKillstreaks;
         this.highestKillstreaks = highestKillstreaks;
+        this.bounty = bounty;
     }
 
     @Override
@@ -67,6 +69,11 @@ public class OnlineKitPvp extends KitPvp {
     @Override
     void updateCurrentKillstreak(int i) {
         this.currentKillstreaks = i;
+    }
+
+    @Override
+    void updateBounty(int i) {
+        this.bounty = i;
     }
 
     /**
@@ -103,5 +110,13 @@ public class OnlineKitPvp extends KitPvp {
 
     public int currentExperience() {
         return experience;
+    }
+
+    /**
+     * The cached bounty value. Not reliable
+     * @return the bounty
+     */
+    public int currentBounty() {
+        return bounty;
     }
 }

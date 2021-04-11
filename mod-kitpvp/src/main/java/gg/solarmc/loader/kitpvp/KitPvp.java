@@ -200,8 +200,8 @@ public abstract class KitPvp implements DataObject {
     }
 
     /**
-     * Gets the mounty
-     * @param transaction trans
+     * Gets the bounty
+     * @param transaction the transaction
      * @return bounty
      */
     public int getBounty(Transaction transaction) {
@@ -238,7 +238,7 @@ public abstract class KitPvp implements DataObject {
     }
 
     /**
-     * resets the bounty. infallible.
+     * Resets the bounty. infallible.
      *
      * @param transaction the transaction
      */

@@ -112,6 +112,10 @@ public class OnlineKitPvp extends KitPvp {
         return experience;
     }
 
+    /**
+     * The cached bounty value. Not reliable
+     * @return the bounty
+     */
     public int currentBounty() {
         return bounty;
     }

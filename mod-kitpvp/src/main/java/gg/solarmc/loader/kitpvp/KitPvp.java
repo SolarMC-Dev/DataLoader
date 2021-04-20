@@ -77,7 +77,7 @@ public abstract class KitPvp implements DataObject {
         statisticsRecord.store(KITPVP_STATISTICS.KILLS);
         this.updateKills(newValue);
 
-        return new StatisticResult(newValue);
+        return new StatisticResult(newValue, existingValue);
     }
 
     /**
@@ -99,7 +99,7 @@ public abstract class KitPvp implements DataObject {
         statisticsRecord.store(KITPVP_STATISTICS.DEATHS);
         this.updateDeaths(newValue);
 
-        return new StatisticResult(newValue);
+        return new StatisticResult(newValue, existingValue);
     }
 
     /**
@@ -122,7 +122,7 @@ public abstract class KitPvp implements DataObject {
 
         this.updateAssists(newValue);
 
-        return new StatisticResult(newValue);
+        return new StatisticResult(newValue, existingValue);
     }
 
     /**
@@ -146,7 +146,7 @@ public abstract class KitPvp implements DataObject {
 
         this.updateExperience(newValue);
 
-        return new StatisticResult(newValue);
+        return new StatisticResult(newValue, existingValue);
     }
 
     /**
@@ -180,7 +180,7 @@ public abstract class KitPvp implements DataObject {
 
         this.updateCurrentKillstreak(newValue);
 
-        return new StatisticResult(newValue);
+        return new StatisticResult(newValue, existingValue);
     }
 
     /**

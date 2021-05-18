@@ -20,7 +20,6 @@
 package gg.solarmc.loader.impl;
 
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import space.arim.omnibus.DefaultOmnibus;
@@ -45,15 +44,11 @@ public class IcarusLauncherTest {
     }
 
     @Test
-    @Disabled("Bug in DazzleConf on the module path. " +
-            "See https://github.com/A248/DazzleConf/commit/dbaa4defb07199b138c5d8834ef6209f2f89a304 " +
-            "Will be fixed in DazzleConf 1.2.0")
     public void loadConfig() {
         assertDoesNotThrow(launcher::loadConfig);
     }
 
     @Test
-    @Disabled("same as prior")
     public void reloadConfig() {
         launcher.loadConfig();
         assertDoesNotThrow(launcher::loadConfig);

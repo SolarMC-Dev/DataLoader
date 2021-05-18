@@ -16,10 +16,10 @@
 	<name>Solar-DataLoader</name>
 
 	<properties>
-		<skipJavadoc>false</skipJavadoc>
-		<skipSources>false</skipSources>
+		<solar-parent.skipJavadoc>false</solar-parent.skipJavadoc>
+		<solar-parent.skipSources>false</solar-parent.skipSources>
 
-		<omnibus.version>1.1.0-M2</omnibus.version>
+		<omnibus.version>1.1.0-RC2</omnibus.version>
 		<slf4j.version>1.7.30</slf4j.version>
 		<junit.version>5.7.1</junit.version>
 
@@ -28,7 +28,7 @@
 		<flyway.version>7.7.1</flyway.version>
 		<jooq.version>3.14.4</jooq.version>
 
-		<dazzleconf.version>1.2.0-RC1</dazzleconf.version>
+		<dazzleconf.version>1.2.0</dazzleconf.version>
 
 		<caffeine.version>3.0.1</caffeine.version>
 	</properties>

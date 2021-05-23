@@ -14,6 +14,15 @@
 		<hikaricp.version>4.0.1</hikaricp.version>
 	</properties>
 
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-failsafe-plugin</artifactId>
+			</plugin>
+		</plugins>
+	</build>
+
 	<dependencies>
 		<dependency>
 			<groupId>gg.solarmc.loader</groupId>
@@ -41,6 +50,18 @@
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>
 			<artifactId>junit-jupiter-api</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-junit-jupiter</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-simple</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>ch.vorburger.mariaDB4j</groupId>
+			<artifactId>mariaDB4j</artifactId>
 		</dependency>
 	</dependencies>
 </project>

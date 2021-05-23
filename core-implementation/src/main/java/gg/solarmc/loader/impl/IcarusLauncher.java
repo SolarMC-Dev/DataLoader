@@ -98,6 +98,7 @@ public class IcarusLauncher {
 				.dataSource(dataSource)
 				.locations("classpath:sql-schema")
 				.validateMigrationNaming(true).group(true)
+				.baselineOnMigrate(true).baselineVersion("0.0")
 				.load();
 		flyway.migrate();
 

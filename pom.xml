@@ -22,10 +22,11 @@
 		<omnibus.version>1.1.0-RC2</omnibus.version>
 		<slf4j.version>1.7.30</slf4j.version>
 		<junit.version>5.7.1</junit.version>
+		<mockito.version>3.9.0</mockito.version>
+		<mariadb4j.version>2.4.0</mariadb4j.version>
 
 		<mariadb-connector.version>2.7.2</mariadb-connector.version>
-		<mariadb4j.version>2.4.0</mariadb4j.version>
-		<flyway.version>7.7.1</flyway.version>
+		<flyway.version>7.9.1</flyway.version>
 		<jooq.version>3.14.4</jooq.version>
 
 		<dazzleconf.version>1.2.0</dazzleconf.version>
@@ -138,6 +139,24 @@
 				<groupId>org.junit.jupiter</groupId>
 				<artifactId>junit-jupiter-params</artifactId>
 				<version>${junit.version}</version>
+				<scope>test</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.mockito</groupId>
+				<artifactId>mockito-junit-jupiter</artifactId>
+				<version>${mockito.version}</version>
+				<scope>test</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.slf4j</groupId>
+				<artifactId>slf4j-simple</artifactId>
+				<version>${slf4j.version}</version>
+				<scope>test</scope>
+			</dependency>
+			<dependency>
+				<groupId>ch.vorburger.mariaDB4j</groupId>
+				<artifactId>mariaDB4j</artifactId>
+				<version>${mariadb4j.version}</version>
 				<scope>test</scope>
 			</dependency>
 		</dependencies>

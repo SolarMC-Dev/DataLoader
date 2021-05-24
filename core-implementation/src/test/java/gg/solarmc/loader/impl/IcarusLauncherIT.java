@@ -23,6 +23,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.junit.jupiter.MockitoExtension;
 import space.arim.omnibus.DefaultOmnibus;
 import space.arim.omnibus.util.concurrent.impl.IndifferentFactoryOfTheFuture;
 
@@ -32,6 +33,7 @@ import java.util.concurrent.Executors;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 @ExtendWith(DatabaseExtension.class)
+@ExtendWith(MockitoExtension.class)
 public class IcarusLauncherIT {
 
     @TempDir

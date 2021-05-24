@@ -1,6 +1,9 @@
 ## Mac ##
 .DS_Store
 
+### Specific to DataLoader
+core-schema/src/generated/java/
+
 ### Maven ###
 
 target/

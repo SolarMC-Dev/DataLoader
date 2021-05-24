@@ -1,5 +1,6 @@
 module gg.solarmc.loader.impl {
 	exports gg.solarmc.loader.impl;
+	opens gg.solarmc.loader.impl to space.arim.dazzleconf;
 
 	requires transitive java.sql;
 	requires transitive gg.solarmc.loader.schema;

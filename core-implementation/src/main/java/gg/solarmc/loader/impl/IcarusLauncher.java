@@ -29,6 +29,7 @@ import gg.solarmc.loader.impl.launch.DatabaseSettings;
 import org.flywaydb.core.Flyway;
 import space.arim.dazzleconf.ConfigurationOptions;
 import space.arim.dazzleconf.error.InvalidConfigException;
+import space.arim.dazzleconf.ext.snakeyaml.CommentMode;
 import space.arim.dazzleconf.ext.snakeyaml.SnakeYamlConfigurationFactory;
 import space.arim.dazzleconf.ext.snakeyaml.SnakeYamlOptions;
 import space.arim.dazzleconf.helper.ConfigurationHelper;
@@ -74,8 +75,9 @@ public class IcarusLauncher {
 	public SolarDataConfig loadConfig() {
 		try {
 			return new ConfigurationHelper<>(folder, "dataloader.yml",
-					new SnakeYamlConfigurationFactory<>(SolarDataConfig.class, ConfigurationOptions.defaults(),
-							new SnakeYamlOptions.Builder().useCommentingWriter(true).build())).reloadConfigData();
+					SnakeYamlConfigurationFactory.create(SolarDataConfig.class, ConfigurationOptions.defaults(),
+							new SnakeYamlOptions.Builder().commentMode(CommentMode.fullComments()).build())
+			).reloadConfigData();
 		} catch (IOException ex) {
 			throw new UncheckedIOException(ex);
 		} catch (InvalidConfigException ex) {
@@ -96,6 +98,7 @@ public class IcarusLauncher {
 				.dataSource(dataSource)
 				.locations("classpath:sql-schema")
 				.validateMigrationNaming(true).group(true)
+				.baselineOnMigrate(true).baselineVersion("0.0")
 				.load();
 		flyway.migrate();
 

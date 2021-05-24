@@ -19,7 +19,6 @@
 
 package gg.solarmc.loader.impl;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
@@ -39,16 +38,10 @@ public class IcarusLauncherIT {
     @TempDir
     public Path tempDir;
 
-    private IcarusLauncher launcher;
-
-    @BeforeEach
-    public void setup() {
-        launcher = new IcarusLauncher(tempDir, new IndifferentFactoryOfTheFuture(),
-                new DefaultOmnibus(), Executors::newFixedThreadPool);
-    }
-
     @Test
     public void launch(SolarDataConfig.DatabaseCredentials credentials) {
+        IcarusLauncher launcher = new IcarusLauncher(tempDir, new IndifferentFactoryOfTheFuture(),
+                new DefaultOmnibus(), Executors::newFixedThreadPool);
         Icarus icarus = assertDoesNotThrow(() -> launcher.launch(credentials));
         assertDoesNotThrow(icarus::close);
     }

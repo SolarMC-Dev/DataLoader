@@ -17,42 +17,34 @@
  * and navigate to version 3 of the GNU Affero General Public License.
  */
 
-package gg.solarmc.loader.authentication;
+package gg.solarmc.loader.authentication.test;
 
-import gg.solarmc.loader.Transaction;
 import gg.solarmc.loader.authentication.internal.UUIDOperations;
+import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
-/**
- * A user whose data has not been loaded yet. The user may not be authenticated either
- *
- */
-public interface UserWithDataNotYetLoaded {
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-	UUID mcUuid();
+public class UUIDOperationsTest {
 
-	String username();
+	@Test
+	public void isPremium() {
+		assertTrue(UUIDOperations.isPremium(UUID.fromString(
+				"ed5f12cd-6007-45d9-a4b9-940524ddaecf")), "Premium");
+		assertFalse(UUIDOperations.isPremium(UUID.fromString(
+				"0aef255c-11e0-3879-9dba-1c530ab70323")), "Cracked");
 
-	default boolean isPremium() {
-		return UUIDOperations.isPremium(mcUuid());
+		assertFalse(UUIDOperations.isPremium(UUIDOperations.computeOfflineUuid("A248")));
 	}
 
-	/**
-	 * Loads the data for the user
-	 *
-	 * @param transaction the transaction
-	 * @param userId the user ID
-	 */
-	void loadData(Transaction transaction, int userId);
-
-	/**
-	 * Whether this user is equal to another
-	 *
-	 * @param o the object to determine equality with
-	 * @return true if equal, false otherwise
-	 */
-	@Override
-	boolean equals(Object o);
+	@Test
+	public void computeOfflineUuid() {
+		assertEquals(
+				UUID.fromString("0b58c22d-56f5-3296-87b8-c0155a071d4d"),
+				UUIDOperations.computeOfflineUuid("McStorm_MlyK11qF"));
+	}
 
 }

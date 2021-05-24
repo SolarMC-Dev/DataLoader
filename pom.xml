@@ -159,6 +159,12 @@
 				<version>${mariadb4j.version}</version>
 				<scope>test</scope>
 			</dependency>
+			<dependency>
+				<groupId>ch.vorburger.mariaDB4j</groupId>
+				<artifactId>mariaDB4j-core</artifactId>
+				<version>${mariadb4j.version}</version>
+				<scope>test</scope>
+			</dependency>
 		</dependencies>
 	</dependencyManagement>
 

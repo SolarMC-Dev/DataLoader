@@ -20,17 +20,20 @@
 package gg.solarmc.loader.impl;
 
 import gg.solarmc.loader.Transaction;
+import org.jooq.ConnectionProvider;
 import org.jooq.DSLContext;
 import org.jooq.SQLDialect;
+import org.jooq.conf.Settings;
+import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 
 /**
- * Implementation of transaction. Produced in {@link TransactionSource}
+ * Implementation of transaction created from {@code TransactionSource}
  */
-public class SQLTransaction implements Transaction, AutoCloseable {
+final class SQLTransaction implements Transaction, AutoCloseable {
 
     private final Connection connection;
 
@@ -51,10 +54,13 @@ public class SQLTransaction implements Transaction, AutoCloseable {
     @SuppressWarnings("unchecked")
     public <T> T getProperty(Class<T> propertyClass) {
         if (propertyClass.equals(Connection.class)) {
-            return (T)connection;
+            return (T) connection;
         }
         if (propertyClass.equals(DSLContext.class)) {
-            return (T) DSL.using(connection, SQLDialect.MARIADB);
+            return (T) DSL.using(
+                    new JooqConnectionProvider(),
+                    SQLDialect.MARIADB,
+                    new Settings().withRenderSchema(false));
         }
         if (propertyClass.equals(SQLExceptionHandler.class)) {
             return (T) handler();
@@ -70,5 +76,20 @@ public class SQLTransaction implements Transaction, AutoCloseable {
     @Override
     public void close() throws SQLException {
         connection.close();
+    }
+
+    /*
+     * JOOQ's DefaultConnectionProvider has a finalize() method. To avoid the cost
+     * of the finalization queue, use this instead
+     */
+    private final class JooqConnectionProvider implements ConnectionProvider {
+
+        @Override
+        public Connection acquire() throws DataAccessException {
+            return connection;
+        }
+
+        @Override
+        public void release(Connection connection) throws DataAccessException { }
     }
 }

@@ -19,12 +19,14 @@
 
 package gg.solarmc.loader.authentication;
 
+import gg.solarmc.loader.authentication.internal.UUIDOperations;
+
 import java.util.Objects;
 import java.util.UUID;
 
-public record UserDetails(UUID mcUuid, String username) {
+public record User(UUID mcUuid, String username) {
 
-    public UserDetails {
+    public User {
         Objects.requireNonNull(mcUuid, "mcUuid");
         Objects.requireNonNull(username, "username");
     }

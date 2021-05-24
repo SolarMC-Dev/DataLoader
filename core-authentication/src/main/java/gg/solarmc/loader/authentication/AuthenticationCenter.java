@@ -21,6 +21,10 @@ package gg.solarmc.loader.authentication;
 
 import gg.solarmc.loader.Transaction;
 
+import gg.solarmc.loader.authentication.internal.PasswordHashImpl;
+import gg.solarmc.loader.authentication.internal.PasswordHasher;
+import gg.solarmc.loader.authentication.internal.PasswordSaltImpl;
+import gg.solarmc.loader.authentication.internal.UUIDOperations;
 import org.jooq.DSLContext;
 import org.jooq.Record1;
 import org.jooq.Record5;
@@ -63,15 +67,24 @@ public final class AuthenticationCenter {
 
 	private static final HashingInstructions DEFAULT_HASHING_INSTRUCTIONS = new HashingInstructions(10, 65536);
 
-	AuthenticationCenter(PasswordHasher passwordHasher) {
-		this.passwordHasher = passwordHasher;
+	private AuthenticationCenter(PasswordHasher passwordHasher) {
+		this.passwordHasher = Objects.requireNonNull(passwordHasher, "passwordHasher");
+	}
+
+	/**
+	 * Creates an instance
+	 *
+	 * @return the auth center
+	 */
+	public static AuthenticationCenter create() {
+		return new AuthenticationCenter(PasswordHasher.create());
 	}
 
 	/**
 	 * Finds the UUID of a user who already exists and has the given name. <br>
 	 * <br>
 	 * The return type can indicate several possible states, which are explained
-	 * in {@link AutoLoginPreparation.ResultType}. The name comparison is case
+	 * in {@link AutoLoginResult.ResultType}. The name comparison is case
 	 * insensitive when the query is performed, but as explained, there may be
 	 * a user who has the same name ignoring case but a different name including case.
 	 *
@@ -80,7 +93,7 @@ public final class AuthenticationCenter {
 	 * @return the auto login preparation, indicating the existing user if found, and if
 	 * the existing user is cracked, the cracked user's password
 	 */
-	public AutoLoginPreparation findExistingUserWithName(Transaction transaction, String username) {
+	public AutoLoginResult findExistingUserWithName(Transaction transaction, String username) {
 		Objects.requireNonNull(username, "username");
 		DSLContext context = transaction.getProperty(DSLContext.class);
 		/*
@@ -103,23 +116,23 @@ public final class AuthenticationCenter {
 				.where(LATEST_NAMES.USERNAME.eq(username))
 				.fetchOne();
 		if (accountRecord == null) {
-			return AutoLoginPreparation.noneFound();
+			return AutoLoginResult.noneFound();
 		}
-		UserDetails userDetails = new UserDetails(
+		User user = new User(
 				UUIDUtil.fromByteArray(accountRecord.get(LATEST_NAMES.UUID)),
 				accountRecord.get(LATEST_NAMES.USERNAME));
-		if (userDetails.isPremium()) {
+		if (user.isPremium()) {
 			assert accountRecord.get(AUTH_PASSWORDS.ITERATIONS) == 0 : "premium accounts use iterations=0";
-			return AutoLoginPreparation.forExistingPremiumUser(userDetails);
+			return AutoLoginResult.forExistingPremiumUser(user);
 		}
-		if (!userDetails.username().equals(username)) {
-			return AutoLoginPreparation.deniedCaseSensitivityOfName();
+		if (!user.username().equals(username)) {
+			return AutoLoginResult.deniedCaseSensitivityOfName();
 		}
-		return AutoLoginPreparation.forExistingCrackedUser(
-				userDetails,
+		return AutoLoginResult.forExistingCrackedUser(
+				user,
 				new VerifiablePassword(
-						new PasswordHash(accountRecord.get(AUTH_PASSWORDS.PASSWORD_HASH)),
-						new PasswordSalt(accountRecord.get(AUTH_PASSWORDS.PASSWORD_SALT)),
+						new PasswordHashImpl(accountRecord.get(AUTH_PASSWORDS.PASSWORD_HASH)),
+						new PasswordSaltImpl(accountRecord.get(AUTH_PASSWORDS.PASSWORD_SALT)),
 						new HashingInstructions(
 								accountRecord.get(AUTH_PASSWORDS.ITERATIONS),
 								accountRecord.get(AUTH_PASSWORDS.MEMORY))
@@ -188,8 +201,8 @@ public final class AuthenticationCenter {
 			return LoginAttempt.deniedCaseSensitivityOfName();
 		}
 		VerifiablePassword existingPassword = new VerifiablePassword(
-				new PasswordHash(passwordRecord.get(AUTH_PASSWORDS.PASSWORD_HASH)),
-				new PasswordSalt(passwordRecord.get(AUTH_PASSWORDS.PASSWORD_SALT)),
+				new PasswordHashImpl(passwordRecord.get(AUTH_PASSWORDS.PASSWORD_HASH)),
+				new PasswordSaltImpl(passwordRecord.get(AUTH_PASSWORDS.PASSWORD_SALT)),
 				new HashingInstructions(iterations, passwordRecord.get(AUTH_PASSWORDS.MEMORY))
 		);
 		return LoginAttempt.needsPassword(existingPassword);
@@ -256,7 +269,8 @@ public final class AuthenticationCenter {
 						AUTH_PASSWORDS.PASSWORD_HASH, AUTH_PASSWORDS.PASSWORD_SALT)
 				.values(user.username(),
 						(byte) instructions.iterations(), instructions.memory(),
-						password.passwordHash().hashUncloned(), password.passwordSalt().saltUncloned())
+						PasswordHashImpl.hashUncloned(password.passwordHash()),
+						PasswordSaltImpl.saltUncloned(password.passwordSalt()))
 				.onDuplicateKeyIgnore()
 				.execute();
 		if (updateCount == 0) {
@@ -322,17 +336,17 @@ public final class AuthenticationCenter {
 	 * Marks that a user wants to migrate their account from cracked to premium
 	 *
 	 * @param transaction the transaction
-	 * @param userDetails the user details
+	 * @param user the user details
 	 * @throws IllegalArgumentException if the user is premium
 	 */
-	public void desiresAccountMigration(Transaction transaction, UserDetails userDetails) {
-		if (userDetails.isPremium()) {
+	public void desiresAccountMigration(Transaction transaction, User user) {
+		if (user.isPremium()) {
 			throw new IllegalArgumentException("User is premium");
 		}
 		transaction.getProperty(DSLContext.class)
 				.update(AUTH_PASSWORDS)
 				.set(AUTH_PASSWORDS.WANTS_MIGRATION, true)
-				.where(AUTH_PASSWORDS.USERNAME.eq(userDetails.username()))
+				.where(AUTH_PASSWORDS.USERNAME.eq(user.username()))
 				.execute();
 	}
 

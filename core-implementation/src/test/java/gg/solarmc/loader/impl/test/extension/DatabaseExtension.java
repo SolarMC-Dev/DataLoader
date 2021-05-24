@@ -17,8 +17,9 @@
  * and navigate to version 3 of the GNU Affero General Public License.
  */
 
-package gg.solarmc.loader.impl;
+package gg.solarmc.loader.impl.test.extension;
 
+import gg.solarmc.loader.impl.SolarDataConfig;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
@@ -37,7 +38,7 @@ import static org.mockito.Mockito.when;
 
 public final class DatabaseExtension implements ParameterResolver {
 
-    private static final AtomicInteger dbNameCounter = new AtomicInteger();
+    private static final AtomicInteger DB_NAME_COUNTER = new AtomicInteger();
     private static final ExtensionContext.Namespace NAMESPACE = ExtensionContext.Namespace.create(DatabaseExtension.class);
 
     @Override
@@ -50,10 +51,15 @@ public final class DatabaseExtension implements ParameterResolver {
     @Override
     public Object resolveParameter(ParameterContext parameterContext, ExtensionContext extensionContext)
             throws ParameterResolutionException {
+        if (!supportsParameter(parameterContext, extensionContext)) {
+            throw new ParameterResolutionException("Caller failure");
+        }
         return computeCredentials(extensionContext);
     }
 
-    private SolarDataConfig.DatabaseCredentials computeCredentials(ExtensionContext extensionContext) {
+    SolarDataConfig.DatabaseCredentials computeCredentials(ExtensionContext extensionContext) {
+        // Use the root store for the MariaDB instance
+        // Use the context store for the database credentials
         var rootStore = extensionContext.getRoot().getStore(NAMESPACE);
         ClosableMariaDb database = rootStore.getOrComputeIfAbsent(
                 Resource.DB,
@@ -74,7 +80,7 @@ public final class DatabaseExtension implements ParameterResolver {
     }
 
     private SolarDataConfig.DatabaseCredentials createCredentials(int port) {
-        String databaseName = "dataloader_test_" + dbNameCounter.getAndIncrement();
+        String databaseName = "dataloader_test_" + DB_NAME_COUNTER.incrementAndGet();
         String username = "root";
         String password = "";
         createDatabase(port, databaseName);

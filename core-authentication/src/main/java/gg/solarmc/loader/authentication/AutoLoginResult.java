@@ -28,42 +28,42 @@ import java.util.Objects;
  *
  */
 // TODO find a better name for this class
-public final class AutoLoginPreparation {
+public final class AutoLoginResult {
 
-    private final UserDetails userDetails;
+    private final User user;
     private final VerifiablePassword verifiablePassword;
     private final ResultType resultType;
 
-    private AutoLoginPreparation(UserDetails userDetails,
-                                 VerifiablePassword verifiablePassword,
-                                 ResultType resultType) {
-        this.userDetails = userDetails;
+    private AutoLoginResult(User user,
+                            VerifiablePassword verifiablePassword,
+                            ResultType resultType) {
+        this.user = user;
         this.verifiablePassword = verifiablePassword;
         this.resultType = Objects.requireNonNull(resultType, "resultType");
     }
 
-    static AutoLoginPreparation forExistingPremiumUser(UserDetails userDetails) {
-        assert userDetails.isPremium();
-        return new AutoLoginPreparation(Objects.requireNonNull(userDetails, "userDetails"),
+    static AutoLoginResult forExistingPremiumUser(User user) {
+        assert user.isPremium();
+        return new AutoLoginResult(Objects.requireNonNull(user, "user"),
                                         null, ResultType.PREMIUM);
     }
 
-    static AutoLoginPreparation forExistingCrackedUser(UserDetails userDetails,
-                                                       VerifiablePassword verifiablePassword,
-                                                       boolean wantsMigration) {
-        assert !userDetails.isPremium();
-        return new AutoLoginPreparation(
-                Objects.requireNonNull(userDetails, "userDetails"),
+    static AutoLoginResult forExistingCrackedUser(User user,
+                                                  VerifiablePassword verifiablePassword,
+                                                  boolean wantsMigration) {
+        assert !user.isPremium();
+        return new AutoLoginResult(
+                Objects.requireNonNull(user, "user"),
                 Objects.requireNonNull(verifiablePassword, "verifiablePassword"),
                 (wantsMigration) ? ResultType.CRACKED_BUT_DESIRES_MIGRATION : ResultType.CRACKED);
     }
 
-    static AutoLoginPreparation noneFound() {
-        return new AutoLoginPreparation(null, null, ResultType.NONE_FOUND);
+    static AutoLoginResult noneFound() {
+        return new AutoLoginResult(null, null, ResultType.NONE_FOUND);
     }
 
-    static AutoLoginPreparation deniedCaseSensitivityOfName() {
-        return new AutoLoginPreparation(null, null, ResultType.DENIED_CASE_SENSITIVITY_OF_NAME);
+    static AutoLoginResult deniedCaseSensitivityOfName() {
+        return new AutoLoginResult(null, null, ResultType.DENIED_CASE_SENSITIVITY_OF_NAME);
     }
 
     /**
@@ -72,11 +72,11 @@ public final class AutoLoginPreparation {
      * @return the user details of the found user
      * @throws IllegalStateException if the result type does not indicate a user was found
      */
-    public UserDetails userDetails() {
-        if (userDetails == null) {
+    public User userDetails() {
+        if (user == null) {
             throw new IllegalStateException("No user details present");
         }
-        return userDetails;
+        return user;
     }
 
     /**
@@ -150,5 +150,31 @@ public final class AutoLoginPreparation {
          */
         DENIED_CASE_SENSITIVITY_OF_NAME
 
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        AutoLoginResult that = (AutoLoginResult) o;
+        return Objects.equals(user, that.user) && Objects.equals(verifiablePassword, that.verifiablePassword)
+                && resultType == that.resultType;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = user != null ? user.hashCode() : 0;
+        result = 31 * result + (verifiablePassword != null ? verifiablePassword.hashCode() : 0);
+        result = 31 * result + resultType.hashCode();
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return "AutoLoginResult{" +
+                "user=" + user +
+                ", verifiablePassword=" + verifiablePassword +
+                ", resultType=" + resultType +
+                '}';
     }
 }

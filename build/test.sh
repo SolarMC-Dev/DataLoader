@@ -1,3 +1,3 @@
 #!/bin/bash
 
-mvn test -P-schema-gen
+mvn clean test -P-schema-gen

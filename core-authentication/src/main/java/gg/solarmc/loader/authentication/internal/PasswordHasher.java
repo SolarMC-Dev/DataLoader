@@ -17,35 +17,45 @@
  * and navigate to version 3 of the GNU Affero General Public License.
  */
 
-package gg.solarmc.loader.authentication;
+package gg.solarmc.loader.authentication.internal;
 
 import de.mkammerer.argon2.Argon2Advanced;
+import de.mkammerer.argon2.Argon2Factory;
+import gg.solarmc.loader.authentication.HashingInstructions;
+import gg.solarmc.loader.authentication.PasswordHash;
+import gg.solarmc.loader.authentication.PasswordSalt;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 
-class PasswordHasher {
+public final class PasswordHasher {
 
 	private final Argon2Advanced argon2;
 
-	static final int HASH_LENGTH = 64;
-	static final int SALT_LENGTH = 32;
+	public static final int HASH_LENGTH = 64;
+	public static final int SALT_LENGTH = 32;
 
-	PasswordHasher(Argon2Advanced argon2) {
-		this.argon2 = argon2;
+	private PasswordHasher(Argon2Advanced argon2) {
+		this.argon2 = Objects.requireNonNull(argon2, "argon2");
 	}
 
-	PasswordHash hashPassword(String password, PasswordSalt salt, HashingInstructions instructions) {
+	public static PasswordHasher create() {
+		return new PasswordHasher(Argon2Factory.createAdvanced(
+				Argon2Factory.Argon2Types.ARGON2i, PasswordHasher.SALT_LENGTH, PasswordHasher.HASH_LENGTH));
+	}
+
+	public PasswordHash hashPassword(String password, PasswordSalt salt, HashingInstructions instructions) {
 		byte[] hash = argon2.rawHash(
 					instructions.iterations(), instructions.memory(), 1,
-					password.getBytes(StandardCharsets.UTF_8), salt.saltUncloned());
+					password.getBytes(StandardCharsets.UTF_8), PasswordSaltImpl.saltUncloned(salt));
 		assert hash.length == HASH_LENGTH : hash.length;
-		return new PasswordHash(hash);
+		return new PasswordHashImpl(hash);
 	}
 
-	PasswordSalt generateSalt() {
+	public PasswordSalt generateSalt() {
 		byte[] salt = argon2.generateSalt();
 		assert salt.length == SALT_LENGTH;
-		return new PasswordSalt(salt);
+		return new PasswordSaltImpl(salt);
 	}
 
 }

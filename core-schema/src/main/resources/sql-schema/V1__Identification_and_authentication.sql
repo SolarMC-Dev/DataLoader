@@ -40,7 +40,7 @@ CREATE FUNCTION insert_automatic_account_and_get_user_id
   RETURNS INT
   MODIFIES SQL DATA
   BEGIN
-    INSERT INTO auth_passwords (username) VALUES (mc_username);
+    INSERT INTO auth_passwords (username, iterations, memory, wants_migration) VALUES (mc_username, 0, 0, 0);
     RETURN insert_or_get_user_id(mc_uuid);
   END;
 

@@ -20,7 +20,6 @@
 package gg.solarmc.loader.authentication;
 
 import java.util.Objects;
-import java.util.Optional;
 
 public final class LoginAttempt {
 
@@ -64,10 +63,14 @@ public final class LoginAttempt {
 	/**
 	 * Gets the hashed password which must be verified against
 	 *
-	 * @return the verifiable password, or an empty optional if this is not {@code NEEDS_PASSWORD}
+	 * @return the verifiable password
+	 * @throws IllegalStateException if the result type is not {@code NEEDS_PASSWORD}
 	 */
-	public Optional<VerifiablePassword> verifiablePassword() {
-		return Optional.ofNullable(verifiablePassword);
+	public VerifiablePassword verifiablePassword() {
+		if (verifiablePassword == null) {
+			throw new IllegalStateException("No password present");
+		}
+		return verifiablePassword;
 	}
 
 	public enum ResultType {
@@ -81,7 +84,7 @@ public final class LoginAttempt {
 		 * relating to the password are given by {@link #verifiablePassword()}. <br>
 		 * <br>
 		 * This can only be encountered via a race condition. Usually the state
-		 * {@link AutoLoginPreparation.ResultType#CRACKED} indicates the user
+		 * {@link AutoLoginResult.ResultType#CRACKED} indicates the user
 		 * is cracked and has to enter the associated password.
 		 */
 		NEEDS_PASSWORD,
@@ -93,7 +96,7 @@ public final class LoginAttempt {
 		 * The user is cracked, but a premium user already holds their username. <br>
 		 * <br>
 		 * This can only be encountered via a race condition. Usually the state
-		 * {@link AutoLoginPreparation.ResultType#PREMIUM} indicates that the
+		 * {@link AutoLoginResult.ResultType#PREMIUM} indicates that the
 		 * user should be presumed premium and must complete the login protocol
 		 */
 		DENIED_PREMIUM_TOOK_NAME,
@@ -102,7 +105,7 @@ public final class LoginAttempt {
 		 * ignoring case but different than the existing name including case. <br>
 		 * <br>
 		 * As with {@code DENIED_PREMIUM_TOOK_NAME}, this can only happen via a race condition.
-		 * This state should usually be prevented by {@link AutoLoginPreparation.ResultType#DENIED_CASE_SENSITIVITY_OF_NAME}
+		 * This state should usually be prevented by {@link AutoLoginResult.ResultType#DENIED_CASE_SENSITIVITY_OF_NAME}
 		 */
 		DENIED_CASE_SENSITIVITY_OF_NAME
 

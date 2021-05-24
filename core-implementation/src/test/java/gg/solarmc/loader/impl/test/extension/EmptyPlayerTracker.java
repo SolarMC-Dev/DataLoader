@@ -17,18 +17,23 @@
  * and navigate to version 3 of the GNU Affero General Public License.
  */
 
-package gg.solarmc.loader.authentication;
+package gg.solarmc.loader.impl.test.extension;
 
-import de.mkammerer.argon2.Argon2Advanced;
-import de.mkammerer.argon2.Argon2Factory;
-import de.mkammerer.argon2.Argon2Factory.Argon2Types;
+import gg.solarmc.loader.OnlineSolarPlayer;
+import gg.solarmc.loader.impl.PlayerTracker;
 
-public class AuthenticationCenterCreation {
+import java.util.Optional;
+import java.util.UUID;
 
-	public AuthenticationCenter create() {
-		Argon2Advanced argon2 = Argon2Factory.createAdvanced(
-				Argon2Types.ARGON2i, PasswordHasher.SALT_LENGTH, PasswordHasher.HASH_LENGTH);
-		return new AuthenticationCenter(new PasswordHasher(argon2));
-	}
+final class EmptyPlayerTracker implements PlayerTracker {
 
+    @Override
+    public Optional<OnlineSolarPlayer> getOnlinePlayerForUuid(UUID uuid) {
+        return Optional.empty();
+    }
+
+    @Override
+    public Optional<OnlineSolarPlayer> getOnlinePlayerForName(String name) {
+        return Optional.empty();
+    }
 }

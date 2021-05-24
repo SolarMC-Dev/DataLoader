@@ -17,33 +17,24 @@
  * and navigate to version 3 of the GNU Affero General Public License.
  */
 
-package gg.solarmc.loader.authentication;
+package gg.solarmc.loader.authentication.internal;
 
-import org.junit.jupiter.api.Test;
+import space.arim.omnibus.util.UUIDUtil;
 
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+public final class UUIDOperations {
 
-public class UUIDOperationsTest {
+	private UUIDOperations() {}
 
-	@Test
-	public void isPremium() {
-		assertTrue(UUIDOperations.isPremium(UUID.fromString(
-				"ed5f12cd-6007-45d9-a4b9-940524ddaecf")), "Premium");
-		assertFalse(UUIDOperations.isPremium(UUID.fromString(
-				"0aef255c-11e0-3879-9dba-1c530ab70323")), "Cracked");
-
-		assertFalse(UUIDOperations.isPremium(UUIDOperations.computeOfflineUuid("A248")));
+	public static boolean isPremium(UUID uuid) {
+		// Premium UUIDs are v4. See OpenJDK implementation of UUID.randomUUID()
+		byte[] uuidBytes = UUIDUtil.toByteArray(uuid);
+		return (uuidBytes[6] & 0x40) != 0;
 	}
 
-	@Test
-	public void computeOfflineUuid() {
-		assertEquals(
-				UUID.fromString("0b58c22d-56f5-3296-87b8-c0155a071d4d"),
-				UUIDOperations.computeOfflineUuid("McStorm_MlyK11qF"));
+	public static UUID computeOfflineUuid(String name) {
+		return UUID.nameUUIDFromBytes(("OfflinePlayer:" + name).getBytes(StandardCharsets.UTF_8));
 	}
-
 }

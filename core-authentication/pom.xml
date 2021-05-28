@@ -51,7 +51,7 @@
         </dependency>
         <!-- Required by former -->
         <dependency>
-            <groupId>ch.vorburger.mariaDB4j</groupId>
+            <groupId>gg.solarmc.mariaDB4j</groupId>
             <artifactId>mariaDB4j</artifactId>
         </dependency>
         <dependency>

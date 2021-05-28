@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>gg.solarmc</groupId>
 		<artifactId>solar-parent</artifactId>
-		<version>0.5.4</version>
+		<version>0.5.8</version>
 	</parent>
 
 	<groupId>gg.solarmc.loader</groupId>
@@ -23,7 +23,7 @@
 		<slf4j.version>1.7.30</slf4j.version>
 		<junit.version>5.7.1</junit.version>
 		<mockito.version>3.10.0</mockito.version>
-		<mariadb4j.version>2.4.0</mariadb4j.version>
+		<mariadb4j.version>2.5.0</mariadb4j.version>
 
 		<mariadb-connector.version>2.7.2</mariadb-connector.version>
 		<flyway.version>7.9.1</flyway.version>
@@ -154,14 +154,8 @@
 				<scope>test</scope>
 			</dependency>
 			<dependency>
-				<groupId>ch.vorburger.mariaDB4j</groupId>
+				<groupId>gg.solarmc.mariaDB4j</groupId>
 				<artifactId>mariaDB4j</artifactId>
-				<version>${mariadb4j.version}</version>
-				<scope>test</scope>
-			</dependency>
-			<dependency>
-				<groupId>ch.vorburger.mariaDB4j</groupId>
-				<artifactId>mariaDB4j-core</artifactId>
 				<version>${mariadb4j.version}</version>
 				<scope>test</scope>
 			</dependency>

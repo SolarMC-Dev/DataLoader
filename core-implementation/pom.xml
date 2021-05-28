@@ -71,7 +71,7 @@
 			<artifactId>slf4j-simple</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>ch.vorburger.mariaDB4j</groupId>
+			<groupId>gg.solarmc.mariaDB4j</groupId>
 			<artifactId>mariaDB4j</artifactId>
 		</dependency>
 	</dependencies>

@@ -9,5 +9,7 @@ open module gg.solarmc.loader.impl.test {
     requires org.mockito.junit.jupiter;
     requires net.bytebuddy; // required by mockito
     requires exec;
-    requires mariaDB4j.core;
+    requires ch.vorburger.mariadb4j;
+    requires org.slf4j;
+    requires space.arim.omnibus;
 }

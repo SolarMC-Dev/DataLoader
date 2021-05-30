@@ -41,6 +41,14 @@ public record DataCenterInfo(Icarus icarus, DataCenter dataCenter, LoginHandler 
         return loginHandler.loginUser(userDetails).join();
     }
 
+    /**
+     * Creates a data center. The associated {@code LoginHandler} will assume
+     * users exist and will update their name and address history when called
+     *
+     * @param folder the launch directory
+     * @param credentials the database credentials
+     * @return the data center info
+     */
     public static DataCenterInfo create(Path folder, SolarDataConfig.DatabaseCredentials credentials) {
         FactoryOfTheFuture futuresFactory = new IndifferentFactoryOfTheFuture();
         IcarusLauncher icarusLauncher = new IcarusLauncher(

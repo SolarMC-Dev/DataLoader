@@ -1,5 +1,5 @@
 open module gg.solarmc.loader.impl.test {
-    requires gg.solarmc.loader.impl;
+    requires transitive gg.solarmc.loader.impl;
 
     exports gg.solarmc.loader.impl.test;
     exports gg.solarmc.loader.impl.test.extension;

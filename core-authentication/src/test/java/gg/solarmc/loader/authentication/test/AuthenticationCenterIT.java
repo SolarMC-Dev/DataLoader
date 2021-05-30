@@ -20,6 +20,7 @@
 package gg.solarmc.loader.authentication.test;
 
 import gg.solarmc.loader.DataCenter;
+import gg.solarmc.loader.OnlineSolarPlayer;
 import gg.solarmc.loader.authentication.AuthenticationCenter;
 import gg.solarmc.loader.authentication.AutoLoginResult;
 import gg.solarmc.loader.authentication.CompleteLoginResult;
@@ -29,6 +30,7 @@ import gg.solarmc.loader.authentication.User;
 import gg.solarmc.loader.authentication.VerifiablePassword;
 import gg.solarmc.loader.authentication.internal.UUIDOperations;
 import gg.solarmc.loader.impl.SolarDataConfig;
+import gg.solarmc.loader.impl.UserDetails;
 import gg.solarmc.loader.impl.test.extension.DataCenterInfo;
 import gg.solarmc.loader.impl.test.extension.DatabaseExtension;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,12 +39,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.file.Path;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -57,6 +60,26 @@ public class AuthenticationCenterIT {
     public void setupCenters(@TempDir Path folder, SolarDataConfig.DatabaseCredentials credentials) {
         authCenter = AuthenticationCenter.create();
         dataCenterInfo = DataCenterInfo.create(folder, credentials);
+    }
+
+    /**
+     * Adds the player's name history to the database
+     *
+     * @param player the player
+     * @return the user ID of the player
+     */
+    private int addToLatestNamesAndGetId(Player player) {
+        InetAddress address;
+        try {
+            address = InetAddress.getByName("127.0.0.1");
+        } catch (UnknownHostException ex) {
+            throw new RuntimeException(ex);
+        }
+        UserDetails userDetails = new UserDetails(player.mcUuid(), player.username(), address);
+        OnlineSolarPlayer solarPlayer = dataCenterInfo.loginHandler().loginUser(userDetails).join();
+        assertNotNull(solarPlayer);
+        assertEquals(solarPlayer.getMcUuid(), player.mcUuid());
+        return solarPlayer.getUserId();
     }
 
     private Player premiumPlayer(String name) {
@@ -99,7 +122,7 @@ public class AuthenticationCenterIT {
         });
         assertEquals(LoginAttempt.ResultType.PREMIUM_PERMITTED, loginAttempt.resultType());
         assertThrows(IllegalStateException.class, loginAttempt::verifiablePassword);
-        assertFalse(player.isDataLoaded());
+        assertTrue(player.isDataLoaded());
     }
 
     // New user who is not premium according to the Mojang API
@@ -120,6 +143,7 @@ public class AuthenticationCenterIT {
             return authCenter.attemptLoginOfIdentifiedUser(tx, player);
         });
         assertEquals(LoginAttempt.ResultType.PREMIUM_PERMITTED, loginAttempt.resultType());
+        assertEquals(addToLatestNamesAndGetId(player), player.getLoadedUserId());
 
         AutoLoginResult autoLoginResult = transact((tx) -> authCenter.findExistingUserWithName(tx, username));
         assertEquals(AutoLoginResult.ResultType.PREMIUM, autoLoginResult.resultType());
@@ -140,6 +164,8 @@ public class AuthenticationCenterIT {
         assertEquals(
                 CreateAccountResult.CREATED,
                 transact((tx) -> authCenter.createAccount(tx, crackedPlayer, password)));
+        int userId = addToLatestNamesAndGetId(crackedPlayer);
+        assertEquals(userId, crackedPlayer.getLoadedUserId());
 
         LoginAttempt loginAttempt = transact((tx) -> authCenter.attemptLoginOfIdentifiedUser(tx, player));
         assertEquals(LoginAttempt.ResultType.NEEDS_PASSWORD, loginAttempt.resultType());
@@ -151,8 +177,9 @@ public class AuthenticationCenterIT {
             return authCenter.completeLoginAndPossiblyMigrate(tx, player);
         });
         assertEquals(CompleteLoginResult.MIGRATED_TO_PREMIUM, premiumLoginResult);
+        assertEquals(userId, player.getLoadedUserId());
 
-        // Assume cracked player now quits. While re-joining, their account is migrated by the premium user
+        // Assume cracked player quits. While re-joining, their account is migrated by the premium user
         CompleteLoginResult crackedLoginResult= transact((tx) -> {
             return authCenter.completeLoginAndPossiblyMigrate(tx, crackedPlayer);
         });
@@ -170,6 +197,7 @@ public class AuthenticationCenterIT {
         assertEquals(
                 CreateAccountResult.CREATED,
                 transact((tx) -> authCenter.createAccount(tx, crackedPlayer, password)));
+        assertEquals(addToLatestNamesAndGetId(crackedPlayer), crackedPlayer.getLoadedUserId());
 
         LoginAttempt loginAttempt = transact((tx) -> {
             return authCenter.attemptLoginOfIdentifiedUser(tx, player);
@@ -202,6 +230,7 @@ public class AuthenticationCenterIT {
         assertEquals(
                 CreateAccountResult.CREATED,
                 transact((tx) -> authCenter.createAccount(tx, playerOne, password)));
+        assertEquals(addToLatestNamesAndGetId(playerOne), playerOne.getLoadedUserId());
 
         AutoLoginResult autoLoginResult = transact((tx) -> authCenter.findExistingUserWithName(tx, usernameTwo));
         assertEquals(AutoLoginResult.ResultType.DENIED_CASE_SENSITIVITY_OF_NAME, autoLoginResult.resultType());
@@ -218,8 +247,8 @@ public class AuthenticationCenterIT {
             assertEquals(
                     CreateAccountResult.CREATED,
                     transact((tx) -> authCenter.createAccount(tx, crackedPlayerOriginal, password)));
-            assertTrue(crackedPlayerOriginal.isDataLoaded());
-            userId = crackedPlayerOriginal.getLoadedUserId();
+            userId = addToLatestNamesAndGetId(crackedPlayerOriginal);
+            assertEquals(userId, crackedPlayerOriginal.getLoadedUserId());
         }
 
         // Re-login
@@ -248,8 +277,8 @@ public class AuthenticationCenterIT {
             assertEquals(
                     CreateAccountResult.CREATED,
                     transact((tx) -> authCenter.createAccount(tx, crackedPlayerOriginal, password)));
-            assertTrue(crackedPlayerOriginal.isDataLoaded());
-            userId = crackedPlayerOriginal.getLoadedUserId();
+            userId = addToLatestNamesAndGetId(crackedPlayerOriginal);
+            assertEquals(userId, crackedPlayerOriginal.getLoadedUserId());
             runTransact((tx) -> authCenter.desiresAccountMigration(tx, crackedPlayerOriginal.user()));
         }
 

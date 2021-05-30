@@ -19,26 +19,12 @@
 
 package gg.solarmc.loader.authentication;
 
+/**
+ * Inputs for the password hashing algorithm
+ *
+ * @param iterations the amount of algorithm iterations
+ * @param memory the KB memory value used in the hashing algorithm
+ */
 public record HashingInstructions(int iterations, int memory) {
-
-	/**
-	 * Gets the amount of algorithm iterations
-	 *
-	 * @return the iteration
-	 */
-	@Override
-	public int iterations() {
-		return iterations;
-	}
-
-	/**
-	 * Gets the KB memory value used in the hashing algorithm
-	 *
-	 * @return the kb of memory to use
-	 */
-	@Override
-	public int memory() {
-		return memory;
-	}
 
 }

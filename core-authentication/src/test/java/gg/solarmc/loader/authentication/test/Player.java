@@ -34,6 +34,15 @@ public final class Player implements UserWithDataNotYetLoaded {
         this.user = user;
     }
 
+    /**
+     * Gets a duplicate player whose data loading is performed separately than this one
+     *
+     * @return a duplicate player
+     */
+    public Player duplicate() {
+        return new Player(user);
+    }
+
     public User user() {
         return user;
     }

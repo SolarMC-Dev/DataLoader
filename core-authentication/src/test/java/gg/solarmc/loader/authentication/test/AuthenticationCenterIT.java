@@ -330,4 +330,22 @@ public class AuthenticationCenterIT {
                 transact((tx) -> authCenter.createAccount(tx, playerTwo, passwordTwo)));
     }
 
+    // The same premium user simultaneously logs in to multiple proxies
+    @Test
+    public void premiumUserLoginSimultaneously() {
+        Player player = premiumPlayer("Aesthetik");
+        Player samePlayer = player.duplicate();
+        // Assume findExistingUserWithName returns null for both logins
+        assertEquals(
+                LoginAttempt.ResultType.PREMIUM_PERMITTED,
+                transact((tx) -> authCenter.attemptLoginOfIdentifiedUser(tx, player)).resultType());
+        int userId = addToLatestNamesAndGetId(player);
+        assertEquals(userId, player.getLoadedUserId());
+
+        assertEquals(
+                LoginAttempt.ResultType.PREMIUM_PERMITTED,
+                transact((tx) -> authCenter.attemptLoginOfIdentifiedUser(tx, samePlayer)).resultType());
+        assertEquals(userId, samePlayer.getLoadedUserId());
+    }
+
 }

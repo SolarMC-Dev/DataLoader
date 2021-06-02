@@ -297,4 +297,37 @@ public class AuthenticationCenterIT {
         assertEquals(userId, crackedPlayerNowPremium.getLoadedUserId());
     }
 
+    // Two cracked users with the same name attempt to create an account
+    @Test
+    public void crackedUsersCreateAccountSameName() {
+        String username = "Aesthetik";
+        Player playerOne = crackedPlayer(username);
+        Player playerTwo = crackedPlayer(username);
+        VerifiablePassword passwordOne = authCenter.hashNewPassword("passcodeOne");
+        VerifiablePassword passwordTwo = authCenter.hashNewPassword("passcodeTwo");
+
+        assertEquals(
+                CreateAccountResult.CREATED,
+                transact((tx) -> authCenter.createAccount(tx, playerOne, passwordOne)));
+        assertEquals(
+                CreateAccountResult.CONFLICT,
+                transact((tx) -> authCenter.createAccount(tx, playerTwo, passwordTwo)));
+    }
+
+    // Two cracked users with the same name ignoring case attempt to create an account
+    @Test
+    public void crackedUsersCreateAccountSameNameIgnoringCase() {
+        Player playerOne = crackedPlayer("Aesthetik");
+        Player playerTwo = crackedPlayer("aesthetik");
+        VerifiablePassword passwordOne = authCenter.hashNewPassword("passcodeOne");
+        VerifiablePassword passwordTwo = authCenter.hashNewPassword("passcodeTwo");
+
+        assertEquals(
+                CreateAccountResult.CREATED,
+                transact((tx) -> authCenter.createAccount(tx, playerOne, passwordOne)));
+        assertEquals(
+                CreateAccountResult.CONFLICT,
+                transact((tx) -> authCenter.createAccount(tx, playerTwo, passwordTwo)));
+    }
+
 }

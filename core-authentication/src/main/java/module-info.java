@@ -6,4 +6,5 @@ module gg.solarmc.loader.authentication {
 	requires gg.solarmc.loader.impl;
 	requires de.mkammerer.argon2.nolibs;
 	requires org.slf4j;
+	requires space.arim.omnibus;
 }

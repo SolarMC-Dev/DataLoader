@@ -29,7 +29,9 @@ import org.jooq.DSLContext;
 import org.jooq.Record1;
 import org.jooq.Record5;
 import org.jooq.Record7;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import space.arim.omnibus.util.ThisClass;
 import space.arim.omnibus.util.UUIDUtil;
 
 import java.util.Objects;
@@ -66,6 +68,8 @@ public final class AuthenticationCenter {
 	private final PasswordHasher passwordHasher;
 
 	private static final HashingInstructions DEFAULT_HASHING_INSTRUCTIONS = new HashingInstructions(10, 65536);
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(ThisClass.get());
 
 	private AuthenticationCenter(PasswordHasher passwordHasher) {
 		this.passwordHasher = Objects.requireNonNull(passwordHasher, "passwordHasher");
@@ -171,7 +175,7 @@ public final class AuthenticationCenter {
 			// New cracked username, request account creation
 			return LoginAttempt.needsAccount();
 		}
-		LoggerFactory.getLogger(getClass()).info(
+		LOGGER.info(
 				"An incredible race condition occurred (or this is a bug). User {} logged in " +
 				"while no one owned their username. Now, however, someone has taken their username.",
 				user.username());

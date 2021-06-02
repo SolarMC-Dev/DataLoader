@@ -27,7 +27,6 @@ import java.util.Objects;
  * An initial indicator of how to proceed
  *
  */
-// TODO find a better name for this class
 public final class AutoLoginResult {
 
     private final User user;

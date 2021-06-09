@@ -69,7 +69,7 @@
 					  the temporary MariaDB instance.
 					-->
 					<plugin>
-						<groupId>ch.vorburger.mariaDB4j</groupId>
+						<groupId>gg.solarmc.mariaDB4j</groupId>
 						<artifactId>mariaDB4j-maven-plugin</artifactId>
 						<version>${mariadb4j.version}</version>
 						<executions>

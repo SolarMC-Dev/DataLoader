@@ -19,42 +19,7 @@
 
 package gg.solarmc.loader.authentication;
 
-import java.util.Arrays;
-import java.util.Objects;
+public interface PasswordSalt {
 
-public final class PasswordSalt {
-
-	private final byte[] salt;
-
-	public PasswordSalt(byte[] salt) {
-		this.salt = Objects.requireNonNull(salt);
-	}
-
-	public byte[] salt() {
-		return salt.clone();
-	}
-
-	byte[] saltUncloned() {
-		return salt;
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
-		PasswordSalt that = (PasswordSalt) o;
-		return Arrays.equals(salt, that.salt);
-	}
-
-	@Override
-	public int hashCode() {
-		return Arrays.hashCode(salt);
-	}
-
-	@Override
-	public String toString() {
-		return "PasswordSalt{" +
-				"salt=" + Arrays.toString(salt) +
-				'}';
-	}
+	byte[] salt();
 }

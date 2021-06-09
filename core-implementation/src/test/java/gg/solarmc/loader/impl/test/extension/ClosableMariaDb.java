@@ -1,28 +1,27 @@
 /*
- * LibertyBans
- * Copyright © 2021 Anand Beh
+ * DataLoader
+ * Copyright © 2021 SolarMC Developers
  *
- * LibertyBans is free software: you can redistribute it and/or modify
+ * DataLoader is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
  *
- * LibertyBans is distributed in the hope that it will be useful,
+ * DataLoader is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with LibertyBans. If not, see <https://www.gnu.org/licenses/>
+ * along with DataLoader. If not, see <https://www.gnu.org/licenses/>
  * and navigate to version 3 of the GNU Affero General Public License.
  */
-package gg.solarmc.loader.impl;
+package gg.solarmc.loader.impl.test.extension;
 
 import ch.vorburger.exec.ManagedProcessException;
 import ch.vorburger.mariadb4j.DB;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.extension.ExtensionContext;
-import org.junit.jupiter.api.extension.ExtensionContext.Store.CloseableResource;
 
 record ClosableMariaDb(DB db) implements ExtensionContext.Store.CloseableResource {
 

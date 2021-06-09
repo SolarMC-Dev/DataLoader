@@ -28,5 +28,12 @@ public enum CompleteLoginResult {
 	/**
 	 * The user's cracked data was migrated to the premium account they are now logging in with
 	 */
-	MIGRATED_TO_PREMIUM
+	MIGRATED_TO_PREMIUM,
+	/**
+	 * User ID is missing. This can only happen if someone else migrated this user's account.
+	 * Is that considered a forced migration?
+	 *
+	 */
+	USER_ID_MISSING;
+
 }

@@ -17,8 +17,12 @@
  * and navigate to version 3 of the GNU Affero General Public License.
  */
 
-package gg.solarmc.loader.impl;
+package gg.solarmc.loader.impl.test;
 
+import gg.solarmc.loader.impl.Icarus;
+import gg.solarmc.loader.impl.IcarusLauncher;
+import gg.solarmc.loader.impl.SolarDataConfig;
+import gg.solarmc.loader.impl.test.extension.DatabaseExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;

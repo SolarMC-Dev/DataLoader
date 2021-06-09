@@ -20,6 +20,8 @@
 package gg.solarmc.loader.impl;
 
 import gg.solarmc.loader.DataCenter;
+import gg.solarmc.loader.Transaction;
+import org.jooq.DSLContext;
 import space.arim.omnibus.util.concurrent.CentralisedFuture;
 import space.arim.omnibus.util.concurrent.FactoryOfTheFuture;
 
@@ -31,7 +33,10 @@ import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 
 /**
- * Produces {@link SQLTransaction}s as well as allows for Async Futures to be produced using the contained executor.
+ * Produces {@link Transaction}s as well as allows for Async Futures to be produced using the contained executor.
+ * <br> <br>
+ * The transactions provided will have properties available for at least {@link Connection} and {@link DSLContext}
+ * and objects, accessible via {@link Transaction#getProperty(Class)}
  */
 public class TransactionSource {
 
@@ -46,9 +51,7 @@ public class TransactionSource {
 	}
 
 	public CentralisedFuture<?> runTransact(DataCenter.TransactionRunner runner) {
-		if (runner == null) {
-			throw new NullPointerException("runner");
-		}
+		Objects.requireNonNull(runner, "runner");
 		return runAsync(() -> {
 			try (Connection connection = dataSource.getConnection()) {
 				SQLTransaction transaction = new SQLTransaction(connection);
@@ -70,9 +73,7 @@ public class TransactionSource {
 	}
 
 	public <R> CentralisedFuture<R> transact(DataCenter.TransactionActor<R> actor) {
-		if (actor == null) {
-			throw new NullPointerException("actor");
-		}
+		Objects.requireNonNull(actor, "actor");
 		return supplyAsync(() -> {
 			try (Connection connection = dataSource.getConnection()) {
 				SQLTransaction transaction = new SQLTransaction(connection);

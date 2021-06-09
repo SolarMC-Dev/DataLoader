@@ -17,35 +17,24 @@
  * and navigate to version 3 of the GNU Affero General Public License.
  */
 
-package gg.solarmc.loader.authentication;
+package gg.solarmc.loader.authentication.internal;
 
-import de.mkammerer.argon2.Argon2Advanced;
+import space.arim.omnibus.util.UUIDUtil;
 
 import java.nio.charset.StandardCharsets;
+import java.util.UUID;
 
-class PasswordHasher {
+public final class UUIDOperations {
 
-	private final Argon2Advanced argon2;
+	private UUIDOperations() {}
 
-	static final int HASH_LENGTH = 64;
-	static final int SALT_LENGTH = 32;
-
-	PasswordHasher(Argon2Advanced argon2) {
-		this.argon2 = argon2;
+	public static boolean isPremium(UUID uuid) {
+		// Premium UUIDs are v4. See OpenJDK implementation of UUID.randomUUID()
+		byte[] uuidBytes = UUIDUtil.toByteArray(uuid);
+		return (uuidBytes[6] & 0x40) != 0;
 	}
 
-	PasswordHash hashPassword(String password, PasswordSalt salt, HashingInstructions instructions) {
-		byte[] hash = argon2.rawHash(
-					instructions.iterations(), instructions.memory(), 1,
-					password.getBytes(StandardCharsets.UTF_8), salt.saltUncloned());
-		assert hash.length == HASH_LENGTH : hash.length;
-		return new PasswordHash(hash);
+	public static UUID computeOfflineUuid(String name) {
+		return UUID.nameUUIDFromBytes(("OfflinePlayer:" + name).getBytes(StandardCharsets.UTF_8));
 	}
-
-	PasswordSalt generateSalt() {
-		byte[] salt = argon2.generateSalt();
-		assert salt.length == SALT_LENGTH;
-		return new PasswordSalt(salt);
-	}
-
 }

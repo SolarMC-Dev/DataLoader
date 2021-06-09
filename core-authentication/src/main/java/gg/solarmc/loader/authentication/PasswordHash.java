@@ -19,42 +19,7 @@
 
 package gg.solarmc.loader.authentication;
 
-import java.util.Arrays;
-import java.util.Objects;
+public interface PasswordHash {
 
-public final class PasswordHash {
-
-	private final byte[] hash;
-
-	PasswordHash(byte[] hash) {
-		this.hash = Objects.requireNonNull(hash);
-	}
-
-	public byte[] hash() {
-		return hash.clone();
-	}
-
-	byte[] hashUncloned() {
-		return hash;
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
-		PasswordHash that = (PasswordHash) o;
-		return Arrays.equals(hash, that.hash);
-	}
-
-	@Override
-	public int hashCode() {
-		return Arrays.hashCode(hash);
-	}
-
-	@Override
-	public String toString() {
-		return "HashedPassword{" +
-				"hash=" + Arrays.toString(hash) +
-				'}';
-	}
+	byte[] hash();
 }

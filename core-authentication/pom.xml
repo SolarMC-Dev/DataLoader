@@ -19,7 +19,7 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <configuration>
-                    <argLine>@{jacoco.argLine} --enable-preview</argLine>
+                    <argLine>@{jacoco.argLine}</argLine>
                 </configuration>
             </plugin>
         </plugins>

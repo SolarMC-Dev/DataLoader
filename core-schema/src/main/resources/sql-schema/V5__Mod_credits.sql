@@ -2,7 +2,8 @@
 CREATE TABLE credits (
   user_id INT PRIMARY KEY,
   balance NUMERIC(12, 3) NOT NULL CHECK (balance >= 0),
-  FOREIGN KEY (user_id) REFERENCES user_ids (id) ON DELETE CASCADE
+  FOREIGN KEY (user_id) REFERENCES user_ids (id) ON DELETE CASCADE,
+  INDEX balance_index (balance)
 );
 
 CREATE VIEW credits_with_names AS

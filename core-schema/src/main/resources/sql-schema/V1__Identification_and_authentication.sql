@@ -1,7 +1,8 @@
 
 CREATE TABLE user_ids (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  uuid BINARY(16) NOT NULL UNIQUE
+  uuid BINARY(16) NOT NULL,
+  UNIQUE INDEX uuid_uniqueness (uuid)
 );
 
 CREATE FUNCTION insert_or_get_user_id

@@ -9,12 +9,15 @@ CREATE TABLE kitpvp_statistics (
   experience INT NOT NULL,
   bounty INT NOT NULL,
 
-  FOREIGN KEY (user_id) REFERENCES user_ids (id) ON DELETE CASCADE
+  FOREIGN KEY (user_id) REFERENCES user_ids (id) ON DELETE CASCADE,
+  INDEX kills_index (kills),
+  INDEX highest_killstreak_index (highest_killstreak)
 );
 
 CREATE TABLE kitpvp_kits_ids (
   kit_id INT AUTO_INCREMENT PRIMARY KEY,
-  kit_name VARCHAR(32) NOT NULL UNIQUE
+  kit_name VARCHAR(32) NOT NULL,
+  UNIQUE INDEX kit_name_uniqueness (kit_name)
 );
 
 CREATE TABLE kitpvp_kits_ownership (

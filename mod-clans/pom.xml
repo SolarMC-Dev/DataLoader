@@ -26,7 +26,7 @@
     <parent>
         <groupId>gg.solarmc.loader</groupId>
         <artifactId>dataloader</artifactId>
-        <version>0.5.1-SNAPSHOT</version>
+        <version>0.5.1</version>
     </parent>
 
     <artifactId>loader-mod-clans</artifactId>

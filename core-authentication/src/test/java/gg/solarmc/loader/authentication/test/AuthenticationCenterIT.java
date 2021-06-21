@@ -59,7 +59,7 @@ public class AuthenticationCenterIT {
     @BeforeEach
     public void setupCenters(@TempDir Path folder, SolarDataConfig.DatabaseCredentials credentials) {
         authCenter = AuthenticationCenter.create();
-        dataCenterInfo = DataCenterInfo.create(folder, credentials);
+        dataCenterInfo = DataCenterInfo.builder(folder, credentials).build();
     }
 
     /**

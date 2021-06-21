@@ -1,13 +1,13 @@
 
 CREATE TABLE kitpvp_statistics (
   user_id INT PRIMARY KEY,
-  kills INT NOT NULL,
-  deaths INT NOT NULL,
-  assists INT NOT NULL,
-  current_killstreak INT NOT NULL,
-  highest_killstreak INT NOT NULL,
-  experience INT NOT NULL,
-  bounty INT NOT NULL,
+  kills INT NOT NULL DEFAULT 0,
+  deaths INT NOT NULL DEFAULT 0,
+  assists INT NOT NULL DEFAULT 0,
+  current_killstreak INT NOT NULL DEFAULT 0,
+  highest_killstreak INT NOT NULL DEFAULT 0,
+  experience INT NOT NULL DEFAULT 0,
+  bounty INT NOT NULL DEFAULT 0,
 
   FOREIGN KEY (user_id) REFERENCES user_ids (id) ON DELETE CASCADE,
   INDEX kills_index (kills),

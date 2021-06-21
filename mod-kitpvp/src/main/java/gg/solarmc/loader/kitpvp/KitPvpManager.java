@@ -102,7 +102,7 @@ public class KitPvpManager implements DataManager {
 			Query query = jooq
 					.insertInto(KITPVP_KITS_CONTENTS)
 					.columns(KITPVP_KITS_CONTENTS.KIT_ID, KITPVP_KITS_CONTENTS.SLOT, KITPVP_KITS_CONTENTS.ITEM)
-					.values(kitId, (byte) itemInSlot.getSlot(), serializer.serialize(itemInSlot.getItem()));
+					.values(kitId, (byte) itemInSlot.slot(), serializer.serialize(itemInSlot.item()));
 			queries.add(query);
 		}
 		jooq.batch(queries).execute();

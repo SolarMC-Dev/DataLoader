@@ -58,3 +58,24 @@ CREATE FUNCTION migrate_to_premium_and_get_user_id
       WHERE username = mc_username;
     RETURN (SELECT id FROM user_ids WHERE uuid = online_uuid);
   END;
+
+CREATE FUNCTION insert_cracked_account_and_get_user_id
+  (username_arg VARCHAR(16),
+  uuid_arg BINARY(16),
+  iterations_arg TINYINT,
+  memory_arg INT,
+  password_hash_arg BINARY(64),
+  password_salt_arg BINARY(32))
+  RETURNS INT
+  MODIFIES SQL DATA
+  BEGIN
+    -- Catch error code 1062 / ER_DUP_ENTRY
+    DECLARE EXIT HANDLER FOR 1062
+    BEGIN
+      RETURN -1;
+    END;
+    INSERT INTO auth_passwords (username, iterations, memory, password_hash, password_salt, wants_migration)
+      VALUES (username_arg, iterations_arg, memory_arg, password_hash_arg, password_salt_arg, 0);
+    INSERT INTO user_ids (uuid) VALUES (uuid_arg);
+    RETURN LAST_INSERT_ID();
+  END;

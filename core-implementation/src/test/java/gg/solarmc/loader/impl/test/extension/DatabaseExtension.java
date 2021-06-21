@@ -98,8 +98,13 @@ public final class DatabaseExtension implements ParameterResolver {
         return credentials;
     }
 
-    private static void createDatabase(int port, String database) {
+    private void createDatabase(int port, String database) {
+        SqlModes sqlModes = SqlModes.readSqlModes();
         try (Connection conn = DriverManager.getConnection("jdbc:mariadb://localhost:" + port + '/', "root", "");
+             PreparedStatement setSqlMode = conn.prepareStatement(
+                     "SET @@GLOBAL.SQL_MODE = CONCAT(@@GLOBAL.SQL_MODE, '," + sqlModes.sqlMode() + "')");
+             PreparedStatement setOldMode = conn.prepareStatement(
+                     "SET @@GLOBAL.OLD_MODE = '" + sqlModes.oldMode() + "'");
              PreparedStatement createDatabase = conn.prepareStatement("CREATE DATABASE " + database
                      + " CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
              PreparedStatement createTablesOne = conn.prepareStatement("""
@@ -115,6 +120,8 @@ public final class DatabaseExtension implements ParameterResolver {
                      `updated` BIGINT NOT NULL,
                      PRIMARY KEY (`uuid`, `address`))""".replace("%db%", database))) {
 
+            setSqlMode.execute();
+            setOldMode.execute();
             createDatabase.execute();
             createTablesOne.execute();
             createTablesTwo.execute();

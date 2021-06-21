@@ -21,11 +21,13 @@ package gg.solarmc.loader.credits;
 
 import gg.solarmc.loader.Transaction;
 import gg.solarmc.loader.data.DataObject;
-import gg.solarmc.loader.schema.tables.records.CreditsRecord;
+import gg.solarmc.loader.schema.routines.CreditsWithdrawBalance;
 import org.jooq.DSLContext;
+import org.jooq.Record1;
 
 import java.math.BigDecimal;
 
+import static gg.solarmc.loader.schema.Routines.creditsDepositBalance;
 import static gg.solarmc.loader.schema.tables.Credits.CREDITS;
 
 public abstract class Credits implements DataObject {
@@ -37,13 +39,6 @@ public abstract class Credits implements DataObject {
 	}
 
 	abstract void updateBalance(BigDecimal newBalance);
-
-	private CreditsRecord getBalance(Transaction transaction) {
-		CreditsRecord creditsRecord = transaction.getProperty(DSLContext.class).fetchOne(CREDITS, CREDITS.USER_ID.eq(userId));
-
-		assert creditsRecord != null : "User data disappeared";
-		return creditsRecord;
-	}
 
 	/**
 	 * Withdraws from the user's account. Only succeeds if the user has enough balance.
@@ -57,16 +52,15 @@ public abstract class Credits implements DataObject {
 		if (withdrawAmount.compareTo(BigDecimal.ZERO) <= 0) {
 			throw new IllegalArgumentException("withdrawAmount must be positive");
 		}
-		CreditsRecord creditsRecord = getBalance(transaction);
-		BigDecimal existingBalance = creditsRecord.getBalance();
-		BigDecimal newBalance = existingBalance.subtract(withdrawAmount);
-		if (newBalance.compareTo(BigDecimal.ZERO) < 0) {
-			return new WithdrawResult(existingBalance, false);
-		}
-		creditsRecord.setBalance(newBalance);
-		creditsRecord.store(CREDITS.BALANCE);
+		CreditsWithdrawBalance withdrawProcedure = new CreditsWithdrawBalance();
+		withdrawProcedure.setUserIdentifier(userId);
+		withdrawProcedure.setWithdrawAmount(withdrawAmount);
+		withdrawProcedure.execute(transaction.getProperty(DSLContext.class).configuration());
+		// New balance is always balance after operation
+		BigDecimal newBalance = withdrawProcedure.getNewBalance();
+		assert newBalance != null : "Remote routine returned null balance";
 		updateBalance(newBalance);
-		return new WithdrawResult(newBalance, true);
+		return new WithdrawResult(newBalance, withdrawProcedure.getSuccessful() == 1);
 	}
 
 	/**
@@ -80,11 +74,11 @@ public abstract class Credits implements DataObject {
 		if (depositAmount.compareTo(BigDecimal.ZERO) <= 0) {
 			throw new IllegalArgumentException("depositAmount must be positive");
 		}
-		CreditsRecord creditsRecord = getBalance(transaction);
-		BigDecimal existingBalance = creditsRecord.getBalance();
-		BigDecimal newBalance = existingBalance.add(depositAmount);
-		creditsRecord.setBalance(newBalance);
-		creditsRecord.store(CREDITS.BALANCE);
+		Record1<BigDecimal> newBalanceRecord = transaction.getProperty(DSLContext.class)
+				.select(creditsDepositBalance(userId, depositAmount))
+				.fetchOne();
+		assert newBalanceRecord != null : "Remote routine returned null balance record";
+		BigDecimal newBalance = newBalanceRecord.value1();
 		updateBalance(newBalance);
 		return new DepositResult(newBalance);
 	}
@@ -98,10 +92,11 @@ public abstract class Credits implements DataObject {
 		if (newAmount.compareTo(BigDecimal.ZERO) <= 0) {
 			throw new IllegalArgumentException("newAmount must be positive");
 		}
-
-		CreditsRecord creditsRecord = getBalance(transaction);
-		creditsRecord.setBalance(newAmount);
-		creditsRecord.store(CREDITS.BALANCE);
+		transaction.getProperty(DSLContext.class)
+				.update(CREDITS)
+				.set(CREDITS.BALANCE, newAmount)
+				.where(CREDITS.USER_ID.eq(userId))
+				.execute();
 		updateBalance(newAmount);
 	}
 

@@ -27,7 +27,6 @@ import gg.solarmc.loader.Transaction;
 import gg.solarmc.loader.schema.tables.records.ClansClanInfoRecord;
 import org.jooq.DSLContext;
 import org.jooq.Record1;
-import org.jooq.Record2;
 import org.jooq.Result;
 
 import java.util.Optional;
@@ -273,16 +272,16 @@ public class Clan {
             return false;
         }
 
-        int sec = transaction.getProperty(DSLContext.class)
+        int updateCount = transaction.getProperty(DSLContext.class)
                 .insertInto(CLANS_CLAN_MEMBERSHIP)
                 .columns(CLANS_CLAN_MEMBERSHIP.CLAN_ID,CLANS_CLAN_MEMBERSHIP.USER_ID)
-                .values(this.clanID,receiver.getUserId())
-                .onDuplicateKeyIgnore()
+                .values(this.clanID, receiver.getUserId())
+                .onConflictDoNothing()
                 .execute();
 
-        this.members.add(new ClanMember(this.clanID,receiver.getUserId(),manager));
+        this.members.add(new ClanMember(this.clanID, receiver.getUserId(), manager));
 
-        if (sec != 1) {
+        if (updateCount != 1) {
             return false;
         } else {
             receiver.updateCachedClan(this);
@@ -332,10 +331,10 @@ public class Clan {
         //note to aurium - these are now okay to do becaue we run the checks previous
         int res = transaction.getProperty(DSLContext.class)
                 .insertInto(CLANS_CLAN_ALLIANCES)
-                .columns(CLANS_CLAN_ALLIANCES.CLAN_ID,CLANS_CLAN_ALLIANCES.ALLY_ID)
-                .values(this.clanID,receiver.getID())
-                .values(receiver.getID(),this.clanID)
-                .onDuplicateKeyIgnore()
+                .columns(CLANS_CLAN_ALLIANCES.CLAN_ID, CLANS_CLAN_ALLIANCES.ALLY_ID)
+                .values(this.clanID, receiver.getID())
+                .values(receiver.getID(), this.clanID)
+                .onConflictDoNothing()
                 .execute();
 
         if (res != 2) {
@@ -390,9 +389,9 @@ public class Clan {
 
         int res = transaction.getProperty(DSLContext.class)
                 .insertInto(CLANS_CLAN_ENEMIES)
-                .columns(CLANS_CLAN_ENEMIES.CLAN_ID,CLANS_CLAN_ENEMIES.ENEMY_ID)
-                .values(this.clanID,receiver.getID())
-                .onDuplicateKeyIgnore()
+                .columns(CLANS_CLAN_ENEMIES.CLAN_ID, CLANS_CLAN_ENEMIES.ENEMY_ID)
+                .values(this.clanID, receiver.getID())
+                .onConflictDoNothing()
                 .execute();
 
         return res == 1;

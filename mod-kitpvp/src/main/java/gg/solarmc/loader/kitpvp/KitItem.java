@@ -24,11 +24,43 @@ package gg.solarmc.loader.kitpvp;
 /**
  * Interface representing something that can be stored in a kit
  */
-public interface KitItem<T> {
+public interface KitItem {
 
+    /**
+     * Informative string for the item material
+     *
+     * @return the material
+     */
     String getMaterial();
+
+    /**
+     * Informative string for the display name
+     *
+     * @return the display name
+     */
     String getDisplayName();
+
+    /**
+     * Informative number for the amount of the item
+     *
+     * @return the amount
+     */
     int getAmount();
-    T getObject();
+
+    /**
+     * Gets the backing item object
+     *
+     * @return the item object itself
+     */
+    Object getItem();
+
+    /**
+     * Gets the backing item object, assuming it is of a given type
+     *
+     * @param <T> the expected type of the item object
+     * @param type the expected type class of the item object
+     * @return the item object itself
+     */
+    <T> T getItem(Class<T> type);
 
 }

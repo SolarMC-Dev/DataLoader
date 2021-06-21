@@ -39,6 +39,7 @@ import java.util.UUID;
 import java.util.concurrent.ForkJoinPool;
 
 import static gg.solarmc.loader.schema.Routines.insertAutomaticAccountAndGetUserId;
+import static gg.solarmc.loader.schema.Routines.insertCrackedAccountAndGetUserId;
 import static gg.solarmc.loader.schema.Routines.migrateToPremiumAndGetUserId;
 import static gg.solarmc.loader.schema.tables.AuthPasswords.*;
 import static gg.solarmc.loader.schema.tables.LatestNames.*;
@@ -228,14 +229,6 @@ public final class AuthenticationCenter {
 		return userId;
 	}
 
-	private int userIdFromRecord(Record1<Integer> userIdRecord, UserWithDataNotYetLoaded user) {
-		Integer userId;
-		if (userIdRecord == null || (userId = userIdRecord.value1()) == null) {
-			throw new IllegalStateException("Unable to get user ID for user " + user);
-		}
-		return userId;
-	}
-
 	/**
 	 * Creates an automatic account. Called only for premium users
 	 * @param transaction the transaction
@@ -245,10 +238,9 @@ public final class AuthenticationCenter {
 		DSLContext context = transaction.getProperty(DSLContext.class);
 		byte[] uuidBytes = UUIDUtil.toByteArray(user.mcUuid());
 		String username = user.username();
-		Record1<Integer> userIdRecord = context
+		int userId = context
 				.select(insertAutomaticAccountAndGetUserId(uuidBytes, username))
-				.fetchOne();
-		int userId = userIdFromRecord(userIdRecord, user);
+				.fetchSingle().value1();
 		user.loadData(transaction, userId);
 	}
 
@@ -266,27 +258,16 @@ public final class AuthenticationCenter {
 		DSLContext context = transaction.getProperty(DSLContext.class);
 		HashingInstructions instructions = password.instructions();
 
-		int updateCount = context
-				.insertInto(AUTH_PASSWORDS)
-				.columns(AUTH_PASSWORDS.USERNAME,
-						AUTH_PASSWORDS.ITERATIONS, AUTH_PASSWORDS.MEMORY,
-						AUTH_PASSWORDS.PASSWORD_HASH, AUTH_PASSWORDS.PASSWORD_SALT)
-				.values(user.username(),
-						(byte) instructions.iterations(), instructions.memory(),
-						PasswordHashImpl.hashUncloned(password.passwordHash()),
-						PasswordSaltImpl.saltUncloned(password.passwordSalt()))
-				.onDuplicateKeyIgnore()
-				.execute();
-		if (updateCount == 0) {
+		Record1<Integer> userIdRecord = context.select(insertCrackedAccountAndGetUserId(
+				user.username(), UUIDUtil.toByteArray(user.mcUuid()),
+				(byte) instructions.iterations(), instructions.memory(),
+				PasswordHashImpl.hashUncloned(password.passwordHash()),
+				PasswordSaltImpl.saltUncloned(password.passwordSalt())))
+				.fetchSingle();
+		int userId = userIdRecord.value1();
+		if (userId == -1) { // Special value
 			return CreateAccountResult.CONFLICT;
 		}
-		Record1<Integer> userIdRecord = context
-				.insertInto(USER_IDS)
-				.columns(USER_IDS.UUID)
-				.values(UUIDUtil.toByteArray(user.mcUuid()))
-				.returningResult(USER_IDS.ID)
-				.fetchOne();
-		int userId = userIdFromRecord(userIdRecord, user);
 		user.loadData(transaction, userId);
 		return CreateAccountResult.CREATED;
 	}
@@ -319,9 +300,9 @@ public final class AuthenticationCenter {
 
 			Record1<Integer> userIdRecord = context
 					.select(migrateToPremiumAndGetUserId(offlineUuidBytes, onlineUuidBytes, username))
-					.fetchOne();
+					.fetchSingle();
 
-			int userId = userIdFromRecord(userIdRecord, user);
+			int userId = userIdRecord.value1();
 			user.loadData(transaction, userId);
 			return CompleteLoginResult.MIGRATED_TO_PREMIUM;
 		}

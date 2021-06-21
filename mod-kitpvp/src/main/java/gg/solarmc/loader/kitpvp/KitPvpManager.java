@@ -23,20 +23,17 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import gg.solarmc.loader.Transaction;
 import gg.solarmc.loader.data.DataManager;
-
 import gg.solarmc.loader.schema.tables.records.KitpvpKitsIdsRecord;
-
+import org.jooq.BatchBindStep;
 import org.jooq.DSLContext;
-import org.jooq.Query;
+import org.jooq.DataType;
+import org.jooq.Field;
+import org.jooq.impl.DSL;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
 
-
 import static gg.solarmc.loader.schema.Tables.KITPVP_KITS_IDS;
-
 import static gg.solarmc.loader.schema.tables.KitpvpKitsContents.KITPVP_KITS_CONTENTS;
 
 public class KitPvpManager implements DataManager {
@@ -46,6 +43,10 @@ public class KitPvpManager implements DataManager {
 
 	KitPvpManager(ItemSerializer serializer) {
 		this.serializer = serializer;
+	}
+
+	private DataType<KitItem> kitItemDataType() {
+		return KITPVP_KITS_CONTENTS.ITEM.getDataType().asConvertedDataType(new ItemSerializerBinding(serializer));
 	}
 
 	/**
@@ -67,12 +68,13 @@ public class KitPvpManager implements DataManager {
 				throw new IllegalStateException("Kit by id " + id + " does not exist");
 			}
 
+			DataType<KitItem> itemType = kitItemDataType();
+			Field<KitItem> itemColumn = DSL.field(KITPVP_KITS_CONTENTS.ITEM.getName(), itemType);
 			Set<ItemInSlot> contents = jooq
-                    .select(KITPVP_KITS_CONTENTS.ITEM, KITPVP_KITS_CONTENTS.SLOT).from(KITPVP_KITS_CONTENTS)
+                    .select(KITPVP_KITS_CONTENTS.SLOT, itemColumn).from(KITPVP_KITS_CONTENTS)
                     .where(KITPVP_KITS_CONTENTS.KIT_ID.eq(id)).fetchSet((itemInSlotRecord) -> {
                         return new ItemInSlot(
-                        		itemInSlotRecord.get(KITPVP_KITS_CONTENTS.SLOT),
-								serializer.deserialize(itemInSlotRecord.get(KITPVP_KITS_CONTENTS.ITEM)));
+                        		itemInSlotRecord.value1(), itemInSlotRecord.value2());
                     });
 			return new Kit(id, kitName, Set.copyOf(contents));
 		});
@@ -86,10 +88,9 @@ public class KitPvpManager implements DataManager {
 	 * @return the kit which was created
 	 */
 	public Kit createKit(Transaction transaction, String name, Set<ItemInSlot> contents) {
-		var jooq = transaction.getProperty(DSLContext.class);
+		DSLContext context = transaction.getProperty(DSLContext.class);
 
-
-		KitpvpKitsIdsRecord result = jooq.insertInto(KITPVP_KITS_IDS)
+		KitpvpKitsIdsRecord result = context.insertInto(KITPVP_KITS_IDS)
 				.columns(KITPVP_KITS_IDS.KIT_NAME).values(name)
 				.returning().fetchOne();
 		if (result == null) {
@@ -97,15 +98,18 @@ public class KitPvpManager implements DataManager {
 		}
 		int kitId = result.getKitId();
 
-		List<Query> queries = new ArrayList<>(contents.size());
-		for (ItemInSlot itemInSlot : contents) {
-			Query query = jooq
+		if (!contents.isEmpty()) {
+			DataType<KitItem> itemType = kitItemDataType();
+			Field<KitItem> itemColumn = DSL.field(KITPVP_KITS_CONTENTS.ITEM.getQualifiedName(), itemType);
+			BatchBindStep batch = context.batch(context
 					.insertInto(KITPVP_KITS_CONTENTS)
-					.columns(KITPVP_KITS_CONTENTS.KIT_ID, KITPVP_KITS_CONTENTS.SLOT, KITPVP_KITS_CONTENTS.ITEM)
-					.values(kitId, (byte) itemInSlot.slot(), serializer.serialize(itemInSlot.item()));
-			queries.add(query);
+					.columns(KITPVP_KITS_CONTENTS.KIT_ID, KITPVP_KITS_CONTENTS.SLOT, itemColumn)
+					.values((Integer) null, null, null));
+			for (ItemInSlot itemInSlot : contents) {
+				batch.bind(kitId, itemInSlot.slot(), itemInSlot.item());
+			}
+			batch.execute();
 		}
-		jooq.batch(queries).execute();
 
 		Kit kit = new Kit(kitId, name, contents);
 		existingKits.put(kitId, kit);

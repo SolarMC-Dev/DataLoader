@@ -21,7 +21,7 @@
 
 package gg.solarmc.loader.kitpvp;
 
-public record ItemInSlot(int slot, KitItem<?> item) {
+public record ItemInSlot(int slot, KitItem item) {
 
     /**
      * Leftover from before this class was a record
@@ -30,7 +30,7 @@ public record ItemInSlot(int slot, KitItem<?> item) {
      * @deprecated use the record component
      */
     @Deprecated
-    public KitItem<?> getItem() {
+    public KitItem getItem() {
         return item;
     }
 

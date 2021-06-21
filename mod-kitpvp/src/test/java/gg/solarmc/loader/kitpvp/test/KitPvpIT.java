@@ -8,7 +8,7 @@ import gg.solarmc.loader.kitpvp.ItemInSlot;
 import gg.solarmc.loader.kitpvp.ItemSerializer;
 import gg.solarmc.loader.kitpvp.Kit;
 import gg.solarmc.loader.kitpvp.KitItem;
-import gg.solarmc.loader.kitpvp.KitOwnershipResult;
+import gg.solarmc.loader.kitpvp.KitOwnership;
 import gg.solarmc.loader.kitpvp.KitPvp;
 import gg.solarmc.loader.kitpvp.KitPvpKey;
 import gg.solarmc.loader.kitpvp.KitPvpManager;
@@ -21,6 +21,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import space.arim.omnibus.DefaultOmnibus;
 import space.arim.omnibus.Omnibus;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.file.Path;
 import java.util.Set;
 
@@ -28,6 +30,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(DatabaseExtension.class)
@@ -56,7 +62,7 @@ public class KitPvpIT {
     }
 
     private void addKitAssumeSuccess(KitPvp data, Kit kit) {
-        KitOwnershipResult kitOwnership = dataCenterInfo.transact((tx) -> {
+        KitOwnership kitOwnership = dataCenterInfo.transact((tx) -> {
             return data.addKit(tx, kit);
         });
         assumeTrue(kitOwnership.isChanged());
@@ -66,7 +72,7 @@ public class KitPvpIT {
     public void addKit() {
         KitPvp data = dataCenterInfo.loginNewRandomUser().getData(KitPvpKey.INSTANCE);
         Kit kit = newKit("MyKit", Set.of());
-        KitOwnershipResult kitOwnership = dataCenterInfo.transact((tx) -> {
+        KitOwnership kitOwnership = dataCenterInfo.transact((tx) -> {
             return data.addKit(tx, kit);
         });
         assertTrue(kitOwnership.isChanged());
@@ -79,7 +85,7 @@ public class KitPvpIT {
         addKitAssumeSuccess(data, kit);
 
         // Do it again
-        KitOwnershipResult kitOwnership = dataCenterInfo.transact((tx) -> {
+        KitOwnership kitOwnership = dataCenterInfo.transact((tx) -> {
             return data.addKit(tx, kit);
         });
         assertFalse(kitOwnership.isChanged(), "Kit should already be added");
@@ -91,7 +97,7 @@ public class KitPvpIT {
         Kit kit = newKit("MyKit", Set.of());
         addKitAssumeSuccess(data, kit);
 
-        KitOwnershipResult kitOwnership = dataCenterInfo.transact((tx) -> {
+        KitOwnership kitOwnership = dataCenterInfo.transact((tx) -> {
             return data.removeKit(tx, kit);
         });
         assertTrue(kitOwnership.isChanged());
@@ -101,20 +107,29 @@ public class KitPvpIT {
     public void removeKitNotPresent() {
         KitPvp data = dataCenterInfo.loginNewRandomUser().getData(KitPvpKey.INSTANCE);
         Kit kit = newKit("MyNonExistingKit", Set.of());
-        KitOwnershipResult kitOwnership = dataCenterInfo.transact((tx) -> {
+        KitOwnership kitOwnership = dataCenterInfo.transact((tx) -> {
             return data.removeKit(tx, kit);
         });
         assertFalse(kitOwnership.isChanged());
     }
-    
+
+    private void mockItemSerialization(KitItem item, byte[] data) throws IOException {
+        doAnswer((invocation) -> {
+            var output = invocation.getArgument(1, OutputStream.class);
+            output.write(data);
+            output.flush();
+            return null;
+        }).when(itemSerializer).serialize(eq(item), any());
+        when(itemSerializer.deserialize(argThat(new InputStreamMatcher(data))))
+                .thenAnswer((i) -> item);
+    }
+
     @Test
-    public void serializeItems(@Mock KitItem<?> item1, @Mock KitItem<?> item2) {
+    public void serializeItems(@Mock KitItem item1, @Mock KitItem item2) throws IOException {
         byte[] item1Data = DataGenerator.randomBytes(1, 15);
         byte[] item2Data = DataGenerator.randomBytes(1, 15);
-        when(itemSerializer.serialize(item1)).thenReturn(item1Data);
-        when(itemSerializer.serialize(item2)).thenReturn(item2Data);
-        when(itemSerializer.deserialize(item1Data)).thenAnswer(invocation -> item1);
-        when(itemSerializer.deserialize(item2Data)).thenAnswer(invocation -> item2);
+        mockItemSerialization(item1, item1Data);
+        mockItemSerialization(item2, item2Data);
         Set<ItemInSlot> contents = Set.of(new ItemInSlot(3, item1), new ItemInSlot(5, item2));
 
         Kit originalKit = newKit("MyItemKit", contents);

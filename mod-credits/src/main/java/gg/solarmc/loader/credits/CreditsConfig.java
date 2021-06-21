@@ -27,6 +27,6 @@ import space.arim.dazzleconf.annote.ConfHeader;
 @ConfHeader("Configuration details regarding credits")
 public interface CreditsConfig {
 
-    @ConfDefault.DefaultDouble(0.0)
+    @ConfDefault.DefaultDouble(50.0)
     double defaultBalance();
 }

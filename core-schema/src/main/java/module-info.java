@@ -6,4 +6,5 @@ module gg.solarmc.loader.schema {
 	exports gg.solarmc.loader.schema;
 	exports gg.solarmc.loader.schema.tables;
 	exports gg.solarmc.loader.schema.tables.records;
+    exports gg.solarmc.loader.schema.routines;
 }

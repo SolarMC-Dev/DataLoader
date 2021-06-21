@@ -21,13 +21,17 @@
 
 package gg.solarmc.loader.kitpvp;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+
 /**
  * SPI that handles serialization of KitItem implementation to byte and back.
  */
 public interface ItemSerializer {
 
-    byte[] serialize(KitItem<?> item);
+    void serialize(KitItem item, OutputStream output) throws IOException;
 
-    KitItem<?> deserialize(byte[] serialized);
+    KitItem deserialize(InputStream input) throws IOException;
 
 }

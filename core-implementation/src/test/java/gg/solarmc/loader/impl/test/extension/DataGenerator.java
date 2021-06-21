@@ -61,4 +61,37 @@ public final class DataGenerator {
         return bytes;
     }
 
+    /**
+     * Gets a random positive integer
+     *
+     * @return the random integer
+     */
+    public static int randomPositiveInteger() {
+        // Use less than MAX_VALUE to allow for some further addition
+        return ThreadLocalRandom.current().nextInt(0, Integer.MAX_VALUE / 4) + 1;
+    }
+
+    /**
+     * Gets a random negative integer
+     *
+     * @return the random integer
+     */
+    public static int randomNegativeInteger() {
+        return ThreadLocalRandom.current().nextInt(Integer.MIN_VALUE, 0);
+    }
+
+    /**
+     * Gets a random integer between the specified values
+     *
+     * @param minimum the minimum value, inclusive
+     * @param maximum the maximum value, inclusive
+     * @return the random integer
+     */
+    public static int randomIntegerBetween(int minimum, int maximum) {
+        if (maximum < minimum) {
+            throw new IllegalArgumentException("Maximum must be equal to or greater than minimum");
+        }
+        return 1 + ThreadLocalRandom.current().nextInt(minimum - 1, maximum);
+    }
+
 }

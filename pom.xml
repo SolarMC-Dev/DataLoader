@@ -28,6 +28,7 @@
 
 		<dazzleconf.version>1.2.0</dazzleconf.version>
 		<caffeine.version>3.0.1</caffeine.version>
+		<checker-qual.version>3.14.0</checker-qual.version>
 
 		<jacoco.argLine />
 	</properties>
@@ -146,6 +147,12 @@
 				<groupId>com.github.ben-manes.caffeine</groupId>
 				<artifactId>caffeine</artifactId>
 				<version>${caffeine.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.checkerframework</groupId>
+				<artifactId>checker-qual</artifactId>
+				<version>${checker-qual.version}</version>
+				<optional>true</optional>
 			</dependency>
 			<!-- Self Dependencies -->
 			<dependency>

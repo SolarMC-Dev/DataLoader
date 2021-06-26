@@ -24,6 +24,7 @@ import gg.solarmc.loader.data.DataKeyInitializationContext;
 import gg.solarmc.loader.data.DataLoader;
 import space.arim.dazzleconf.ConfigurationOptions;
 import space.arim.dazzleconf.error.InvalidConfigException;
+import space.arim.dazzleconf.ext.snakeyaml.CommentMode;
 import space.arim.dazzleconf.ext.snakeyaml.SnakeYamlConfigurationFactory;
 import space.arim.dazzleconf.ext.snakeyaml.SnakeYamlOptions;
 import space.arim.dazzleconf.helper.ConfigurationHelper;
@@ -52,8 +53,8 @@ public class CreditsKey implements DataKey<OnlineCredits, Credits, CreditsManage
 	private CreditsConfig loadConfig(Path path) {
 		try {
 			return new ConfigurationHelper<>(path, "credits.yml",
-					new SnakeYamlConfigurationFactory<>(CreditsConfig.class, ConfigurationOptions.defaults(),
-							new SnakeYamlOptions.Builder().useCommentingWriter(true).build())).reloadConfigData();
+					SnakeYamlConfigurationFactory.create(CreditsConfig.class, ConfigurationOptions.defaults(),
+							new SnakeYamlOptions.Builder().commentMode(CommentMode.alternativeWriter()).build())).reloadConfigData();
 		} catch (IOException ex) {
 			throw new UncheckedIOException(ex);
 		} catch (InvalidConfigException ex) {

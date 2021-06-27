@@ -86,13 +86,7 @@ public abstract class ClanDataObject implements DataObject {
      * @return gg.solarmc.loader.clans.ClanMember from table.
      */
     public ClanMember asClanMember(Transaction transaction) {
-        Optional<Clan> temp = getClan(transaction);
-
-        if (temp.isEmpty()) {
-            return new ClanMember(null,this.userId,manager);
-        }
-
-        return new ClanMember(temp.orElseThrow().getID(),this.userId,manager);
+        return new ClanMember(userId);
     }
 
     /**
@@ -101,7 +95,7 @@ public abstract class ClanDataObject implements DataObject {
      * @return whether they are similar or not
      */
     boolean isSimilar(ClanMember member) {
-        return member.getUserId() == this.userId;
+        return member.userId() == this.userId;
     }
 
 }

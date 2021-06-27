@@ -32,7 +32,7 @@ CREATE TABLE auth_passwords (
   memory INT NOT NULL,
   password_hash BINARY(64) NULL,
   password_salt BINARY(32) NULL,
-  wants_migration BIT(1) NOT NULL
+  wants_migration BIT NOT NULL
 );
 
 CREATE FUNCTION insert_automatic_account_and_get_user_id
@@ -69,7 +69,7 @@ CREATE FUNCTION insert_cracked_account_and_get_user_id
   RETURNS INT
   MODIFIES SQL DATA
   BEGIN
-    -- Catch error code 1062 / ER_DUP_ENTRY
+    -- Catch duplicate key errors
     DECLARE EXIT HANDLER FOR 1062
     BEGIN
       RETURN -1;

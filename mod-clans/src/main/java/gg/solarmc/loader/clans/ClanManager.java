@@ -29,6 +29,7 @@ import gg.solarmc.loader.data.DataManager;
 import gg.solarmc.loader.schema.tables.records.ClansClanAlliancesRecord;
 import gg.solarmc.loader.schema.tables.records.ClansClanInfoRecord;
 import org.jooq.DSLContext;
+import org.jooq.Record1;
 
 import java.time.Duration;
 import java.util.*;
@@ -72,15 +73,16 @@ public class ClanManager implements DataManager {
                 throw new IllegalStateException("No such clan exists!");
             }
 
-            Set<ClanMember> bruh = jooq.select(CLANS_CLAN_MEMBERSHIP.USER_ID).from(CLANS_CLAN_MEMBERSHIP)
-                    .where(CLANS_CLAN_MEMBERSHIP.CLAN_ID.eq(id)).fetchSet((rec1) -> new ClanMember(id,rec1.value1(),this));
+            Set<ClanMember> bruh = jooq
+                    .select(CLANS_CLAN_MEMBERSHIP.USER_ID).from(CLANS_CLAN_MEMBERSHIP)
+                    .where(CLANS_CLAN_MEMBERSHIP.CLAN_ID.eq(id)).fetchSet((rec1) -> new ClanMember(rec1.value1()));
 
             ConcurrentHashMap.KeySetView<ClanMember,Boolean> view = ConcurrentHashMap.newKeySet();
             view.addAll(bruh);
 
             ClansClanAlliancesRecord recAlly = jooq.fetchOne(CLANS_CLAN_ALLIANCES,CLANS_CLAN_ALLIANCES.CLAN_ID.eq(id));
 
-            ClanMember owner = new ClanMember(id,rec.getClanLeader(),this);
+            ClanMember owner = new ClanMember(rec.getClanLeader());
 
             Clan returned = new Clan(rec.getClanId(), rec.getClanName(),rec.getClanKills(),
                     rec.getClanDeaths(),rec.getClanAssists(),this,view,owner);
@@ -121,31 +123,40 @@ public class ClanManager implements DataManager {
     }
 
     /**
-     * Creates an empty clan with given name.
+     * Creates a new clan with given name.
      * @param name Name of the Clan to add
      * @param transaction the tx
-     * @param player the to be owner of the clan
+     * @param leader the player to be owner of the clan
      * @return created clan.
      */
-    public Clan createClan(Transaction transaction, String name, SolarPlayer player) {
-        ClanDataObject owner = player.getData(ClansKey.INSTANCE);
-        ClansClanInfoRecord rec = transaction.getProperty(DSLContext.class)
+    public Clan createClan(Transaction transaction, String name, SolarPlayer leader) {
+        DSLContext context = transaction.getProperty(DSLContext.class);
+        ClanDataObject owner = leader.getData(ClansKey.INSTANCE);
+        Record1<Integer> rec = transaction.getProperty(DSLContext.class)
                 .insertInto(CLANS_CLAN_INFO)
                 .columns(CLANS_CLAN_INFO.CLAN_NAME, CLANS_CLAN_INFO.CLAN_LEADER, CLANS_CLAN_INFO.CLAN_KILLS, CLANS_CLAN_INFO.CLAN_DEATHS, CLANS_CLAN_INFO.CLAN_ASSISTS)
                 .values(name, owner.getUserId(), 0, 0, 0)
-                .returning()
+                .returningResult(CLANS_CLAN_INFO.CLAN_ID)
                 .fetchOne();
 
         if (rec == null) throw new IllegalStateException("Failed to insert new gg.solarmc.loader.clans.Clan by name " + name);
 
+        int clanId = rec.value1();
+
+        int updateCount = context
+                .insertInto(CLANS_CLAN_MEMBERSHIP)
+                .columns(CLANS_CLAN_MEMBERSHIP.CLAN_ID, CLANS_CLAN_MEMBERSHIP.USER_ID)
+                .values(clanId, owner.getUserId())
+                .execute();
+        assert updateCount == 1;
         ClanMember ownerAsMember = owner.asClanMember(transaction);
 
         ConcurrentHashMap.KeySetView<ClanMember,Boolean> view = ConcurrentHashMap.newKeySet();
         view.add(ownerAsMember);
 
-        Clan returned = new Clan(rec.getClanId(),rec.getClanName(),rec.getClanKills(),rec.getClanDeaths(),rec.getClanAssists(),this,view,ownerAsMember);
+        Clan returned = new Clan(clanId, name, 0, 0, 0, this, view, ownerAsMember);
 
-        clans.put(returned.getID(),returned);
+        clans.put(returned.getClanId(),returned);
 
         return returned;
     }
@@ -161,7 +172,7 @@ public class ClanManager implements DataManager {
     public void deleteClan(Transaction transaction, Clan clan) {
         int i = transaction.getProperty(DSLContext.class)
                 .delete(CLANS_CLAN_INFO)
-                .where(CLANS_CLAN_INFO.CLAN_ID.eq(clan.getID()))
+                .where(CLANS_CLAN_INFO.CLAN_ID.eq(clan.getClanId()))
                 .execute();
 
         if (i == 0) {
@@ -169,10 +180,10 @@ public class ClanManager implements DataManager {
         }
 
         clan.currentAllyClan().ifPresent(ally -> {
-            this.invalidateAllianceCache(clan.getID());
+            this.invalidateAllianceCache(clan.getClanId());
         });
 
-        clans.invalidate(clan.getID());
+        clans.invalidate(clan.getClanId());
     }
 
 

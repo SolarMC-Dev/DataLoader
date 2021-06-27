@@ -36,7 +36,9 @@ public class CreditsManager implements DataManager {
 	}
 
 	public List<TopBalanceEntry> getTopBalances(Transaction transaction, int limit) {
-		return transaction.getProperty(DSLContext.class).select().from(CREDITS_WITH_NAMES)
+		return transaction.getProperty(DSLContext.class)
+				.select(CREDITS_WITH_NAMES.USER_ID, CREDITS_WITH_NAMES.USERNAME, CREDITS_WITH_NAMES.BALANCE)
+				.from(CREDITS_WITH_NAMES)
 				.orderBy(CREDITS_WITH_NAMES.BALANCE.desc()).limit(limit)
 				.fetch((rowRecord) -> {
 					return new TopBalanceEntry(

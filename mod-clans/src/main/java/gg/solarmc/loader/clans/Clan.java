@@ -186,8 +186,12 @@ public class Clan {
      * @param transaction the tx
      * @param toAdd how much to add
      * @return accurate amount of kills post transaction
+     * @throws IllegalArgumentException if {@code toAdd} is not positive
      */
     public int addKills(Transaction transaction, int toAdd) {
+        if (toAdd <= 0) {
+            throw new IllegalArgumentException("Amount must be positive");
+        }
         ClansClanInfoRecord rec = getInformation(transaction);
 
         int newValue = rec.getClanKills() + toAdd;
@@ -205,8 +209,12 @@ public class Clan {
      * @param transaction the tx
      * @param toAdd amount of deaths to add
      * @return accurate count of deaths post transaction
+     * @throws IllegalArgumentException if {@code toAdd} is not positive
      */
     public int addDeaths(Transaction transaction, int toAdd) {
+        if (toAdd <= 0) {
+            throw new IllegalArgumentException("Amount must be positive");
+        }
         ClansClanInfoRecord rec = getInformation(transaction);
 
         int newValue = rec.getClanDeaths() + toAdd;
@@ -224,8 +232,12 @@ public class Clan {
      * @param transaction tx
      * @param toAdd the amount you want to add
      * @return Accurate assists after transaction
+     * @throws IllegalArgumentException if {@code toAdd} is not positive
      */
     public int addAssists(Transaction transaction, int toAdd) {
+        if (toAdd <= 0) {
+            throw new IllegalArgumentException("Amount must be positive");
+        }
         ClansClanInfoRecord rec = getInformation(transaction);
 
         int newValue = rec.getClanAssists() + toAdd;

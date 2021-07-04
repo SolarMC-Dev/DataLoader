@@ -1,2 +1,0 @@
-${dataloader.sqlmode}
-${dataloader.oldmode}

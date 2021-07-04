@@ -1,4 +1,4 @@
-package gg.solarmc.loader.impl.test.extension;
+package gg.solarmc.loader.impl.launch;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -8,7 +8,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
-record SqlModes(String sqlMode, String oldMode) {
+record SqlModes(String sqlMode) {
 
     static SqlModes readSqlModes() {
         URL sqlModesResource = SqlModes.class.getResource("/sql-modes.txt");
@@ -19,7 +19,10 @@ record SqlModes(String sqlMode, String oldMode) {
         } catch (IOException ex) {
             throw new UncheckedIOException(ex);
         }
-        String[] modes = output.toString(StandardCharsets.UTF_8).split("\n", -1);
-        return new SqlModes(modes[0], modes[1]);
+        return new SqlModes(output.toString(StandardCharsets.UTF_8));
+    }
+
+    String queryToSetModes() {
+        return "SET @@SQL_MODE = CONCAT(@@SQL_MODE, '," + sqlMode() + "')";
     }
 }

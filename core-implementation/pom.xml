@@ -12,18 +12,17 @@
 
 	<properties>
 		<hikaricp.version>4.0.1</hikaricp.version>
-		<!-- dataloader.sqlmode is in addition to the default, dataloader.oldmode replaces the default -->
+		<!-- These SQL_MODE values are in addition to the default ones -->
 		<dataloader.sqlmode>ANSI,SIMULTANEOUS_ASSIGNMENT,NO_ZERO_IN_DATE,NO_ZERO_DATE</dataloader.sqlmode>
-		<dataloader.oldmode/>
 	</properties>
 
 	<build>
-		<testResources>
-			<testResource>
-				<directory>src/test/resources</directory>
+		<resources>
+			<resource>
+				<directory>src/main/resources</directory>
 				<filtering>true</filtering>
-			</testResource>
-		</testResources>
+			</resource>
+		</resources>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>

@@ -12,9 +12,17 @@
 
 	<properties>
 		<hikaricp.version>4.0.1</hikaricp.version>
+		<!-- These SQL_MODE values are in addition to the default ones -->
+		<dataloader.sqlmode>ANSI,SIMULTANEOUS_ASSIGNMENT,NO_ZERO_IN_DATE,NO_ZERO_DATE</dataloader.sqlmode>
 	</properties>
 
 	<build>
+		<resources>
+			<resource>
+				<directory>src/main/resources</directory>
+				<filtering>true</filtering>
+			</resource>
+		</resources>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -26,10 +34,6 @@
 						</goals>
 					</execution>
 				</executions>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-failsafe-plugin</artifactId>
 			</plugin>
 		</plugins>
 	</build>

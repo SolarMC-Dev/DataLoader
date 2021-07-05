@@ -21,36 +21,27 @@
 
 package gg.solarmc.loader.kitpvp;
 
-public class ItemInSlot {
+public record ItemInSlot(int slot, KitItem item) {
 
-    private final int slot;
-    private final KitItem<?> item;
-
-    ItemInSlot(int slot, KitItem<?> item) {
-        this.item = item;
-        this.slot = slot;
-    }
-
-    public KitItem<?> getItem() {
+    /**
+     * Leftover from before this class was a record
+     *
+     * @return the item
+     * @deprecated use the record component
+     */
+    @Deprecated
+    public KitItem getItem() {
         return item;
     }
 
+    /**
+     * Leftover from before this class was a record
+     *
+     * @return the slot
+     * @deprecated use the record component
+     */
+    @Deprecated
     public int getSlot() {
         return slot;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        ItemInSlot that = (ItemInSlot) o;
-        return slot == that.slot && item.equals(that.item);
-    }
-
-    @Override
-    public int hashCode() {
-        int result = slot;
-        result = 31 * result + item.hashCode();
-        return result;
     }
 }

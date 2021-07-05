@@ -31,6 +31,12 @@ public class EconomyResult {
 		this.newBalance = newBalance;
 	}
 
+	/**
+	 * Gets the balance after the operation. If the operation somehow failed,
+	 * this will stay as the existing balance.
+	 *
+	 * @return the balance after the operation
+	 */
 	public BigDecimal newBalance() {
 		return newBalance;
 	}

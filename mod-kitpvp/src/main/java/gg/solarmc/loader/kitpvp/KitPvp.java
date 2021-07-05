@@ -21,32 +21,32 @@ package gg.solarmc.loader.kitpvp;
 
 import gg.solarmc.loader.Transaction;
 import gg.solarmc.loader.data.DataObject;
-import gg.solarmc.loader.schema.tables.records.KitpvpStatisticsRecord;
+import gg.solarmc.loader.schema.routines.KitpvpAddKillstreak;
 import org.jooq.DSLContext;
 
 import java.util.Set;
 
+import static gg.solarmc.loader.kitpvp.KitOwnership.ADDED_KIT;
+import static gg.solarmc.loader.kitpvp.KitOwnership.NO_CHANGE;
+import static gg.solarmc.loader.kitpvp.KitOwnership.REMOVED_KIT;
+import static gg.solarmc.loader.schema.Routines.kitpvpAddAssists;
+import static gg.solarmc.loader.schema.Routines.kitpvpAddBounty;
+import static gg.solarmc.loader.schema.Routines.kitpvpAddDeaths;
+import static gg.solarmc.loader.schema.Routines.kitpvpAddExperience;
+import static gg.solarmc.loader.schema.Routines.kitpvpAddKills;
+import static gg.solarmc.loader.schema.Routines.kitpvpResetBounty;
+import static gg.solarmc.loader.schema.Routines.kitpvpResetCurrentKillstreak;
 import static gg.solarmc.loader.schema.tables.KitpvpKitsOwnership.KITPVP_KITS_OWNERSHIP;
 import static gg.solarmc.loader.schema.tables.KitpvpStatistics.KITPVP_STATISTICS;
 
 public abstract class KitPvp implements DataObject {
 
-    private final int userID;
+    private final int userId;
     private final KitPvpManager manager;
 
-    KitPvp(int userID, KitPvpManager manager) {
-        this.userID = userID;
+    KitPvp(int userId, KitPvpManager manager) {
+        this.userId = userId;
         this.manager = manager;
-    }
-
-    private KitpvpStatisticsRecord getStatistics(Transaction transaction) {
-        KitpvpStatisticsRecord record = transaction
-                .getProperty(DSLContext.class)
-                .fetchOne(KITPVP_STATISTICS,KITPVP_STATISTICS.USER_ID.eq(userID));
-
-        assert record != null : "Data is missing from the stats!";
-
-        return record;
     }
 
     abstract void updateKills(int i);
@@ -68,16 +68,12 @@ public abstract class KitPvp implements DataObject {
         if (amount <= 0) {
             throw new IllegalArgumentException("amount must be positive");
         }
-        KitpvpStatisticsRecord statisticsRecord = getStatistics(transaction);
-
-        int existingValue = statisticsRecord.getKills();
-        int newValue = existingValue + amount;
-
-        statisticsRecord.setKills(newValue);
-        statisticsRecord.store(KITPVP_STATISTICS.KILLS);
+        int newValue = transaction.getProperty(DSLContext.class)
+                .select(kitpvpAddKills(userId, amount))
+                .fetchSingle().value1();
         this.updateKills(newValue);
 
-        return new StatisticResult(newValue, existingValue);
+        return new StatisticResult(newValue, newValue - amount);
     }
 
     /**
@@ -90,16 +86,12 @@ public abstract class KitPvp implements DataObject {
         if (amount <= 0) {
             throw new IllegalArgumentException("amount must be positive");
         }
-        KitpvpStatisticsRecord statisticsRecord = getStatistics(transaction);
+        int newValue = transaction.getProperty(DSLContext.class)
+                .select(kitpvpAddDeaths(userId, amount))
+                .fetchSingle().value1();
 
-        int existingValue = statisticsRecord.getDeaths();
-        int newValue = existingValue + amount;
-
-        statisticsRecord.setKills(newValue);
-        statisticsRecord.store(KITPVP_STATISTICS.DEATHS);
         this.updateDeaths(newValue);
-
-        return new StatisticResult(newValue, existingValue);
+        return new StatisticResult(newValue, newValue - amount);
     }
 
     /**
@@ -112,17 +104,12 @@ public abstract class KitPvp implements DataObject {
         if (amount <= 0) {
             throw new IllegalArgumentException("amount must be positive");
         }
-        KitpvpStatisticsRecord statisticsRecord = getStatistics(transaction);
-
-        int existingValue = statisticsRecord.getAssists();
-        int newValue = existingValue + amount;
-
-        statisticsRecord.setKills(newValue);
-        statisticsRecord.store(KITPVP_STATISTICS.ASSISTS);
+        int newValue = transaction.getProperty(DSLContext.class)
+                .select(kitpvpAddAssists(userId, amount))
+                .fetchSingle().value1();
 
         this.updateAssists(newValue);
-
-        return new StatisticResult(newValue, existingValue);
+        return new StatisticResult(newValue, newValue - amount);
     }
 
     /**
@@ -136,17 +123,12 @@ public abstract class KitPvp implements DataObject {
         if (amount <= 0) {
             throw new IllegalArgumentException("amount must be positive");
         }
-        KitpvpStatisticsRecord statisticsRecord = getStatistics(transaction);
-
-        int existingValue = statisticsRecord.getExperience();
-        int newValue = existingValue + amount;
-
-        statisticsRecord.setExperience(newValue);
-        statisticsRecord.store(KITPVP_STATISTICS.EXPERIENCE);
+        int newValue = transaction.getProperty(DSLContext.class)
+                .select(kitpvpAddExperience(userId, amount))
+                .fetchSingle().value1();
 
         this.updateExperience(newValue);
-
-        return new StatisticResult(newValue, existingValue);
+        return new StatisticResult(newValue, newValue - amount);
     }
 
     /**
@@ -162,25 +144,18 @@ public abstract class KitPvp implements DataObject {
         if (amount <= 0) {
             throw new IllegalArgumentException("amount must be positive");
         }
-        KitpvpStatisticsRecord statisticsRecord = getStatistics(transaction);
+        KitpvpAddKillstreak killstreakProcedure = new KitpvpAddKillstreak();
+        killstreakProcedure.setUserIdentifier(userId);
+        killstreakProcedure.setAmount(amount);
+        killstreakProcedure.execute(transaction.getProperty(DSLContext.class).configuration());
 
-        int existingValue = statisticsRecord.getCurrentKillstreak();
-        int newValue = existingValue + amount;
+        int newCurrentKillstreak = killstreakProcedure.getNewCurrentKillstreak();
+        int newHighestKillstreak = killstreakProcedure.getNewHighestKillstreak();
 
-        int existingTwo = statisticsRecord.getHighestKillstreak();
+        this.updateCurrentKillstreak(newCurrentKillstreak);
+        this.updateHighestKillstreak(newHighestKillstreak);
 
-        if (newValue > existingTwo) {
-            int newTwo = existingTwo + amount;
-            statisticsRecord.setHighestKillstreak(newTwo);
-            this.updateHighestKillstreak(newTwo);
-        }
-
-        statisticsRecord.setCurrentKillstreak(newValue);
-        statisticsRecord.store(KITPVP_STATISTICS.HIGHEST_KILLSTREAK,KITPVP_STATISTICS.CURRENT_KILLSTREAK);
-
-        this.updateCurrentKillstreak(newValue);
-
-        return new StatisticResult(newValue, existingValue);
+        return new StatisticResult(newCurrentKillstreak, newCurrentKillstreak - amount);
     }
 
     /**
@@ -192,27 +167,25 @@ public abstract class KitPvp implements DataObject {
      * @return the amount they had before
      */
     public int resetCurrentKillstreaks(Transaction transaction) {
-        KitpvpStatisticsRecord statisticsRecord = getStatistics(transaction);
-
-        int old = statisticsRecord.getCurrentKillstreak();
-
-        statisticsRecord.setCurrentKillstreak(0);
-        statisticsRecord.store(KITPVP_STATISTICS.CURRENT_KILLSTREAK);
+        int old = transaction.getProperty(DSLContext.class)
+                .select(kitpvpResetCurrentKillstreak(userId))
+                .fetchSingle().value1();
 
         this.updateCurrentKillstreak(0);
-
         return old;
     }
 
     /**
      * Gets the bounty
      * @param transaction the transaction
-     * @return bounty
+     * @return the current bounty
      */
     public int getBounty(Transaction transaction) {
-        KitpvpStatisticsRecord statisticsRecord = getStatistics(transaction);
-
-        int existingValue = statisticsRecord.getBounty();
+        int existingValue = transaction.getProperty(DSLContext.class)
+                .select(KITPVP_STATISTICS.BOUNTY)
+                .from(KITPVP_STATISTICS)
+                .where(KITPVP_STATISTICS.USER_ID.eq(userId))
+                .fetchSingle().value1();
 
         this.updateBounty(existingValue);
 
@@ -225,35 +198,33 @@ public abstract class KitPvp implements DataObject {
      * @param transaction the transaction
      * @param amount amount to add
      * @throws IllegalArgumentException if the amount is negative
+     * @return the new bounty on the player
      */
-    public void addBounty(Transaction transaction, int amount) {
+    public int addBounty(Transaction transaction, int amount) {
         if (amount <= 0) {
             throw new IllegalArgumentException("Amount cannot be negative!");
         }
+        int newValue = transaction.getProperty(DSLContext.class)
+                .select(kitpvpAddBounty(userId, amount))
+                .fetchSingle().value1();
 
-        KitpvpStatisticsRecord statisticsRecord = getStatistics(transaction);
-
-        int existingValue = statisticsRecord.getBounty();
-        int newValue = existingValue + amount;
-
-        statisticsRecord.setBounty(newValue);
-        statisticsRecord.store(KITPVP_STATISTICS.BOUNTY);
-
-        this.updateBounty(amount);
+        this.updateBounty(newValue);
+        return newValue;
     }
 
     /**
      * Resets the bounty. infallible.
      *
      * @param transaction the transaction
+     * @return the previous bounty on the player
      */
-    public void resetBounty(Transaction transaction) {
-        KitpvpStatisticsRecord statisticsRecord = getStatistics(transaction);
-
-        statisticsRecord.setBounty(0);
-        statisticsRecord.store(KITPVP_STATISTICS.BOUNTY);
+    public int resetBounty(Transaction transaction) {
+        int previousBounty = transaction.getProperty(DSLContext.class)
+                .select(kitpvpResetBounty(userId))
+                .fetchSingle().value1();
 
         this.updateBounty(0);
+        return previousBounty;
     }
 
     /**
@@ -263,14 +234,14 @@ public abstract class KitPvp implements DataObject {
      * @param kit represents the kit to add
      * @return whether the action was successful or not
      */
-    public KitOwnershipResult addKit(Transaction transaction, Kit kit) {
-        int res = transaction.getProperty(DSLContext.class)
+    public KitOwnership addKit(Transaction transaction, Kit kit) {
+        int updateCount = transaction.getProperty(DSLContext.class)
                 .insertInto(KITPVP_KITS_OWNERSHIP)
                 .columns(KITPVP_KITS_OWNERSHIP.USER_ID, KITPVP_KITS_OWNERSHIP.KIT_ID)
-                .values(userID, kit.getId())
-                .onDuplicateKeyIgnore()
+                .values(userId, kit.getId())
+                .onConflictDoNothing()
                 .execute();
-        return new KitOwnershipResult(res != 0);
+        return updateCount != 0 ? ADDED_KIT : NO_CHANGE;
     }
 
     /**
@@ -279,13 +250,13 @@ public abstract class KitPvp implements DataObject {
      * @param kit represents the kit to remove
      * @return whether the action was successful or not
      */
-    public KitOwnershipResult removeKit(Transaction transaction, Kit kit) {
-        int res = transaction.getProperty(DSLContext.class)
+    public KitOwnership removeKit(Transaction transaction, Kit kit) {
+        int updateCount = transaction.getProperty(DSLContext.class)
                 .delete(KITPVP_KITS_OWNERSHIP)
-                .where(KITPVP_KITS_OWNERSHIP.USER_ID.eq(userID))
+                .where(KITPVP_KITS_OWNERSHIP.USER_ID.eq(userId))
                 .and(KITPVP_KITS_OWNERSHIP.KIT_ID.eq(kit.getId()))
                 .execute();
-        return new KitOwnershipResult(res != 0);
+        return updateCount != 0 ? REMOVED_KIT : NO_CHANGE;
     }
 
     /**
@@ -296,7 +267,7 @@ public abstract class KitPvp implements DataObject {
     public Set<Kit> getKits(Transaction transaction) {
         Set<Kit> kits = transaction.getProperty(DSLContext.class)
                 .select(KITPVP_KITS_OWNERSHIP.KIT_ID).from(KITPVP_KITS_OWNERSHIP)
-                .where(KITPVP_KITS_OWNERSHIP.USER_ID.eq(this.userID))
+                .where(KITPVP_KITS_OWNERSHIP.USER_ID.eq(this.userId))
                 .fetchSet((ownershipRecord) -> {
                     return manager.getKit(transaction, ownershipRecord.get(KITPVP_KITS_OWNERSHIP.KIT_ID));
                 });
@@ -314,7 +285,7 @@ public abstract class KitPvp implements DataObject {
         var context = transaction.getProperty(DSLContext.class);
         return context.fetchExists(
                 context.select(KITPVP_KITS_OWNERSHIP.KIT_ID).from(KITPVP_KITS_OWNERSHIP)
-                .where(KITPVP_KITS_OWNERSHIP.USER_ID.eq(this.userID))
+                .where(KITPVP_KITS_OWNERSHIP.USER_ID.eq(this.userId))
                 .and(KITPVP_KITS_OWNERSHIP.KIT_ID.eq(kit.getId())));
     }
 

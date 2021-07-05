@@ -98,7 +98,7 @@ public final class DatabaseExtension implements ParameterResolver {
         return credentials;
     }
 
-    private static void createDatabase(int port, String database) {
+    private void createDatabase(int port, String database) {
         try (Connection conn = DriverManager.getConnection("jdbc:mariadb://localhost:" + port + '/', "root", "");
              PreparedStatement createDatabase = conn.prepareStatement("CREATE DATABASE " + database
                      + " CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");

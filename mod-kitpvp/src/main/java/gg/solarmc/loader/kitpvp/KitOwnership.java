@@ -21,16 +21,12 @@
 
 package gg.solarmc.loader.kitpvp;
 
-public class KitOwnershipResult {
-    //if this were c#, i'd have to do a constructor and a private bool Success {get;set;} but noooooooooooooooooooooooooo
-
-    private final boolean changed;
-
-    KitOwnershipResult(boolean changed) {
-        this.changed = changed;
-    }
+public enum KitOwnership {
+    ADDED_KIT,
+    REMOVED_KIT,
+    NO_CHANGE;
 
     public boolean isChanged() {
-        return changed;
+        return this != NO_CHANGE;
     }
 }

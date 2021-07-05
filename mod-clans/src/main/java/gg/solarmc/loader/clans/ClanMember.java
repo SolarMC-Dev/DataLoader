@@ -26,19 +26,18 @@ package gg.solarmc.loader.clans;
  *
  * Think of this as a final object - it simply holds information for you to interact with
  * that is accurate at the time - aurium, telling aurium how his own code works (2021)
+ *
+ * @param userId the user ID of the member
  */
-public class ClanMember {
+public record ClanMember(int userId) {
 
-    private final Integer clanId; //nullable
-    private final int userId;
-    private final ClanManager manager;
-
-    public ClanMember(Integer clanId, int userId, ClanManager manager) {
-        this.clanId = clanId;
-        this.userId = userId;
-        this.manager = manager;
-    }
-
+    /**
+     * Gets the user ID of the clan member
+     *
+     * @return the user ID
+     * @deprecated Use {@link #userId()}
+     */
+    @Deprecated
     public int getUserId() {
         return userId;
     }
@@ -52,11 +51,4 @@ public class ClanMember {
         return object.isSimilar(this);
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        ClanMember that = (ClanMember) o;
-        return userId == that.userId;
-    }
 }

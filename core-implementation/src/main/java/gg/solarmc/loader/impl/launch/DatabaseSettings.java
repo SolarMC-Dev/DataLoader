@@ -61,6 +61,7 @@ public class DatabaseSettings {
 		int poolSize = config.poolSize();
 		hikariConf.setMinimumIdle(poolSize);
 		hikariConf.setMaximumPoolSize(poolSize);
+		hikariConf.setConnectionInitSql(SqlModes.readSqlModes().queryToSetModes());
 
 		// Timeouts
 		Duration connectionTimeout = Duration.ofSeconds(config.connectionTimeoutSeconds());

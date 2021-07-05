@@ -33,17 +33,21 @@ import gg.solarmc.loader.impl.SolarDataConfig;
 import gg.solarmc.loader.impl.UserDetails;
 import gg.solarmc.loader.impl.test.extension.DataCenterInfo;
 import gg.solarmc.loader.impl.test.extension.DatabaseExtension;
+import org.jooq.DSLContext;
+import org.jooq.Record1;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.junit.jupiter.MockitoExtension;
+import space.arim.omnibus.util.UUIDUtil;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.util.UUID;
 
+import static gg.solarmc.loader.schema.tables.UserIds.USER_IDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -59,7 +63,7 @@ public class AuthenticationCenterIT {
     @BeforeEach
     public void setupCenters(@TempDir Path folder, SolarDataConfig.DatabaseCredentials credentials) {
         authCenter = AuthenticationCenter.create();
-        dataCenterInfo = DataCenterInfo.create(folder, credentials);
+        dataCenterInfo = DataCenterInfo.builder(folder, credentials).build();
     }
 
     /**
@@ -95,11 +99,26 @@ public class AuthenticationCenterIT {
     }
 
     private <T> T transact(DataCenter.TransactionActor<T> actor) {
-        return dataCenterInfo.dataCenter().transact(actor).join();
+        return dataCenterInfo.transact(actor);
     }
 
     private void runTransact(DataCenter.TransactionRunner runner) {
-        dataCenterInfo.dataCenter().runTransact(runner).join();
+        dataCenterInfo.runTransact(runner);
+    }
+
+    private void assertUserExists(int userId, UUID uuid) {
+        runTransact((tx) -> {
+            var context = tx.getProperty(DSLContext.class);
+            Record1<byte[]> uuidRecord = context.select(USER_IDS.UUID)
+                    .from(USER_IDS).where(USER_IDS.ID.eq(userId)).fetchOne();
+            assertNotNull(uuidRecord, "User does not exist");
+            assertEquals(uuid, UUIDUtil.fromByteArray(uuidRecord.value1()));
+        });
+    }
+
+    private void assertLoadedUser(int userId, Player player) {
+        assertEquals(userId, player.getLoadedUserId());
+        assertUserExists(userId, player.mcUuid());
     }
 
     // Completely new user
@@ -123,6 +142,7 @@ public class AuthenticationCenterIT {
         assertEquals(LoginAttempt.ResultType.PREMIUM_PERMITTED, loginAttempt.resultType());
         assertThrows(IllegalStateException.class, loginAttempt::verifiablePassword);
         assertTrue(player.isDataLoaded());
+        assertUserExists(player.getLoadedUserId(), player.mcUuid());
     }
 
     // New user who is not premium according to the Mojang API
@@ -143,7 +163,7 @@ public class AuthenticationCenterIT {
             return authCenter.attemptLoginOfIdentifiedUser(tx, player);
         });
         assertEquals(LoginAttempt.ResultType.PREMIUM_PERMITTED, loginAttempt.resultType());
-        assertEquals(addToLatestNamesAndGetId(player), player.getLoadedUserId());
+        assertLoadedUser(addToLatestNamesAndGetId(player), player);
 
         AutoLoginResult autoLoginResult = transact((tx) -> authCenter.findExistingUserWithName(tx, username));
         assertEquals(AutoLoginResult.ResultType.PREMIUM, autoLoginResult.resultType());
@@ -165,7 +185,7 @@ public class AuthenticationCenterIT {
                 CreateAccountResult.CREATED,
                 transact((tx) -> authCenter.createAccount(tx, crackedPlayer, password)));
         int userId = addToLatestNamesAndGetId(crackedPlayer);
-        assertEquals(userId, crackedPlayer.getLoadedUserId());
+        assertLoadedUser(userId, crackedPlayer);
 
         LoginAttempt loginAttempt = transact((tx) -> authCenter.attemptLoginOfIdentifiedUser(tx, player));
         assertEquals(LoginAttempt.ResultType.NEEDS_PASSWORD, loginAttempt.resultType());
@@ -177,7 +197,7 @@ public class AuthenticationCenterIT {
             return authCenter.completeLoginAndPossiblyMigrate(tx, player);
         });
         assertEquals(CompleteLoginResult.MIGRATED_TO_PREMIUM, premiumLoginResult);
-        assertEquals(userId, player.getLoadedUserId());
+        assertLoadedUser(userId, player);
 
         // Assume cracked player quits. While re-joining, their account is migrated by the premium user
         CompleteLoginResult crackedLoginResult= transact((tx) -> {
@@ -197,7 +217,7 @@ public class AuthenticationCenterIT {
         assertEquals(
                 CreateAccountResult.CREATED,
                 transact((tx) -> authCenter.createAccount(tx, crackedPlayer, password)));
-        assertEquals(addToLatestNamesAndGetId(crackedPlayer), crackedPlayer.getLoadedUserId());
+        assertLoadedUser(addToLatestNamesAndGetId(crackedPlayer), crackedPlayer);
 
         LoginAttempt loginAttempt = transact((tx) -> {
             return authCenter.attemptLoginOfIdentifiedUser(tx, player);
@@ -230,7 +250,7 @@ public class AuthenticationCenterIT {
         assertEquals(
                 CreateAccountResult.CREATED,
                 transact((tx) -> authCenter.createAccount(tx, playerOne, password)));
-        assertEquals(addToLatestNamesAndGetId(playerOne), playerOne.getLoadedUserId());
+        assertLoadedUser(addToLatestNamesAndGetId(playerOne), playerOne);
 
         AutoLoginResult autoLoginResult = transact((tx) -> authCenter.findExistingUserWithName(tx, usernameTwo));
         assertEquals(AutoLoginResult.ResultType.DENIED_CASE_SENSITIVITY_OF_NAME, autoLoginResult.resultType());
@@ -248,7 +268,7 @@ public class AuthenticationCenterIT {
                     CreateAccountResult.CREATED,
                     transact((tx) -> authCenter.createAccount(tx, crackedPlayerOriginal, password)));
             userId = addToLatestNamesAndGetId(crackedPlayerOriginal);
-            assertEquals(userId, crackedPlayerOriginal.getLoadedUserId());
+            assertLoadedUser(userId, crackedPlayerOriginal);
         }
 
         // Re-login
@@ -263,7 +283,7 @@ public class AuthenticationCenterIT {
         });
         assertEquals(CompleteLoginResult.NORMAL, loginResult);
         assertTrue(crackedPlayerRelogin.isDataLoaded());
-        assertEquals(userId, crackedPlayerRelogin.getLoadedUserId());
+        assertLoadedUser(userId, crackedPlayerRelogin);
     }
 
     // Cracked user who desires migration then re-joins as premium
@@ -278,7 +298,7 @@ public class AuthenticationCenterIT {
                     CreateAccountResult.CREATED,
                     transact((tx) -> authCenter.createAccount(tx, crackedPlayerOriginal, password)));
             userId = addToLatestNamesAndGetId(crackedPlayerOriginal);
-            assertEquals(userId, crackedPlayerOriginal.getLoadedUserId());
+            assertLoadedUser(userId, crackedPlayerOriginal);
             runTransact((tx) -> authCenter.desiresAccountMigration(tx, crackedPlayerOriginal.user()));
         }
 
@@ -294,7 +314,7 @@ public class AuthenticationCenterIT {
         });
         assertEquals(CompleteLoginResult.MIGRATED_TO_PREMIUM, loginResult);
         assertTrue(crackedPlayerNowPremium.isDataLoaded());
-        assertEquals(userId, crackedPlayerNowPremium.getLoadedUserId());
+        assertLoadedUser(userId, crackedPlayerNowPremium);
     }
 
     // Two cracked users with the same name attempt to create an account
@@ -340,12 +360,12 @@ public class AuthenticationCenterIT {
                 LoginAttempt.ResultType.PREMIUM_PERMITTED,
                 transact((tx) -> authCenter.attemptLoginOfIdentifiedUser(tx, player)).resultType());
         int userId = addToLatestNamesAndGetId(player);
-        assertEquals(userId, player.getLoadedUserId());
+        assertLoadedUser(userId, player);
 
         assertEquals(
                 LoginAttempt.ResultType.PREMIUM_PERMITTED,
                 transact((tx) -> authCenter.attemptLoginOfIdentifiedUser(tx, samePlayer)).resultType());
-        assertEquals(userId, samePlayer.getLoadedUserId());
+        assertLoadedUser(userId, samePlayer);
     }
 
 }

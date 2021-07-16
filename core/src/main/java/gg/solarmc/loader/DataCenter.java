@@ -28,6 +28,8 @@ import java.util.UUID;
 
 public interface DataCenter {
 
+	CentralisedFuture<Transaction> provideTransact();
+
 	/**
 	 * Runs a transaction which does not return a result. Helper method
 	 * for {@link #transact(TransactionActor)}
@@ -95,5 +97,5 @@ public interface DataCenter {
 	 * solar player.
 	 */
 	CentralisedFuture<Optional<SolarPlayer>> lookupPlayer(UUID uuid);
-
+	
 }

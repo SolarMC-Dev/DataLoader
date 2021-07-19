@@ -84,8 +84,22 @@ public interface DataCenter {
 	 * @param name the username
 	 * @return the solar player if there is one within the system. May be an online or an offline
 	 * solar player.
+	 * @apiNote If you already have a {@link Transaction}, prefer {@link #lookupPlayerUsing(Transaction, String)}
 	 */
 	CentralisedFuture<Optional<SolarPlayer>> lookupPlayer(String name);
+
+	/**
+	 * Looks up a solar player by name using the given transaction. Case insensitive
+	 * with respect to the name. <br>
+	 * <br>
+	 * (Does not do anything silly such as look for users with similar names)
+	 *
+	 * @param transaction the transaction
+	 * @param name the username
+	 * @return the solar player if there is one within the system. May be an online or an offline
+	 * solar player.
+	 */
+	Optional<SolarPlayer> lookupPlayerUsing(Transaction transaction, String name);
 
 	/**
 	 * Looks up a solar player by UUID.
@@ -93,7 +107,38 @@ public interface DataCenter {
 	 * @param uuid the user UUID
 	 * @return the solar player if there is one within the system. May be an online or an offline
 	 * solar player.
+	 * @apiNote If you already have a {@link Transaction}, prefer {@link #lookupPlayerUsing(Transaction, UUID)}
 	 */
 	CentralisedFuture<Optional<SolarPlayer>> lookupPlayer(UUID uuid);
+
+	/**
+	 * Looks up a solar player by UUID using the given transaction.
+	 *
+	 * @param transaction the transaction
+	 * @param uuid the user UUID
+	 * @return the solar player if there is one within the system. May be an online or an offline
+	 * solar player.
+	 */
+	Optional<SolarPlayer> lookupPlayerUsing(Transaction transaction, UUID uuid);
+
+	/**
+	 * Looks up a solar player by user ID.
+	 *
+	 * @param userId the user ID
+	 * @return the solar player if there is one within the system. May be an online or an offline
+	 * solar player.
+	 * @apiNote If you already have a {@link Transaction}, prefer {@link #lookupPlayerUsing(Transaction, int)}
+	 */
+	CentralisedFuture<Optional<SolarPlayer>> lookupPlayer(int userId);
+
+	/**
+	 * Looks up a solar player by user ID using the given transaction.
+	 *
+	 * @param transaction the transaction
+	 * @param userId the user ID
+	 * @return the solar player if there is one within the system. May be an online or an offline
+	 * solar player.
+	 */
+	Optional<SolarPlayer> lookupPlayerUsing(Transaction transaction, int userId);
 
 }

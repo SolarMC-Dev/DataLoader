@@ -30,4 +30,6 @@ public interface PlayerTracker {
 
 	Optional<OnlineSolarPlayer> getOnlinePlayerForName(String name);
 
+	Optional<OnlineSolarPlayer> getOnlinePlayerForUserId(int userId);
+
 }

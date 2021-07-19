@@ -37,7 +37,8 @@ import java.nio.file.Path;
 import java.util.Objects;
 import java.util.concurrent.Executors;
 
-public record DataCenterInfo(Icarus icarus, DataCenter dataCenter, LoginHandler loginHandler) {
+public record DataCenterInfo(FactoryOfTheFuture futuresFactory, Icarus icarus,
+                             DataCenter dataCenter, LoginHandler loginHandler) {
 
     /**
      * Logs in the player with the given details
@@ -99,6 +100,7 @@ public record DataCenterInfo(Icarus icarus, DataCenter dataCenter, LoginHandler 
         private final SolarDataConfig.DatabaseCredentials credentials;
 
         private Omnibus omnibus = new DefaultOmnibus();
+        private PlayerTracker playerTracker = new EmptyPlayerTracker();
 
         Builder(Path folder, SolarDataConfig.DatabaseCredentials credentials) {
             this.folder = folder;
@@ -107,6 +109,11 @@ public record DataCenterInfo(Icarus icarus, DataCenter dataCenter, LoginHandler 
 
         public Builder omnibus(Omnibus omnibus) {
             this.omnibus = Objects.requireNonNull(omnibus);
+            return this;
+        }
+
+        public Builder playerTracker(PlayerTracker playerTracker) {
+            this.playerTracker = Objects.requireNonNull(playerTracker);
             return this;
         }
 
@@ -124,12 +131,12 @@ public record DataCenterInfo(Icarus icarus, DataCenter dataCenter, LoginHandler 
 
             Icarus icarus = icarusLauncher.launch(credentials);
 
-            PlayerTracker playerTracker = new EmptyPlayerTracker();
             SolarDataConfig.Logins logins = icarusLauncher.loadConfig().logins();
             assert !logins.createUserIfNotExists();
             LoginHandler loginHandler = icarus.loginHandlerBuilder(logins)
                     .updateNameAddressHistory().build(playerTracker);
             return new DataCenterInfo(
+                    futuresFactory,
                     icarus,
                     new SimpleDataCenter(futuresFactory, icarus, playerTracker, loginHandler),
                     loginHandler);

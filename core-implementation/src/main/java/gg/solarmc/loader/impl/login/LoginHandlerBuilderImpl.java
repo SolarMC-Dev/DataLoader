@@ -56,7 +56,7 @@ public final class LoginHandlerBuilderImpl implements LoginHandler.Builder {
         return new LoginHandlerImpl(
                 transactionSource, groups, playerTracker,
                 (createUserIfNotExists) ?
-                        new IdRetrieval.AssumeUserExists() : new IdRetrieval.CreateUserIfNotExists(),
+                        new IdRetrieval.CreateUserIfNotExists() : new IdRetrieval.AssumeUserExists(),
                 (updateNameAddressHistory) ?
                         new NameAddressHistoryUpdate.FunctioningImpl() : new NameAddressHistoryUpdate.NoOpImpl());
     }

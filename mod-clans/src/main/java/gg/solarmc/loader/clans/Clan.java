@@ -29,9 +29,11 @@ import org.jooq.DSLContext;
 import org.jooq.Record1;
 import org.jooq.Result;
 
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static gg.solarmc.loader.schema.Routines.clansAddAlly;
 import static gg.solarmc.loader.schema.Routines.clansAddEnemy;
@@ -49,7 +51,10 @@ public class Clan {
     private final int clanId;
     private final String clanName;
 
-    private volatile ConcurrentHashMap.KeySetView<ClanMember,Boolean> members; //concurrentSet
+    /**
+     * Using CAS updates avoids possible race conditions between concurrent queries
+     */
+    private final AtomicReference<Set<ClanMember>> members;
     private final ClanManager manager;
     private final ClanMember leader;
 
@@ -58,14 +63,14 @@ public class Clan {
     private volatile int clanAssists;
 
     Clan(int clanId, String clanName, int clanKills, int clanDeaths, int clanAssists,
-         ClanManager manager, ConcurrentHashMap.KeySetView<ClanMember,Boolean> members, ClanMember leader) {
+         ClanManager manager, Set<ClanMember> members, ClanMember leader) {
 
         this.clanId = clanId;
         this.clanName = clanName;
         this.clanKills = clanKills;
         this.clanDeaths = clanDeaths;
         this.clanAssists = clanAssists;
-        this.members = members;
+        this.members = new AtomicReference<>(members);
         this.manager = manager;
         this.leader = leader;
     }
@@ -123,7 +128,7 @@ public class Clan {
      * @return all ClanMembers, unmodifiable.
      */
     public Set<ClanMember> currentMembers() {
-        return Set.copyOf(this.members);
+        return Set.copyOf(members.getAcquire());
     }
 
     /**
@@ -251,24 +256,22 @@ public class Clan {
     }
 
     /**
-     * Gets all clan members accurately
-     * @param transaction the tx
-     * @return An immutable set containing the members of the clan, unmodifiable. immutable or readonly.
+     * Gets all clan members
+     *
+     * @param transaction the transaction
+     * @return An immutable set containing the members of the clan. May be immutable or
+     * may be an unmodifiable view.
      */
     public Set<ClanMember> getClanMembers(Transaction transaction) {
-        Set<ClanMember> bruh = transaction.getProperty(DSLContext.class)
+        Set<ClanMember> oldMembers = this.members.get();
+        Set<ClanMember> newMembers = Set.copyOf(transaction.getProperty(DSLContext.class)
                 .select(CLANS_CLAN_MEMBERSHIP.USER_ID)
                 .from(CLANS_CLAN_MEMBERSHIP)
                 .where(CLANS_CLAN_MEMBERSHIP.CLAN_ID.eq(this.clanId))
-                .fetchSet((rec) -> new ClanMember(rec.value1()));
-
-        //this feels like a clumsy way of doing this but i can't figure out any others
-
-        ConcurrentHashMap.KeySetView<ClanMember,Boolean> view = ConcurrentHashMap.newKeySet();
-        view.addAll(bruh);
-        this.members = view;
-
-        return Set.copyOf(bruh);
+                .fetchSet((rec) -> new ClanMember(rec.value1())));
+        // If unsuccessful, the old members are more likely accurate and will be used
+        boolean cas = this.members.compareAndSet(oldMembers, newMembers);
+        return Set.copyOf((cas) ? newMembers : oldMembers);
     }
 
     /**
@@ -303,7 +306,12 @@ public class Clan {
         boolean added = transaction.getProperty(DSLContext.class)
                 .select(clansAddMember(clanId, receiver.getUserId()))
                 .fetchSingle().value1();
-        this.members.add(new ClanMember(receiver.getUserId()));
+        ClanMember memberAdded = new ClanMember(receiver.getUserId());
+        this.members.getAndUpdate((members) -> {
+            Set<ClanMember> newMembers = new HashSet<>(members);
+            newMembers.add(memberAdded);
+            return newMembers;
+        });
 
         if (added) {
             receiver.updateCachedClan(this);
@@ -330,7 +338,12 @@ public class Clan {
                 .and(CLANS_CLAN_MEMBERSHIP.USER_ID.eq(receiver.getUserId()))
                 .execute();
 
-        this.members.remove(new ClanMember(receiver.getUserId()));
+        ClanMember memberRemoved = new ClanMember(receiver.getUserId());
+        this.members.getAndUpdate((members) -> {
+            Set<ClanMember> newMembers = new HashSet<>(members);
+            newMembers.remove(memberRemoved);
+            return newMembers;
+        });
 
         if (res != 1)  {
             return false;

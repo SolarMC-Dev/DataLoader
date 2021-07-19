@@ -61,6 +61,13 @@ public class ClanIT {
         return new ClanMember(member.getUserId());
     }
 
+    private void assertMembers(Set<ClanMember> members, Clan clan) {
+        assertEquals(members.size(), dataCenterInfo.transact(clan::getClanSize), "Clan size");
+        assertEquals(members, clan.currentMembers());
+        assertEquals(members, dataCenterInfo.transact(clan::getClanMembers), "Re-retrieved members");
+        assertEquals(members, clan.currentMembers(), "Cached members updated incorrectly");
+    }
+
     @Test
     public void addClanMember() {
         OnlineSolarPlayer leader = dataCenterInfo.loginNewRandomUser();
@@ -68,9 +75,7 @@ public class ClanIT {
         Clan clan = createClan(leader);
 
         addMemberAssertSuccess(clan, member);
-        assertEquals(2, dataCenterInfo.transact(clan::getClanSize), "Clan size");
-        assertEquals(
-                Set.of(clanMember(leader), clanMember(member)), dataCenterInfo.transact(clan::getClanMembers));
+        assertMembers(Set.of(clanMember(leader), clanMember(member)), clan);
     }
 
     @Test
@@ -91,6 +96,7 @@ public class ClanIT {
 
         boolean addedLeader = dataCenterInfo.transact((tx) -> clan.addClanMember(tx, leader));
         assertFalse(addedLeader, "Leader is already a member");
+        assertMembers(Set.of(clanMember(leader)), clan);
     }
 
     @Test
@@ -104,9 +110,7 @@ public class ClanIT {
             return clan.removeClanMember(tx, member);
         });
         assertTrue(removedMember, "Should be able to remove member");
-
-        assertEquals(1, dataCenterInfo.transact(clan::getClanSize));
-        assertEquals(Set.of(clanMember(leader)), dataCenterInfo.transact(clan::getClanMembers));
+        assertMembers(Set.of(clanMember(leader)), clan);
     }
 
     @Test

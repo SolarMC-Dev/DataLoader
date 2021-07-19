@@ -30,6 +30,8 @@ import gg.solarmc.loader.schema.tables.records.ClansClanAlliancesRecord;
 import gg.solarmc.loader.schema.tables.records.ClansClanInfoRecord;
 import org.jooq.DSLContext;
 import org.jooq.Record1;
+import org.jooq.Record2;
+import org.jooq.Result;
 
 import java.time.Duration;
 import java.util.*;
@@ -44,7 +46,6 @@ public class ClanManager implements DataManager {
 
     private final Cache<Integer,Clan> clans = Caffeine.newBuilder().expireAfterAccess(Duration.ofMinutes(10)).build();
     private final Cache<Integer,Integer> allianceCache = Caffeine.newBuilder().build();
-
 
     /**
      * Gets a clan from cache or returns empty if not present.
@@ -184,6 +185,57 @@ public class ClanManager implements DataManager {
         });
 
         clans.invalidate(clan.getClanId());
+    }
+
+    /**
+     * Gets x amount of the highest ranked clans by kills
+     * Ordered by highest to lowest.
+     * @param amount the amount of clans to fetch
+     * @return an ordered list (highest first, lowest last) of
+     * clans ranked by stat type.
+     */
+    public List<Integer> getTopClanKills(Transaction transaction, int amount) {
+        Result<Record2<Integer,Integer>> result = transaction.getProperty(DSLContext.class).select(CLANS_CLAN_INFO.CLAN_ID, CLANS_CLAN_INFO.CLAN_KILLS)
+                .from(CLANS_CLAN_INFO)
+                .orderBy(CLANS_CLAN_INFO.CLAN_KILLS.desc())
+                .limit(amount)
+                .fetch();
+
+        return result.getValues(CLANS_CLAN_INFO.CLAN_ID);
+    }
+
+    /**
+     * Gets x amount of the highest ranked clans by deaths
+     * Ordered by highest to lowest.
+     * @param amount the amount of clans to fetch
+     * @return an ordered list (highest first, lowest last) of
+     * clans ranked by stat type.
+     */
+    public List<Integer> getTopClanDeaths(Transaction transaction, int amount) {
+        Result<Record2<Integer,Integer>> result = transaction.getProperty(DSLContext.class).select(CLANS_CLAN_INFO.CLAN_ID, CLANS_CLAN_INFO.CLAN_DEATHS)
+                .from(CLANS_CLAN_INFO)
+                .orderBy(CLANS_CLAN_INFO.CLAN_DEATHS.desc())
+                .limit(amount)
+                .fetch();
+
+        return result.getValues(CLANS_CLAN_INFO.CLAN_ID);
+    }
+
+    /**
+     * Gets x amount of the highest ranked clans by assists
+     * Ordered by highest to lowest.
+     * @param amount the amount of clans to fetch
+     * @return an ordered list (highest first, lowest last) of
+     * clans ranked by stat type.
+     */
+    public List<Integer> getTopClanAssists(Transaction transaction, int amount) {
+        Result<Record2<Integer,Integer>> result = transaction.getProperty(DSLContext.class).select(CLANS_CLAN_INFO.CLAN_ID, CLANS_CLAN_INFO.CLAN_ASSISTS)
+                .from(CLANS_CLAN_INFO)
+                .orderBy(CLANS_CLAN_INFO.CLAN_ASSISTS.desc())
+                .limit(amount)
+                .fetch();
+
+        return result.getValues(CLANS_CLAN_INFO.CLAN_ID);
     }
 
 

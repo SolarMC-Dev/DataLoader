@@ -36,6 +36,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import static gg.solarmc.loader.schema.Routines.clansAddAlly;
 import static gg.solarmc.loader.schema.Routines.clansAddEnemy;
 import static gg.solarmc.loader.schema.Routines.clansAddMember;
+
 import static gg.solarmc.loader.schema.tables.ClansClanAlliances.CLANS_CLAN_ALLIANCES;
 import static gg.solarmc.loader.schema.tables.ClansClanEnemies.CLANS_CLAN_ENEMIES;
 import static gg.solarmc.loader.schema.tables.ClansClanInfo.CLANS_CLAN_INFO;
@@ -50,6 +51,7 @@ public class Clan {
     private final String clanName;
 
     private volatile ConcurrentHashMap.KeySetView<ClanMember,Boolean> members; //concurrentSet
+
     private final ClanManager manager;
     private final ClanMember leader;
 
@@ -95,32 +97,41 @@ public class Clan {
     }
 
     /**
-     * Returns the kills at the time of querying (not accurate)
-     * @return kills
+     * Returns the clan's leader at the time of querying
+     * @return the leader represented as an object (should not be relied on for correctness purposes)
+     */
+    public ClanMember currentLeader() {
+        return this.leader;
+    }
+
+    /**
+     * Returns the kills at the time of querying
+     * @return kills (should not be relied on for correctness purposes)
      */
     public int currentKills() {
         return clanKills;
     }
 
     /**
-     * Returns the deaths at the time of querying (not accurate)
-     * @return deaths
+     * Returns the deaths at the time of querying
+     * @return deaths (should not be relied on for correctness purposes)
      */
     public int currentDeaths() {
         return clanDeaths;
     }
 
     /**
-     * Returns the ass at the time of querying (not accurate)
-     * @return ass
+     * Returns the assists at the time of querying
+     * @return assists (should not be relied on for correctness purposes)
      */
     public int currentAssists() {
         return clanAssists;
     }
 
     /**
-     * Gets all current members currently in the clan. Not accurate.
+     * Gets all current members currently in the clan.
      * @return all ClanMembers, unmodifiable.
+     * (should not be relied on for correctness purposes)
      */
     public Set<ClanMember> currentMembers() {
         return Set.copyOf(this.members);
@@ -459,6 +470,8 @@ public class Clan {
     public int hashCode() {
         return clanId;
     }
+
+
 }
 
 

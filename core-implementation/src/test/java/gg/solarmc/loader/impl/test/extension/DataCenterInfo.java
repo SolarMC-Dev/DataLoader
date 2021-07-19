@@ -128,7 +128,7 @@ public record DataCenterInfo(Icarus icarus, DataCenter dataCenter, LoginHandler 
             SolarDataConfig.Logins logins = icarusLauncher.loadConfig().logins();
             assert !logins.createUserIfNotExists();
             LoginHandler loginHandler = icarus.loginHandlerBuilder(logins)
-                    .updateNameAddressHistory().build(playerTracker);
+                    .createUserIfNotExists().updateNameAddressHistory().build(playerTracker);
             return new DataCenterInfo(
                     icarus,
                     new SimpleDataCenter(futuresFactory, icarus, playerTracker, loginHandler),

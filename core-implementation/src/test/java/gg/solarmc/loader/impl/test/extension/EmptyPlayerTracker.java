@@ -36,4 +36,9 @@ final class EmptyPlayerTracker implements PlayerTracker {
     public Optional<OnlineSolarPlayer> getOnlinePlayerForName(String name) {
         return Optional.empty();
     }
+
+    @Override
+    public Optional<OnlineSolarPlayer> getOnlinePlayerForUserId(int userId) {
+        return Optional.empty();
+    }
 }

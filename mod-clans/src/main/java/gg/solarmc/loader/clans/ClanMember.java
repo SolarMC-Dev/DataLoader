@@ -29,7 +29,7 @@ package gg.solarmc.loader.clans;
  *
  * @param userId the user ID of the member
  */
-public record ClanMember(int userId) {
+public record ClanMember(int userId) { //wait since when was this a record :thinking:
 
     /**
      * Gets the user ID of the clan member

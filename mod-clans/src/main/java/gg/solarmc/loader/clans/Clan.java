@@ -29,6 +29,7 @@ import org.jooq.DSLContext;
 import org.jooq.Record1;
 import org.jooq.Result;
 
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -175,7 +176,7 @@ public class Clan {
 
         manager.insertAllianceCache(this.clanId, rec1.value1());
 
-        return Optional.of(manager.getClan(transaction, rec1.value1()));
+        return manager.getClanByID(transaction, rec1.value1());
     }
 
     /**
@@ -418,6 +419,7 @@ public class Clan {
         byte addStatus = transaction.getProperty(DSLContext.class)
                 .select(clansAddEnemy(clanId, receiver.getClanId()))
                 .fetchSingle().value1();
+
         return switch (addStatus) {
         case 0 -> true;
         case 1 -> false;
@@ -451,11 +453,21 @@ public class Clan {
      * @return All clans this clan has currently marked as enemies
      */
     public Set<Clan> getEnemyClans(Transaction transaction) {
-        return transaction.getProperty(DSLContext.class)
+        var result = transaction.getProperty(DSLContext.class)
                 .select(CLANS_CLAN_ENEMIES.ENEMY_ID)
                 .from(CLANS_CLAN_ENEMIES)
                 .where(CLANS_CLAN_ENEMIES.CLAN_ID.eq(this.clanId))
-                .fetchSet((record) -> manager.getClan(transaction, record.get(CLANS_CLAN_ENEMIES.ENEMY_ID)));
+                .fetch();
+
+        Set<Clan> clans = new HashSet<>();
+
+        result.forEach(res -> {
+            Optional<Clan> op = manager.getClanByID(transaction, res.get(CLANS_CLAN_ENEMIES.ENEMY_ID));
+
+            op.ifPresent(clans::add);
+        });
+
+        return clans;
     }
 
     @Override

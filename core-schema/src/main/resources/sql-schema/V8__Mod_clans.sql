@@ -88,12 +88,10 @@ CREATE FUNCTION clans_add_enemy
     RETURN 0;
   END;
 
-CREATE FUNCTION clans_create_new(name VARCHAR(32), leader_id INT) RETURNS TINYINT
+CREATE FUNCTION clans_create_new (name VARCHAR(32), leader_id INT) RETURNS TINYINT MODIFIES SQL DATA
   COMMENT 'Returns 0 if method call successful. Returns 1 if name is not unique.
   Returns 2 if user referenced by leader_id is already a clan member.'
   BEGIN
-      DECLARE returned_id INT; -- why is it complaining about this declaration
-
       -- Since they are all server-sided and therefore optimized by the engine AND there is no latency due to java-sql/io can i call
     -- select queries as much as i fucking please? /s (but is this okay?)
     IF EXISTS(SELECT 1 FROM clans_clan_info WHERE clan_name = name) THEN
@@ -109,8 +107,8 @@ CREATE FUNCTION clans_create_new(name VARCHAR(32), leader_id INT) RETURNS TINYIN
     END IF;
 
 
-    INSERT INTO clans_clan_info (clan_name, clan_leader, clan_kills, clan_deaths, clan_assists) VALUES (name, leader_id, 0, 0, 0) RETURNING returned_id = clan_id;
-    INSERT INTO clans_clan_membership (user_id, clan_id) VALUES (leader_id, returned_id);
+    INSERT INTO clans_clan_info (clan_name, clan_leader, clan_kills, clan_deaths, clan_assists) VALUES (name, leader_id, 0, 0, 0);
+    INSERT INTO clans_clan_membership (user_id, clan_id) VALUES (leader_id, LAST_INSERT_ID());
 
     RETURN 0;
   END;

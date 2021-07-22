@@ -88,12 +88,6 @@ CREATE FUNCTION clans_add_enemy
     RETURN 0;
   END;
 
-  -- A248, i know very little about sql but this is very interesting: Are you implementing an error-handler like catch
-  -- clause here? is 1062 the error code? If so, sql user defined functions are more incredible than i thought!
-  -- I wholly apologize for doubting these earlier in our discussion: we may use these to circumvent writing
-  -- methods with excessive querying. With these functions we can reduce all of our java-sql interactions to a single
-  -- function query: Below is a function that aims to reduce the amount of java-sql interactions of the Create Clan method.
-
 CREATE FUNCTION clans_create_new(name VARCHAR(32), leader_id INT) RETURNS TINYINT
   COMMENT 'Returns 0 if method call successful. Returns 1 if name is not unique.
   Returns 2 if user referenced by leader_id is already a clan member.'

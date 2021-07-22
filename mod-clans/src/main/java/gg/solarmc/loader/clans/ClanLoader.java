@@ -45,10 +45,7 @@ public class ClanLoader implements DataLoader<OnlineClanDataObject,ClanDataObjec
 
         Optional<Clan> clan = manager.getClanByUser(transaction,userId);
 
-        if (clan.isEmpty()) return new OnlineClanDataObject(userId, manager, null);
-
-        return new OnlineClanDataObject(userId, manager, clan.get());
-
+        return new OnlineClanDataObject(userId, manager, clan.orElse(null));
     }
 
     @Override

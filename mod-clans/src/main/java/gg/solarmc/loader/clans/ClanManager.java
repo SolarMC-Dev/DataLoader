@@ -44,24 +44,34 @@ public class ClanManager implements DataManager {
     private final Cache<Integer,Clan> clans = Caffeine.newBuilder().expireAfterAccess(Duration.ofMinutes(10)).build();
     private final Cache<Integer,Integer> allianceCache = Caffeine.newBuilder().build();
 
+    //i know i'm not supposed to prematurely optimize, but why not turn two queries into one and improve my sql knowledge at the same time?
     /**
      * Gets a clan by the id number of a user
      * @param transaction the transaction
      * @param userID the ID of the user
      * @return empty if no clan was found, or the clan that the user is present in
      */
-    public Optional<Clan> getClanByUser(Transaction transaction, int userID) {
+    Optional<Clan> getClanByUser(Transaction transaction, int userID) {
         var result = transaction.getProperty(DSLContext.class)
-                .select(CLANS_CLAN_MEMBERSHIP.CLAN_ID)
+                .select(CLANS_CLAN_MEMBERSHIP.CLAN_ID, CLANS_CLAN_INFO.CLAN_NAME, CLANS_CLAN_INFO.CLAN_LEADER, CLANS_CLAN_INFO.CLAN_KILLS, CLANS_CLAN_INFO.CLAN_DEATHS, CLANS_CLAN_INFO.CLAN_ASSISTS)
                 .from(CLANS_CLAN_MEMBERSHIP)
-                .where(CLANS_CLAN_MEMBERSHIP.USER_ID.eq(userID))
-                .fetchOne(); //am i getting lazy? js is making me use var more and more often
+                .leftJoin(CLANS_CLAN_INFO).on(CLANS_CLAN_MEMBERSHIP.CLAN_ID.eq(CLANS_CLAN_INFO.CLAN_ID))
+                .and(CLANS_CLAN_MEMBERSHIP.USER_ID.eq(userID))
+                .fetchOne();
 
         if (result == null) return Optional.empty();
 
-        return getClanById(transaction, result.value1());
+        Set<ClanMember> bruh = transaction.getProperty(DSLContext.class)
+                .select(CLANS_CLAN_MEMBERSHIP.USER_ID).from(CLANS_CLAN_MEMBERSHIP)
+                .where(CLANS_CLAN_MEMBERSHIP.CLAN_ID.eq(result.value1())).fetchSet((rec1) -> new ClanMember(rec1.value1()));
+
+        Clan returned = new Clan(result.value1(), result.value2(), result.value4(),
+                result.value5(),result.value6(),this,bruh,new ClanMember(result.value3()));
+
+        return Optional.of(returned);
 
     }
+
 
     /**
      * Gets a clan from cache or returns empty if not present.
@@ -94,11 +104,9 @@ public class ClanManager implements DataManager {
      * @return an empty optional if the clan is not present, a clan if it is.
      */
     public Optional<Clan> getClanByName(Transaction transaction, String name) {
-
         return getClan(transaction,transaction.getProperty(DSLContext.class).fetchOne(CLANS_CLAN_INFO,CLANS_CLAN_INFO.CLAN_NAME.eq(name)));
     }
 
-    //This is very messy. TODO replace this with a server-sided func whenever
     Optional<Clan> getClan(Transaction transaction, ClansClanInfoRecord record) {
         var jooq = transaction.getProperty(DSLContext.class);
 
@@ -110,19 +118,8 @@ public class ClanManager implements DataManager {
                 .select(CLANS_CLAN_MEMBERSHIP.USER_ID).from(CLANS_CLAN_MEMBERSHIP)
                 .where(CLANS_CLAN_MEMBERSHIP.CLAN_ID.eq(record.getClanId())).fetchSet((rec1) -> new ClanMember(rec1.value1()));
 
-        ConcurrentHashMap.KeySetView<ClanMember,Boolean> view = ConcurrentHashMap.newKeySet();
-        view.addAll(bruh);
-
-        ClansClanAlliancesRecord recAlly = jooq.fetchOne(CLANS_CLAN_ALLIANCES,CLANS_CLAN_ALLIANCES.CLAN_ID.eq(record.getClanId()));
-
-        ClanMember owner = new ClanMember(record.getClanLeader());
-
         Clan returned = new Clan(record.getClanId(), record.getClanName(),record.getClanKills(),
-                record.getClanDeaths(),record.getClanAssists(),this,view,owner);
-
-        if (recAlly != null) {
-            this.insertAllianceCache(recAlly.getClanId(),recAlly.getAllyId());
-        }
+                record.getClanDeaths(),record.getClanAssists(),this,bruh,new ClanMember(record.getClanLeader()));
 
         return Optional.of(returned);
     }

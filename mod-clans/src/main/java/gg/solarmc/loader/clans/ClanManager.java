@@ -59,7 +59,7 @@ public class ClanManager implements DataManager {
 
         if (result == null) return Optional.empty();
 
-        return getClanByID(transaction, result.value1());
+        return getClanById(transaction, result.value1());
 
     }
 
@@ -81,7 +81,7 @@ public class ClanManager implements DataManager {
      * @param id the clan's id
      * @return the clan if present, empty if not.
      */
-    public Optional<Clan> getClanByID(Transaction transaction, int id) {
+    public Optional<Clan> getClanById(Transaction transaction, int id) {
         return getClan(transaction, transaction.getProperty(DSLContext.class).fetchOne(CLANS_CLAN_INFO,CLANS_CLAN_INFO.CLAN_ID.eq(id)));
     }
 

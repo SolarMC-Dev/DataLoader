@@ -32,7 +32,6 @@ import org.jooq.Result;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static gg.solarmc.loader.schema.Routines.clansAddAlly;
@@ -176,7 +175,7 @@ public class Clan {
 
         manager.insertAllianceCache(this.clanId, rec1.value1());
 
-        return manager.getClanByID(transaction, rec1.value1());
+        return manager.getClanById(transaction, rec1.value1());
     }
 
     /**
@@ -470,7 +469,7 @@ public class Clan {
         Set<Clan> clans = new HashSet<>();
 
         result.forEach(res -> {
-            Optional<Clan> op = manager.getClanByID(transaction, res.get(CLANS_CLAN_ENEMIES.ENEMY_ID));
+            Optional<Clan> op = manager.getClanById(transaction, res.get(CLANS_CLAN_ENEMIES.ENEMY_ID));
 
             op.ifPresent(clans::add);
         });

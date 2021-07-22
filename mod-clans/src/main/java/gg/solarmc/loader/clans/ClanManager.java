@@ -45,6 +45,25 @@ public class ClanManager implements DataManager {
     private final Cache<Integer,Integer> allianceCache = Caffeine.newBuilder().build();
 
     /**
+     * Gets a clan by the id number of a user
+     * @param transaction the transaction
+     * @param userID the ID of the user
+     * @return empty if no clan was found, or the clan that the user is present in
+     */
+    public Optional<Clan> getClanByUser(Transaction transaction, int userID) {
+        var result = transaction.getProperty(DSLContext.class)
+                .select(CLANS_CLAN_MEMBERSHIP.CLAN_ID)
+                .from(CLANS_CLAN_MEMBERSHIP)
+                .where(CLANS_CLAN_MEMBERSHIP.USER_ID.eq(userID))
+                .fetchOne(); //am i getting lazy? js is making me use var more and more often
+
+        if (result == null) return Optional.empty();
+
+        return getClanByID(transaction, result.value1());
+
+    }
+
+    /**
      * Gets a clan from cache or returns empty if not present.
      * @param id id of the clan
      * @return Optional containing the clan if it was present in the local cache
@@ -213,17 +232,17 @@ public class ClanManager implements DataManager {
      * @return an ordered list (highest first, lowest last) of
      * clans ranked by stat type.
      */
-    public List<TopResult> getTopClanKills(Transaction transaction, int amount) {
+    public List<TopClanResult> getTopClanKills(Transaction transaction, int amount) {
         Result<Record3<Integer,Integer,String>> result = transaction.getProperty(DSLContext.class).select(CLANS_CLAN_INFO.CLAN_ID, CLANS_CLAN_INFO.CLAN_KILLS, CLANS_CLAN_INFO.CLAN_NAME)
                 .from(CLANS_CLAN_INFO)
                 .orderBy(CLANS_CLAN_INFO.CLAN_KILLS.desc())
                 .limit(amount)
                 .fetch();
 
-        List<TopResult> results = new ArrayList<>();
+        List<TopClanResult> results = new ArrayList<>();
 
         result.forEach(rec -> {
-            results.add(new TopResult(rec.value1(), rec.value2(), rec.value3()));
+            results.add(new TopClanResult(rec.value1(), rec.value2(), rec.value3()));
         });
 
         return results;
@@ -236,17 +255,17 @@ public class ClanManager implements DataManager {
      * @return an ordered list (highest first, lowest last) of
      * clans ranked by stat type.
      */
-    public List<TopResult> getTopClanDeaths(Transaction transaction, int amount) {
+    public List<TopClanResult> getTopClanDeaths(Transaction transaction, int amount) {
         Result<Record3<Integer,Integer,String>> result = transaction.getProperty(DSLContext.class).select(CLANS_CLAN_INFO.CLAN_ID, CLANS_CLAN_INFO.CLAN_DEATHS, CLANS_CLAN_INFO.CLAN_NAME)
                 .from(CLANS_CLAN_INFO)
                 .orderBy(CLANS_CLAN_INFO.CLAN_DEATHS.desc())
                 .limit(amount)
                 .fetch();
 
-        List<TopResult> results = new ArrayList<>();
+        List<TopClanResult> results = new ArrayList<>();
 
         result.forEach(rec -> {
-            results.add(new TopResult(rec.value1(), rec.value2(), rec.value3()));
+            results.add(new TopClanResult(rec.value1(), rec.value2(), rec.value3()));
         });
 
         return results;
@@ -259,17 +278,17 @@ public class ClanManager implements DataManager {
      * @return an ordered list (highest first, lowest last) of
      * clans ranked by stat type.
      */
-    public List<TopResult> getTopClanAssists(Transaction transaction, int amount) {
+    public List<TopClanResult> getTopClanAssists(Transaction transaction, int amount) {
         Result<Record3<Integer,Integer,String>> result = transaction.getProperty(DSLContext.class).select(CLANS_CLAN_INFO.CLAN_ID, CLANS_CLAN_INFO.CLAN_ASSISTS, CLANS_CLAN_INFO.CLAN_NAME)
                 .from(CLANS_CLAN_INFO)
                 .orderBy(CLANS_CLAN_INFO.CLAN_ASSISTS.desc())
                 .limit(amount)
                 .fetch();
 
-        List<TopResult> results = new ArrayList<>();
+        List<TopClanResult> results = new ArrayList<>();
 
         result.forEach(rec -> {
-            results.add(new TopResult(rec.value1(), rec.value2(), rec.value3()));
+            results.add(new TopClanResult(rec.value1(), rec.value2(), rec.value3()));
         });
 
         return results;

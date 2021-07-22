@@ -204,7 +204,7 @@ public class ClanManager implements DataManager {
         clans.invalidate(clan.getClanId());
     }
 
-    public record TopResult(int id, int statValue, String name) {}
+    public record TopClanResult(int clanId, int statisticValue, String clanName) {}
 
     /**
      * Gets x amount of the highest ranked clans by kills

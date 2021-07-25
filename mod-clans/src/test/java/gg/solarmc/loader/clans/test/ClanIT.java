@@ -54,7 +54,7 @@ public class ClanIT {
     }
 
     private Clan getClan(int clanId) {
-        return dataCenterInfo.transact((tx) -> clanManager.getClan(tx, clanId));
+        return dataCenterInfo.transact((tx) -> clanManager.getClanById(tx, clanId)).orElseThrow();
     }
 
     private ClanMember clanMember(OnlineSolarPlayer member) {

@@ -61,7 +61,9 @@ public class ClanManager implements DataManager {
 
         if (result == null) return Optional.empty();
 
-        Set<ClanMember> bruh = transaction.getProperty(DSLContext.class)
+        throw new IllegalStateException(result.toString());
+
+        /*Set<ClanMember> bruh = transaction.getProperty(DSLContext.class)
                 .select(CLANS_CLAN_MEMBERSHIP.USER_ID).from(CLANS_CLAN_MEMBERSHIP)
                 .where(CLANS_CLAN_MEMBERSHIP.CLAN_ID.eq(result.value1())).fetchSet((rec1) -> new ClanMember(rec1.value1()));
 
@@ -69,7 +71,7 @@ public class ClanManager implements DataManager {
                 result.value5(),result.value6(),this,bruh,new ClanMember(result.value3()));
 
         return Optional.of(returned);
-
+*/
     }
 
 

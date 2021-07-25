@@ -477,6 +477,30 @@ public class Clan {
         return clans;
     }
 
+
+    /**
+     * Sets the owner of the clan to the user provided by the id, and
+     * if they are not a member of the clan they are added.
+     *
+     * The old owner remains a member of the clan.
+     *
+     * @param transaction tx
+     * @param id user id of the new clan owner
+     */
+    public void setOwner(Transaction transaction, int id) {
+        transaction.getProperty(DSLContext.class)
+                .update(CLANS_CLAN_INFO)
+                .set(CLANS_CLAN_INFO.CLAN_LEADER, id)
+                .where(CLANS_CLAN_INFO.CLAN_ID.eq(this.clanId))
+                .execute();
+
+        transaction.getProperty(DSLContext.class)
+                .insertInto(CLANS_CLAN_MEMBERSHIP, CLANS_CLAN_MEMBERSHIP.CLAN_ID, CLANS_CLAN_MEMBERSHIP.USER_ID)
+                .values(this.clanId, id)
+                .execute();
+
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

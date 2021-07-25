@@ -55,15 +55,13 @@ public class ClanManager implements DataManager {
         var result = transaction.getProperty(DSLContext.class)
                 .select(CLANS_CLAN_MEMBERSHIP.CLAN_ID, CLANS_CLAN_INFO.CLAN_NAME, CLANS_CLAN_INFO.CLAN_LEADER, CLANS_CLAN_INFO.CLAN_KILLS, CLANS_CLAN_INFO.CLAN_DEATHS, CLANS_CLAN_INFO.CLAN_ASSISTS)
                 .from(CLANS_CLAN_MEMBERSHIP)
-                .rightJoin(CLANS_CLAN_INFO).on(CLANS_CLAN_MEMBERSHIP.CLAN_ID.eq(CLANS_CLAN_INFO.CLAN_ID))
+                .innerJoin(CLANS_CLAN_INFO).on(CLANS_CLAN_MEMBERSHIP.CLAN_ID.eq(CLANS_CLAN_INFO.CLAN_ID))
                 .where(CLANS_CLAN_MEMBERSHIP.USER_ID.eq(userID))
                 .fetchOne();
 
         if (result == null) return Optional.empty();
 
-        throw new IllegalStateException(result.toString());
-
-        /*Set<ClanMember> bruh = transaction.getProperty(DSLContext.class)
+        Set<ClanMember> bruh = transaction.getProperty(DSLContext.class)
                 .select(CLANS_CLAN_MEMBERSHIP.USER_ID).from(CLANS_CLAN_MEMBERSHIP)
                 .where(CLANS_CLAN_MEMBERSHIP.CLAN_ID.eq(result.value1())).fetchSet((rec1) -> new ClanMember(rec1.value1()));
 
@@ -71,7 +69,7 @@ public class ClanManager implements DataManager {
                 result.value5(),result.value6(),this,bruh,new ClanMember(result.value3()));
 
         return Optional.of(returned);
-*/
+
     }
 
 

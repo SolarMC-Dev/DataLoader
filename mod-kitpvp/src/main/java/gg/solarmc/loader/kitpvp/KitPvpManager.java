@@ -102,8 +102,11 @@ public class KitPvpManager implements DataManager {
 		Field<KitItem> itemColumn = DSL.field(KITPVP_KITS_CONTENTS.ITEM.getName(), itemType);
 		Set<ItemInSlot> contents = jooq
 				.select(KITPVP_KITS_CONTENTS.SLOT, itemColumn).from(KITPVP_KITS_CONTENTS)
-				.where(KITPVP_KITS_CONTENTS.KIT_ID.eq(id)).fetchSet((itemInSlotRecord) -> new ItemInSlot(
-						itemInSlotRecord.value1(), itemInSlotRecord.value2()));
+				.where(KITPVP_KITS_CONTENTS.KIT_ID.eq(id))
+				.fetchSet((itemInSlotRecord) -> {
+					return new ItemInSlot(
+						itemInSlotRecord.value1(), itemInSlotRecord.value2());
+				});
 		return new Kit(id, name, Set.copyOf(contents));
 	}
 

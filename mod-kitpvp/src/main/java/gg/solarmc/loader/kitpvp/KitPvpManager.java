@@ -57,17 +57,19 @@ public class KitPvpManager implements DataManager {
 	 * @return the kit from cache or table
 	 */
 	Kit getKitById(Transaction transaction, int id) {
-		var jooq = transaction.getProperty(DSLContext.class);
+		return existingKits.get(new KitKeyId(id), num -> {
+			var jooq = transaction.getProperty(DSLContext.class);
 
-		String kitName = jooq
-				.select(KITPVP_KITS_IDS.KIT_NAME).from(KITPVP_KITS_IDS)
-				.where(KITPVP_KITS_IDS.KIT_ID.eq(id)).fetchOne(KITPVP_KITS_IDS.KIT_NAME);
+			String kitName = jooq
+					.select(KITPVP_KITS_IDS.KIT_NAME).from(KITPVP_KITS_IDS)
+					.where(KITPVP_KITS_IDS.KIT_ID.eq(id)).fetchOne(KITPVP_KITS_IDS.KIT_NAME);
 
-		if (kitName == null) {
-			throw new IllegalStateException("Kit by id " + id + " does not exist");
-		}
+			if (kitName == null) {
+				throw new IllegalStateException("Kit by id " + id + " does not exist");
+			}
 
-		return existingKits.get(new KitCacheKey(id, kitName), key -> getKit(transaction, id, kitName));
+			return getKit(transaction, id, kitName);
+		});
 	}
 
 	/**
@@ -78,17 +80,19 @@ public class KitPvpManager implements DataManager {
 	 * @return the kit from cache or table
 	 */
 	Kit getKitByName(Transaction transaction, String name) {
-		var jooq = transaction.getProperty(DSLContext.class);
+		return existingKits.get(new KitKeyName(name), num -> {
+			var jooq = transaction.getProperty(DSLContext.class);
 
-		Integer kitId = jooq
-				.select(KITPVP_KITS_IDS.KIT_ID).from(KITPVP_KITS_IDS)
-				.where(KITPVP_KITS_IDS.KIT_NAME.eq(name)).fetchOne(KITPVP_KITS_IDS.KIT_ID);
+			Integer kitId = jooq
+					.select(KITPVP_KITS_IDS.KIT_ID).from(KITPVP_KITS_IDS)
+					.where(KITPVP_KITS_IDS.KIT_NAME.eq(name)).fetchOne(KITPVP_KITS_IDS.KIT_ID);
 
-		if (kitId == null) {
-			throw new IllegalStateException("Kit by name " + name + " does not exist");
-		}
+			if (kitId == null) {
+				throw new IllegalStateException("Kit by name " + name + " does not exist");
+			}
 
-		return existingKits.get(new KitCacheKey(kitId, name), key -> getKit(transaction, kitId, name));
+			return getKit(transaction, kitId, name);
+		});
 	}
 
 	Kit getKit(Transaction transaction, int id, String name){
@@ -135,7 +139,7 @@ public class KitPvpManager implements DataManager {
 		}
 
 		Kit kit = new Kit(kitId, name, contents);
-		existingKits.put(new KitCacheKey(kitId, result.getKitName()), kit);
+		existingKits.put(new KitKeyName(name), kit);
 		return kit;
 	}
 
@@ -148,7 +152,7 @@ public class KitPvpManager implements DataManager {
 		transaction.getProperty(DSLContext.class)
 				.deleteFrom(KITPVP_KITS_IDS).where(KITPVP_KITS_IDS.KIT_ID.eq(kitId))
 				.execute();
-		existingKits.invalidate(new KitCacheKey(kitId));
+		existingKits.invalidate(new KitKeyId(kitId));
 	}
 
 	/**
@@ -160,7 +164,7 @@ public class KitPvpManager implements DataManager {
 		transaction.getProperty(DSLContext.class)
 				.deleteFrom(KITPVP_KITS_IDS).where(KITPVP_KITS_IDS.KIT_NAME.eq(kitName))
 				.execute();
-		existingKits.invalidate(new KitCacheKey(kitName));
+		existingKits.invalidate(new KitKeyName(kitName));
 	}
 
 }

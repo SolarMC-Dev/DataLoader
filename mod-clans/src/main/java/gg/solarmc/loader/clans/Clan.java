@@ -161,7 +161,7 @@ public class Clan {
      * Gets clan name accurately
      * @param transaction the transaction
      * @return the name of the clan
-     * @throws IllegalStateException if clan name is not present in database
+     * @throws IllegalStateException if this clan is not present in database
      */
     public String getClanName(Transaction transaction) {
         var returned =  transaction.getProperty(DSLContext.class).select(CLANS_CLAN_INFO.CLAN_NAME)

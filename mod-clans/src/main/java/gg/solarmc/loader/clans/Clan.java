@@ -53,7 +53,7 @@ public class Clan {
 
     private final AtomicReference<Set<ClanMember>> members;
     private final ClanManager manager;
-    private final ClanMember leader;
+    private volatile ClanMember leader;
 
     private volatile int clanKills;
     private volatile int clanDeaths;
@@ -487,18 +487,37 @@ public class Clan {
      * @param transaction tx
      * @param id user id of the new clan owner
      */
-    public void setOwner(Transaction transaction, int id) {
-        transaction.getProperty(DSLContext.class)
+    public void setLeader(Transaction transaction, SolarPlayer id) {
+
+        var context = transaction.getProperty(DSLContext.class);
+
+        context
                 .update(CLANS_CLAN_INFO)
-                .set(CLANS_CLAN_INFO.CLAN_LEADER, id)
+                .set(CLANS_CLAN_INFO.CLAN_LEADER, id.getUserId())
                 .where(CLANS_CLAN_INFO.CLAN_ID.eq(this.clanId))
                 .execute();
 
-        transaction.getProperty(DSLContext.class)
-                .insertInto(CLANS_CLAN_MEMBERSHIP, CLANS_CLAN_MEMBERSHIP.CLAN_ID, CLANS_CLAN_MEMBERSHIP.USER_ID)
-                .values(this.clanId, id)
+        int result = context.select(clansAddMember(this.clanId, id.getUserId()))
                 .execute();
 
+        this.leader = new ClanMember(id.getUserId());
+
+        //if user is already a member do nothing since the documentation says so
+
+    }
+
+    /**
+     * Sets the name of the clan
+     *
+     * @param transaction transaction
+     * @param name name
+     */
+    public void setName(Transaction transaction, String name){
+        transaction.getProperty(DSLContext.class)
+                .update(CLANS_CLAN_INFO)
+                .set(CLANS_CLAN_INFO.CLAN_NAME, name)
+                .where(CLANS_CLAN_INFO.CLAN_ID.eq(this.clanId))
+                .execute();
     }
 
     @Override

@@ -87,29 +87,3 @@ CREATE FUNCTION clans_add_enemy
     INSERT INTO clans_clan_enemies (clan_id, enemy_id) VALUES (clan_identifier, enemy_identifier);
     RETURN 0;
   END;
-
-CREATE FUNCTION clans_create_new (name VARCHAR(32), leader_id INT) RETURNS TINYINT MODIFIES SQL DATA
-  COMMENT 'Returns 0 if method call successful. Returns 1 if name is not unique.
-  Returns 2 if user referenced by leader_id is already a clan member.'
-  BEGIN
-      -- Since they are all server-sided and therefore optimized by the engine AND there is no latency due to java-sql/io can i call
-    -- select queries as much as i fucking please? /s (but is this okay?)
-    IF EXISTS(SELECT 1 FROM clans_clan_info WHERE clan_name = name) THEN
-      -- i'm programming sql functions like i program java - i don't like try/catching when possible, so
-      -- why not just check explicitly for condition x/y - this one verifies explicitly uniqueness of clan name, so
-      -- i can return whatever "error code" i want.
-      RETURN 1;
-    END IF;
-
-
-    IF EXISTS(SELECT 1 FROM clans_clan_membership WHERE user_id = leader_id) THEN
-      RETURN 2;
-    END IF;
-
-
-    INSERT INTO clans_clan_info (clan_name, clan_leader, clan_kills, clan_deaths, clan_assists) VALUES (name, leader_id, 0, 0, 0);
-    INSERT INTO clans_clan_membership (user_id, clan_id) VALUES (leader_id, LAST_INSERT_ID());
-
-    RETURN 0;
-  END;
-

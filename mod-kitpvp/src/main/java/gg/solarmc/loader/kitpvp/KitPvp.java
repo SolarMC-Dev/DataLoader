@@ -269,7 +269,7 @@ public abstract class KitPvp implements DataObject {
                 .select(KITPVP_KITS_OWNERSHIP.KIT_ID).from(KITPVP_KITS_OWNERSHIP)
                 .where(KITPVP_KITS_OWNERSHIP.USER_ID.eq(this.userId))
                 .fetchSet((ownershipRecord) -> {
-                    return manager.getKit(transaction, ownershipRecord.get(KITPVP_KITS_OWNERSHIP.KIT_ID));
+                    return manager.getKitById(transaction, ownershipRecord.get(KITPVP_KITS_OWNERSHIP.KIT_ID));
                 });
         return Set.copyOf(kits);
     }

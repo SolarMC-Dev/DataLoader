@@ -163,7 +163,7 @@ public class Clan {
                 .where(CLANS_CLAN_ALLIANCES.CLAN_ID.eq(this.clanId))
                 .fetchOne();
 
-        if (rec1 == null) { 
+        if (rec1 == null) {
             return Optional.empty();
         }
 

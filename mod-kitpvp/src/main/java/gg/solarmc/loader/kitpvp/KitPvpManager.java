@@ -28,9 +28,11 @@ import org.jooq.BatchBindStep;
 import org.jooq.DSLContext;
 import org.jooq.DataType;
 import org.jooq.Field;
+import org.jooq.Record1;
 import org.jooq.impl.DSL;
 
 import java.time.Duration;
+import java.util.Optional;
 import java.util.Set;
 
 import static gg.solarmc.loader.schema.Tables.KITPVP_KITS_IDS;
@@ -38,7 +40,7 @@ import static gg.solarmc.loader.schema.tables.KitpvpKitsContents.KITPVP_KITS_CON
 
 public class KitPvpManager implements DataManager {
 
-	private final Cache<KitCacheKey,Kit> existingKits = Caffeine.newBuilder().expireAfterAccess(Duration.ofMinutes(15)).build();
+	private final Cache<KitCacheKey, Kit> existingKits = Caffeine.newBuilder().expireAfterAccess(Duration.ofMinutes(15)).build();
 	private final ItemSerializer serializer;
 
 	KitPvpManager(ItemSerializer serializer) {
@@ -54,10 +56,13 @@ public class KitPvpManager implements DataManager {
 	 *
 	 * @param transaction the transaction
 	 * @param id represents the kit ID
-	 * @return the kit from cache or table
+	 * @return the kit if found, an empty optional otherwise
 	 */
-	public Kit getKitById(Transaction transaction, int id) {
-		return existingKits.get(new KitKeyId(id), num -> {
+	public Optional<Kit> getKitById(Transaction transaction, int id) {
+		// IntelliJ needs to fix their broken inspection on this
+		// Cache provides the desired behavior of not caching nulls but returning them from get()
+		//noinspection ConstantConditions
+		return Optional.ofNullable(existingKits.get(new KitKeyId(id), num -> {
 			var jooq = transaction.getProperty(DSLContext.class);
 
 			String kitName = jooq
@@ -65,11 +70,11 @@ public class KitPvpManager implements DataManager {
 					.where(KITPVP_KITS_IDS.KIT_ID.eq(id)).fetchOne(KITPVP_KITS_IDS.KIT_NAME);
 
 			if (kitName == null) {
-				throw new IllegalStateException("Kit by id " + id + " does not exist");
+				return null;
 			}
 
 			return getKit(transaction, id, kitName);
-		});
+		}));
 	}
 
 	/**
@@ -77,11 +82,12 @@ public class KitPvpManager implements DataManager {
 	 *
 	 * @param transaction the transaction
 	 * @param name the name of the kit to find
-	 * @return the kit if found
+	 * @return the kit if found, an empty optional otherwise
 	 * @throws IllegalStateException if the kit does not exist
 	 */
-	public Kit getKitByName(Transaction transaction, String name) {
-		return existingKits.get(new KitKeyName(name), num -> {
+	public Optional<Kit> getKitByName(Transaction transaction, String name) {
+		//noinspection ConstantConditions
+		return Optional.ofNullable(existingKits.get(new KitKeyName(name), num -> {
 			var jooq = transaction.getProperty(DSLContext.class);
 
 			Integer kitId = jooq
@@ -89,11 +95,11 @@ public class KitPvpManager implements DataManager {
 					.where(KITPVP_KITS_IDS.KIT_NAME.eq(name)).fetchOne(KITPVP_KITS_IDS.KIT_ID);
 
 			if (kitId == null) {
-				throw new IllegalStateException("Kit by name " + name + " does not exist");
+				return null;
 			}
 
 			return getKit(transaction, kitId, name);
-		});
+		}));
 	}
 
 	Kit getKit(Transaction transaction, int id, String name){
@@ -149,28 +155,75 @@ public class KitPvpManager implements DataManager {
 		return kit;
 	}
 
+	private void invalidateKit(int id, String name) {
+		existingKits.invalidate(new KitKeyId(id));
+		existingKits.invalidate(new KitKeyName(name));
+	}
+
+	/**
+	 * Deletes a kit if it exists
+	 *
+	 * @param transaction represents the transaction
+	 * @param kit the kit to delete
+	 * @return true if the kit was deleted, false if the kit did not exist
+	 */
+	public boolean deleteKit(Transaction transaction, Kit kit) {
+		int kitId = kit.getId();
+		int updateCount = transaction.getProperty(DSLContext.class)
+				.deleteFrom(KITPVP_KITS_IDS)
+				.where(KITPVP_KITS_IDS.KIT_ID.eq(kitId))
+				.execute();
+		if (updateCount == 0) {
+			return false;
+		}
+		invalidateKit(kitId, kit.getName());
+		return true;
+	}
+
 	/**
 	 * Deletes a kit based on id, if it exists
 	 * @param transaction represents the transaction
 	 * @param kitId the kit's id
+	 * @return true if the kit was deleted, false if the kit did not exist
 	 */
-	public void deleteKitById(Transaction transaction, int kitId) {
-		transaction.getProperty(DSLContext.class)
-				.deleteFrom(KITPVP_KITS_IDS).where(KITPVP_KITS_IDS.KIT_ID.eq(kitId))
-				.execute();
-		existingKits.invalidate(new KitKeyId(kitId));
+	public boolean deleteKitById(Transaction transaction, int kitId) {
+		Record1<String> kitNameRecord = transaction.getProperty(DSLContext.class)
+				.deleteFrom(KITPVP_KITS_IDS)
+				.where(KITPVP_KITS_IDS.KIT_ID.eq(kitId))
+				.returningResult(KITPVP_KITS_IDS.KIT_NAME)
+				.fetchOne();
+		if (kitNameRecord == null) {
+			return false;
+		}
+		invalidateKit(kitId, kitNameRecord.value1());
+		return true;
 	}
 
 	/**
 	 * Deletes a kit based on name, if it exists
 	 * @param transaction represents the transaction
 	 * @param kitName the kit's name
+	 * @return true if the kit was deleted, false if the kit did not exist
 	 */
-	public void deleteKitByName(Transaction transaction, String kitName) {
-		transaction.getProperty(DSLContext.class)
-				.deleteFrom(KITPVP_KITS_IDS).where(KITPVP_KITS_IDS.KIT_NAME.eq(kitName))
-				.execute();
-		existingKits.invalidate(new KitKeyName(kitName));
+	public boolean deleteKitByName(Transaction transaction, String kitName) {
+		Record1<Integer> kitIdRecord = transaction.getProperty(DSLContext.class)
+				.deleteFrom(KITPVP_KITS_IDS)
+				.where(KITPVP_KITS_IDS.KIT_NAME.eq(kitName))
+				.returningResult(KITPVP_KITS_IDS.KIT_ID)
+				.fetchOne();
+		if (kitIdRecord == null) {
+			return false;
+		}
+		invalidateKit(kitIdRecord.value1(), kitName);
+		return true;
+	}
+
+	/**
+	 * Clears all caches which may be in use. Primarily intended for testing purposes
+	 *
+	 */
+	public void clearCaches() {
+		existingKits.invalidateAll();
 	}
 
 }

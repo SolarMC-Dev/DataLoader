@@ -50,13 +50,13 @@ public class KitPvpManager implements DataManager {
 	}
 
 	/**
-	 * Gets a kit based on it's kit ID
+	 * Gets a kit based on its ID
 	 *
 	 * @param transaction the transaction
 	 * @param id represents the kit ID
 	 * @return the kit from cache or table
 	 */
-	Kit getKitById(Transaction transaction, int id) {
+	public Kit getKitById(Transaction transaction, int id) {
 		return existingKits.get(new KitKeyId(id), num -> {
 			var jooq = transaction.getProperty(DSLContext.class);
 
@@ -73,13 +73,14 @@ public class KitPvpManager implements DataManager {
 	}
 
 	/**
-	 * Gets a kit based on it's kit ID
+	 * Gets a kit based on its name
 	 *
 	 * @param transaction the transaction
-	 * @param name represents the kit ID
-	 * @return the kit from cache or table
+	 * @param name the name of the kit to find
+	 * @return the kit if found
+	 * @throws IllegalStateException if the kit does not exist
 	 */
-	Kit getKitByName(Transaction transaction, String name) {
+	public Kit getKitByName(Transaction transaction, String name) {
 		return existingKits.get(new KitKeyName(name), num -> {
 			var jooq = transaction.getProperty(DSLContext.class);
 
@@ -140,6 +141,7 @@ public class KitPvpManager implements DataManager {
 
 		Kit kit = new Kit(kitId, name, contents);
 		existingKits.put(new KitKeyName(name), kit);
+		existingKits.put(new KitKeyId(kitId), kit);
 		return kit;
 	}
 

@@ -49,7 +49,7 @@ import static gg.solarmc.loader.schema.tables.ClansClanMembership.CLANS_CLAN_MEM
 public class Clan {
 
     private final int clanId;
-    private final String clanName;
+    private volatile String clanName;
 
     private final AtomicReference<Set<ClanMember>> members;
     private final ClanManager manager;
@@ -92,7 +92,7 @@ public class Clan {
         return this.clanId;
     }
 
-    public String getName() {
+    public String currentClanName() {
         return this.clanName;
     }
 
@@ -155,6 +155,23 @@ public class Clan {
        }
 
        return manager.getCachedClanOnly(s.orElseThrow());
+    }
+
+    /**
+     * Gets clan name accurately
+     * @param transaction the transaction
+     * @return the name of the clan
+     * @throws IllegalStateException if clan name is not present in database
+     */
+    public String getClanName(Transaction transaction) {
+        var returned =  transaction.getProperty(DSLContext.class).select(CLANS_CLAN_INFO.CLAN_NAME)
+                .from(CLANS_CLAN_INFO)
+                .where(CLANS_CLAN_INFO.CLAN_ID.eq(this.clanId))
+                .fetchOne();
+
+        if (returned == null) throw new IllegalStateException("Clan name not present in database! Data violation!");
+
+        return returned.value1();
     }
 
     /**
@@ -479,30 +496,33 @@ public class Clan {
 
 
     /**
-     * Sets the owner of the clan to the user provided by the id, and
-     * if they are not a member of the clan they are added.
+     * Sets the owner of the clan to the user provided
      *
      * The old owner remains a member of the clan.
      *
      * @param transaction tx
-     * @param id user id of the new clan owner
+     * @param user user id of the new clan leader
+     * @throws IllegalStateException if the new clam leader is not a member of the clan
      */
-    public void setLeader(Transaction transaction, SolarPlayer id) {
+    public void setLeader(Transaction transaction, SolarPlayer user) {
 
         var context = transaction.getProperty(DSLContext.class);
 
         context
                 .update(CLANS_CLAN_INFO)
-                .set(CLANS_CLAN_INFO.CLAN_LEADER, id.getUserId())
+                .set(CLANS_CLAN_INFO.CLAN_LEADER, user.getUserId())
                 .where(CLANS_CLAN_INFO.CLAN_ID.eq(this.clanId))
                 .execute();
 
-        int result = context.select(clansAddMember(this.clanId, id.getUserId()))
-                .execute();
+        var alreadyMember = context.select(CLANS_CLAN_MEMBERSHIP.CLAN_ID)
+                .from(CLANS_CLAN_MEMBERSHIP)
+                .where(CLANS_CLAN_MEMBERSHIP.USER_ID.eq(user.getUserId()))
+                .fetchOne();
 
-        this.leader = new ClanMember(id.getUserId());
+        if (alreadyMember == null) throw new IllegalStateException("User is not a member of any clan!");
+        if (!alreadyMember.value1().equals(this.clanId)) throw new IllegalStateException("User is not member of this clan!");
 
-        //if user is already a member do nothing since the documentation says so
+        this.leader = new ClanMember(user.getUserId());
 
     }
 
@@ -518,6 +538,8 @@ public class Clan {
                 .set(CLANS_CLAN_INFO.CLAN_NAME, name)
                 .where(CLANS_CLAN_INFO.CLAN_ID.eq(this.clanId))
                 .execute();
+
+        this.clanName = name;
     }
 
     @Override

@@ -69,6 +69,49 @@ public class ClanIT {
     }
 
     @Test
+    public void setClanLeader() {
+        OnlineSolarPlayer leader = dataCenterInfo.loginNewRandomUser();
+        OnlineSolarPlayer usurper = dataCenterInfo.loginNewRandomUser();
+        Clan clan = createClan(leader);
+        addMemberAssertSuccess(clan,usurper);
+
+        dataCenterInfo.runTransact(tx -> clan.setLeader(tx, usurper));
+
+        assertEquals(usurper.getUserId(), clan.currentLeader().userId(), "Cached leader is not the same as usurper");
+        assertEquals(true,dataCenterInfo.transact(tx -> clan.getClanMembers(tx).contains(new ClanMember(leader.getUserId()))), "Doesn't contain old leader as member!");
+        assertEquals(true, dataCenterInfo.transact(tx -> clan.getClanMembers(tx).contains(new ClanMember(usurper.getUserId()))), "Doesn't contain usurper as member!");
+
+
+    }
+
+    @Test
+    public void setClanLeaderAsOutsider() {
+        OnlineSolarPlayer leader = dataCenterInfo.loginNewRandomUser();
+        OnlineSolarPlayer usurper = dataCenterInfo.loginNewRandomUser();
+        Clan clan = createClan(leader);
+
+        dataCenterInfo.runTransact(tx -> {
+            assertThrows(IllegalStateException.class, () -> clan.setLeader(tx, usurper));
+        });
+    }
+
+    @Test
+    public void setClanName() {
+        OnlineSolarPlayer leader = dataCenterInfo.loginNewRandomUser();
+        Clan clan = createClan(leader);
+
+        String returned = dataCenterInfo.transact(tx -> {
+            clan.setName(tx, "can_we_merge_yet");
+
+            return clan.getClanName(tx);
+        });
+
+        assertEquals("can_we_merge_yet", clan.currentClanName(), "Cached return invalid!");
+        assertEquals("can_we_merge_yet", returned, "Transactional return not set!");
+
+    }
+
+    @Test
     public void addClanMember() {
         OnlineSolarPlayer leader = dataCenterInfo.loginNewRandomUser();
         OnlineSolarPlayer member = dataCenterInfo.loginNewRandomUser();

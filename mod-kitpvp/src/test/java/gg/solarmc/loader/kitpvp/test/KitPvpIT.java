@@ -58,10 +58,7 @@ public class KitPvpIT {
     }
 
     private Kit newKit(String name, Set<ItemInSlot> items) {
-       return dataCenterInfo.transact((tx) -> {
-            KitPvpManager manager = dataCenterInfo.dataCenter().getDataManager(KitPvpKey.INSTANCE);
-            return manager.createKit(tx, name, items);
-       });
+       return dataCenterInfo.transact((tx) -> manager.createKit(tx, name, items).orElseThrow());
     }
 
     private void addKitAssumeSuccess(KitPvp data, Kit kit) {
@@ -69,6 +66,13 @@ public class KitPvpIT {
             return data.addKit(tx, kit);
         });
         assumeTrue(kitOwnership.isChanged());
+    }
+
+    @Test
+    public void createKitAlreadyExists() {
+        String name = "MyExistingKit";
+        newKit(name, Set.of());
+        assertEquals(Optional.empty(), dataCenterInfo.transact((tx) -> manager.createKit(tx, name, Set.of())));
     }
 
     @Test

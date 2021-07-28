@@ -23,6 +23,8 @@ import gg.solarmc.loader.data.DataKey;
 import gg.solarmc.loader.data.DataKeyInitializationContext;
 import gg.solarmc.loader.data.DataLoader;
 
+import java.util.ServiceLoader;
+
 public class KitPvpKey implements DataKey<OnlineKitPvp, KitPvp, KitPvpManager> {
 
     public static final KitPvpKey INSTANCE = new KitPvpKey();
@@ -36,7 +38,18 @@ public class KitPvpKey implements DataKey<OnlineKitPvp, KitPvp, KitPvpManager> {
 
     @Override
     public KitPvpManager createDataManager(DataKeyInitializationContext context) {
-        return new KitPvpManager(context.omnibus().getRegistry().getProvider(ItemSerializer.class).orElseThrow());
+        return new KitPvpManager(context.omnibus().getRegistry().getProvider(ItemSerializer.class)
+                .orElseGet(this::serviceLoadItemSerializer));
+    }
+
+    private ItemSerializer serviceLoadItemSerializer() {
+        ModuleLayer layer = getClass().getModule().getLayer();
+        if (layer == null) {
+            throw new IllegalStateException("Not in a module layer. For classpath-based testing, " +
+                    "adding a provider for ItemSerializer to the Omnibus Registry is supported");
+        }
+        return ServiceLoader.load(layer, ItemSerializer.class).findFirst()
+                .orElseThrow(() -> new IllegalStateException("No ItemSerializer SPI available"));
     }
 
 }

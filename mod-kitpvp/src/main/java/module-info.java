@@ -6,4 +6,5 @@ module gg.solarmc.loader.kitpvp {
 	requires com.github.benmanes.caffeine;
 
 	provides gg.solarmc.loader.data.DataKeySpi with gg.solarmc.loader.kitpvp.KitPvpKeySpi;
+	uses gg.solarmc.loader.kitpvp.ItemSerializer;
 }

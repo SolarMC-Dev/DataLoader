@@ -5,7 +5,6 @@ CREATE TABLE clans_clan_info (
   clan_kills INT NOT NULL,
   clan_deaths INT NOT NULL,
   clan_assists INT NOT NULL,
-  INDEX clan_name_index (clan_name),
   UNIQUE INDEX clan_name_uniqueness (clan_name)
 );
 

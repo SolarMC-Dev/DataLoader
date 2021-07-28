@@ -155,7 +155,7 @@ public class ClanManager implements DataManager {
      * @param name Name of the Clan to add (must be unique)
      * @param transaction the tx
      * @param leader the player to be owner of the clan
-     * @throws IllegalStateException if name is not unique or if insert is invalid.
+     * @throws IllegalStateException if name is not unique
      * @return created clan.
      */
     public Clan createClan(Transaction transaction, String name, SolarPlayer leader) {

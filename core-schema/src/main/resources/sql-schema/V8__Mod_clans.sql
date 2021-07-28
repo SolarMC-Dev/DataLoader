@@ -1,11 +1,12 @@
 CREATE TABLE clans_clan_info (
   clan_id INT AUTO_INCREMENT PRIMARY KEY,
-  clan_name VARCHAR(32) UNIQUE NOT NULL,
+  clan_name VARCHAR(32) NOT NULL,
   clan_leader INT NOT NULL,
   clan_kills INT NOT NULL,
   clan_deaths INT NOT NULL,
   clan_assists INT NOT NULL,
-  INDEX clan_name_index (clan_name)
+  INDEX clan_name_index (clan_name),
+  UNIQUE INDEX clan_name_uniqueness (clan_name)
 );
 
 CREATE TABLE clans_clan_membership (

@@ -269,7 +269,8 @@ public abstract class KitPvp implements DataObject {
                 .select(KITPVP_KITS_OWNERSHIP.KIT_ID).from(KITPVP_KITS_OWNERSHIP)
                 .where(KITPVP_KITS_OWNERSHIP.USER_ID.eq(this.userId))
                 .fetchSet((ownershipRecord) -> {
-                    return manager.getKitById(transaction, ownershipRecord.get(KITPVP_KITS_OWNERSHIP.KIT_ID));
+                    return manager.getKitById(transaction, ownershipRecord.get(KITPVP_KITS_OWNERSHIP.KIT_ID))
+                            .orElseThrow(() -> new IllegalStateException("Player owns kit which does not exist"));
                 });
         return Set.copyOf(kits);
     }

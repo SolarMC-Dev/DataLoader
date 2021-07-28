@@ -24,6 +24,7 @@ import space.arim.omnibus.Omnibus;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Path;
+import java.util.Optional;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -42,6 +43,7 @@ public class KitPvpIT {
 
     private final ItemSerializer itemSerializer;
     private DataCenterInfo dataCenterInfo;
+    private KitPvpManager manager;
 
     public KitPvpIT(@Mock ItemSerializer itemSerializer) {
         this.itemSerializer = itemSerializer;
@@ -52,6 +54,7 @@ public class KitPvpIT {
         Omnibus omnibus = new DefaultOmnibus();
         omnibus.getRegistry().register(ItemSerializer.class, (byte) 0, itemSerializer, "Serializer");
         dataCenterInfo = DataCenterInfo.builder(folder, credentials).omnibus(omnibus).build();
+        manager = dataCenterInfo.dataCenter().getDataManager(KitPvpKey.INSTANCE);
     }
 
     private Kit newKit(String name, Set<ItemInSlot> items) {
@@ -140,5 +143,61 @@ public class KitPvpIT {
         assertEquals(1, kits.size(), () -> "" + kits);
         Kit reloadedKit = kits.iterator().next();
         assertEquals(contents, reloadedKit.getContents());
+    }
+
+    private void assertKitExistence(
+            @SuppressWarnings("OptionalUsedAsFieldOrParameterType") Optional<Kit> expected, Kit kit) {
+        assertEquals(expected, dataCenterInfo.transact((tx) -> manager.getKitById(tx, kit.getId())));
+        assertEquals(expected, dataCenterInfo.transact((tx) -> manager.getKitByName(tx, kit.getName())));
+    }
+
+    private void assertKitExists(Kit kit) {
+        assertKitExistence(Optional.of(kit), kit);
+    }
+
+    private void assertKitNotExists(Kit kit) {
+        assertKitExistence(Optional.empty(), kit);
+    }
+
+    @Test
+    public void getKitByIdAndName() {
+        Kit kit = newKit("MyKitByIdAndName", Set.of());
+
+        assertKitExists(kit);
+        manager.clearCaches();
+        assertKitExists(kit);
+    }
+
+    @Test
+    public void deleteKit() {
+        Kit kit = newKit("MyKitById", Set.of());
+
+        boolean deleted = dataCenterInfo.transact((tx) -> manager.deleteKit(tx, kit));
+        assertTrue(deleted);
+        assertKitNotExists(kit);
+        manager.clearCaches();
+        assertKitNotExists(kit);
+    }
+
+    @Test
+    public void deleteKitById() {
+        Kit kit = newKit("MyKitById", Set.of());
+
+        boolean deleted = dataCenterInfo.transact((tx) -> manager.deleteKitById(tx, kit.getId()));
+        assertTrue(deleted);
+        assertKitNotExists(kit);
+        manager.clearCaches();
+        assertKitNotExists(kit);
+    }
+
+    @Test
+    public void deleteKitByName() {
+        Kit kit = newKit("MyKitByName", Set.of());
+
+        boolean deleted = dataCenterInfo.transact((tx) -> manager.deleteKitByName(tx, kit.getName()));
+        assertTrue(deleted);
+        assertKitNotExists(kit);
+        manager.clearCaches();
+        assertKitNotExists(kit);
     }
 }

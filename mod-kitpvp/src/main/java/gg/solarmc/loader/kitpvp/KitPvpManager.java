@@ -23,7 +23,6 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import gg.solarmc.loader.Transaction;
 import gg.solarmc.loader.data.DataManager;
-import gg.solarmc.loader.schema.tables.records.KitpvpKitsIdsRecord;
 import org.jooq.BatchBindStep;
 import org.jooq.DSLContext;
 import org.jooq.DataType;
@@ -35,6 +34,7 @@ import java.time.Duration;
 import java.util.Optional;
 import java.util.Set;
 
+import static gg.solarmc.loader.schema.Routines.kitpvpCreateKit;
 import static gg.solarmc.loader.schema.Tables.KITPVP_KITS_IDS;
 import static gg.solarmc.loader.schema.tables.KitpvpKitsContents.KITPVP_KITS_CONTENTS;
 
@@ -121,20 +121,18 @@ public class KitPvpManager implements DataManager {
 	/**
 	 * Creates a kit with given arguments
 	 * @param transaction is the transaction
-	 * @param name name of the kit, must be unique
+	 * @param name name of the kit, should be unique in order for this method to succeed
 	 * @param contents of the kit
-	 * @return the kit which was created
+	 * @return the kit if it was created, an empty optional if a kit by such name already exists
 	 */
-	public Kit createKit(Transaction transaction, String name, Set<ItemInSlot> contents) {
+	public Optional<Kit> createKit(Transaction transaction, String name, Set<ItemInSlot> contents) {
 		DSLContext context = transaction.getProperty(DSLContext.class);
 
-		KitpvpKitsIdsRecord result = context.insertInto(KITPVP_KITS_IDS)
-				.columns(KITPVP_KITS_IDS.KIT_NAME).values(name)
-				.returning().fetchOne();
-		if (result == null) {
-			throw new IllegalStateException("Failed to insert kit by name " + name);
+		int kitId = context.select(kitpvpCreateKit(name))
+				.fetchSingle().value1();
+		if (kitId == -1) { // Special return value
+			return Optional.empty();
 		}
-		int kitId = result.getKitId();
 
 		if (!contents.isEmpty()) {
 			DataType<KitItem> itemType = kitItemDataType();
@@ -152,7 +150,7 @@ public class KitPvpManager implements DataManager {
 		Kit kit = new Kit(kitId, name, contents);
 		existingKits.put(new KitKeyName(name), kit);
 		existingKits.put(new KitKeyId(kitId), kit);
-		return kit;
+		return Optional.of(kit);
 	}
 
 	private void invalidateKit(int id, String name) {

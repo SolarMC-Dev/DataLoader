@@ -44,6 +44,20 @@ CREATE TABLE kitpvp_kits_contents (
   CONSTRAINT nonnegative_slot CHECK (slot >= 0)
 );
 
+CREATE FUNCTION kitpvp_create_kit
+  (kit_displayname VARCHAR(32))
+  RETURNS INT
+  MODIFIES SQL DATA
+  BEGIN
+    -- Catch duplicate key errors
+    DECLARE EXIT HANDLER FOR 1062
+    BEGIN
+      RETURN -1;
+    END;
+    INSERT INTO kitpvp_kits_ids (kit_name) VALUES (kit_displayname);
+    RETURN LAST_INSERT_ID();
+  END;
+
 CREATE FUNCTION kitpvp_add_kills
   (user_identifier INT,
   amount INT)

@@ -32,12 +32,12 @@ import org.jooq.Result;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static gg.solarmc.loader.schema.Routines.clansAddAlly;
 import static gg.solarmc.loader.schema.Routines.clansAddEnemy;
 import static gg.solarmc.loader.schema.Routines.clansAddMember;
+
 import static gg.solarmc.loader.schema.tables.ClansClanAlliances.CLANS_CLAN_ALLIANCES;
 import static gg.solarmc.loader.schema.tables.ClansClanEnemies.CLANS_CLAN_ENEMIES;
 import static gg.solarmc.loader.schema.tables.ClansClanInfo.CLANS_CLAN_INFO;
@@ -49,14 +49,11 @@ import static gg.solarmc.loader.schema.tables.ClansClanMembership.CLANS_CLAN_MEM
 public class Clan {
 
     private final int clanId;
-    private final String clanName;
+    private volatile String clanName;
 
-    /**
-     * Using CAS updates avoids possible race conditions between concurrent queries
-     */
     private final AtomicReference<Set<ClanMember>> members;
     private final ClanManager manager;
-    private final ClanMember leader;
+    private volatile ClanMember leader;
 
     private volatile int clanKills;
     private volatile int clanDeaths;
@@ -95,37 +92,46 @@ public class Clan {
         return this.clanId;
     }
 
-    public String getName() {
+    public String currentClanName() {
         return this.clanName;
     }
 
     /**
-     * Returns the kills at the time of querying (not accurate)
-     * @return kills
+     * Returns the clan's leader at the time of querying
+     * @return the leader represented as an object (should not be relied on for correctness purposes)
+     */
+    public ClanMember currentLeader() {
+        return this.leader;
+    }
+
+    /**
+     * Returns the kills at the time of querying
+     * @return kills (should not be relied on for correctness purposes)
      */
     public int currentKills() {
         return clanKills;
     }
 
     /**
-     * Returns the deaths at the time of querying (not accurate)
-     * @return deaths
+     * Returns the deaths at the time of querying
+     * @return deaths (should not be relied on for correctness purposes)
      */
     public int currentDeaths() {
         return clanDeaths;
     }
 
     /**
-     * Returns the ass at the time of querying (not accurate)
-     * @return ass
+     * Returns the assists at the time of querying
+     * @return assists (should not be relied on for correctness purposes)
      */
     public int currentAssists() {
         return clanAssists;
     }
 
     /**
-     * Gets all current members currently in the clan. Not accurate.
+     * Gets all current members currently in the clan.
      * @return all ClanMembers, unmodifiable.
+     * (should not be relied on for correctness purposes)
      */
     public Set<ClanMember> currentMembers() {
         return Set.copyOf(members.getAcquire());
@@ -152,6 +158,25 @@ public class Clan {
     }
 
     /**
+     * Gets clan name accurately
+     * @param transaction the transaction
+     * @return the name of the clan
+     * @throws IllegalStateException if this clan is not present in database
+     */
+    public String getClanName(Transaction transaction) {
+        var returned =  transaction.getProperty(DSLContext.class).select(CLANS_CLAN_INFO.CLAN_NAME)
+                .from(CLANS_CLAN_INFO)
+                .where(CLANS_CLAN_INFO.CLAN_ID.eq(this.clanId))
+                .fetchOne();
+
+        if (returned == null) throw new IllegalStateException("Clan name not present in database! Data violation!");
+
+        this.clanName = returned.value1();
+
+        return returned.value1();
+    }
+
+    /**
      * Gets this object's currently allied clan accurately
      * @param transaction the tx
      * @return optional holding currently allied clan
@@ -169,7 +194,7 @@ public class Clan {
 
         manager.insertAllianceCache(this.clanId, rec1.value1());
 
-        return Optional.of(manager.getClan(transaction, rec1.value1()));
+        return manager.getClanById(transaction, rec1.value1());
     }
 
     /**
@@ -420,6 +445,7 @@ public class Clan {
         byte addStatus = transaction.getProperty(DSLContext.class)
                 .select(clansAddEnemy(clanId, receiver.getClanId()))
                 .fetchSingle().value1();
+
         return switch (addStatus) {
         case 0 -> true;
         case 1 -> false;
@@ -453,11 +479,71 @@ public class Clan {
      * @return All clans this clan has currently marked as enemies
      */
     public Set<Clan> getEnemyClans(Transaction transaction) {
-        return transaction.getProperty(DSLContext.class)
+        var result = transaction.getProperty(DSLContext.class)
                 .select(CLANS_CLAN_ENEMIES.ENEMY_ID)
                 .from(CLANS_CLAN_ENEMIES)
                 .where(CLANS_CLAN_ENEMIES.CLAN_ID.eq(this.clanId))
-                .fetchSet((record) -> manager.getClan(transaction, record.get(CLANS_CLAN_ENEMIES.ENEMY_ID)));
+                .fetch();
+
+        Set<Clan> clans = new HashSet<>();
+
+        result.forEach(res -> {
+            Optional<Clan> op = manager.getClanById(transaction, res.get(CLANS_CLAN_ENEMIES.ENEMY_ID));
+
+            op.ifPresent(clans::add);
+        });
+
+        return clans;
+    }
+
+
+    /**
+     * Sets the owner of the clan to the user provided
+     *
+     * The old owner remains a member of the clan.
+     *
+     * @param transaction tx
+     * @param user user id of the new clan leader
+     * @throws IllegalStateException if the new clam leader is not a member of the clan
+     */
+    public void setLeader(Transaction transaction, SolarPlayer user) {
+
+        var context = transaction.getProperty(DSLContext.class);
+
+        var alreadyMember = context.select(CLANS_CLAN_MEMBERSHIP.CLAN_ID)
+                .from(CLANS_CLAN_MEMBERSHIP)
+                .where(CLANS_CLAN_MEMBERSHIP.USER_ID.eq(user.getUserId()))
+                .fetchOne();
+
+        if (alreadyMember == null) throw new IllegalStateException("User is not a member of any clan!");
+        if (!alreadyMember.value1().equals(this.clanId)) throw new IllegalStateException("User is not member of this clan!");
+
+        context
+                .update(CLANS_CLAN_INFO)
+                .set(CLANS_CLAN_INFO.CLAN_LEADER, user.getUserId())
+                .where(CLANS_CLAN_INFO.CLAN_ID.eq(this.clanId))
+                .execute();
+
+
+
+        this.leader = new ClanMember(user.getUserId());
+
+    }
+
+    /**
+     * Sets the name of the clan
+     *
+     * @param transaction transaction
+     * @param name name
+     */
+    public void setName(Transaction transaction, String name){
+        transaction.getProperty(DSLContext.class)
+                .update(CLANS_CLAN_INFO)
+                .set(CLANS_CLAN_INFO.CLAN_NAME, name)
+                .where(CLANS_CLAN_INFO.CLAN_ID.eq(this.clanId))
+                .execute();
+
+        this.clanName = name;
     }
 
     @Override
@@ -472,6 +558,8 @@ public class Clan {
     public int hashCode() {
         return clanId;
     }
+
+
 }
 
 

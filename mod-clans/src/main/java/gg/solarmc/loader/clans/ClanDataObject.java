@@ -61,21 +61,13 @@ public abstract class ClanDataObject implements DataObject {
      * @return Optional containing clan player belongs to
      */
     public Optional<Clan> getClan(Transaction transaction) {
-        ClansClanMembershipRecord rec = transaction.getProperty(DSLContext.class)
-                .fetchOne(CLANS_CLAN_MEMBERSHIP,CLANS_CLAN_MEMBERSHIP.USER_ID.eq(this.userId));
 
 
+        Optional<Clan> clan = manager.getClanByUser(transaction, userId);
 
-        if (rec == null)  {
-            updateCachedClan(null);
-            return Optional.empty();
-        }
+        clan.ifPresentOrElse(this::updateCachedClan, () -> updateCachedClan(null));
 
-        Clan fetched = manager.getClan(transaction,rec.getClanId());
-
-        updateCachedClan(fetched);
-
-        return Optional.of(fetched);
+        return clan;
     }
 
     /**

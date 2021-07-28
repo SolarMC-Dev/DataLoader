@@ -28,8 +28,7 @@ import gg.solarmc.loader.Transaction;
 import gg.solarmc.loader.data.DataManager;
 import gg.solarmc.loader.schema.tables.records.ClansClanAlliancesRecord;
 import gg.solarmc.loader.schema.tables.records.ClansClanInfoRecord;
-import org.jooq.DSLContext;
-import org.jooq.Record1;
+import org.jooq.*;
 
 import java.time.Duration;
 import java.util.*;
@@ -45,6 +44,34 @@ public class ClanManager implements DataManager {
     private final Cache<Integer,Clan> clans = Caffeine.newBuilder().expireAfterAccess(Duration.ofMinutes(10)).build();
     private final Cache<Integer,Integer> allianceCache = Caffeine.newBuilder().build();
 
+    //i know i'm not supposed to prematurely optimize, but why not turn two queries into one and improve my sql knowledge at the same time?
+    /**
+     * Gets a clan by the id number of a user
+     * @param transaction the transaction
+     * @param userID the ID of the user
+     * @return empty if no clan was found, or the clan that the user is present in
+     */
+    Optional<Clan> getClanByUser(Transaction transaction, int userID) {
+        var result = transaction.getProperty(DSLContext.class)
+                .select(CLANS_CLAN_MEMBERSHIP.CLAN_ID, CLANS_CLAN_INFO.CLAN_NAME, CLANS_CLAN_INFO.CLAN_LEADER, CLANS_CLAN_INFO.CLAN_KILLS, CLANS_CLAN_INFO.CLAN_DEATHS, CLANS_CLAN_INFO.CLAN_ASSISTS)
+                .from(CLANS_CLAN_MEMBERSHIP)
+                .innerJoin(CLANS_CLAN_INFO).on(CLANS_CLAN_MEMBERSHIP.CLAN_ID.eq(CLANS_CLAN_INFO.CLAN_ID))
+                .where(CLANS_CLAN_MEMBERSHIP.USER_ID.eq(userID))
+                .fetchOne();
+
+        if (result == null) return Optional.empty();
+
+        Set<ClanMember> bruh = transaction.getProperty(DSLContext.class)
+                .select(CLANS_CLAN_MEMBERSHIP.USER_ID).from(CLANS_CLAN_MEMBERSHIP)
+                .where(CLANS_CLAN_MEMBERSHIP.CLAN_ID.eq(result.value1())).fetchSet((rec1) -> new ClanMember(rec1.value1()));
+
+        Clan returned = new Clan(result.value1(), result.value2(), result.value4(),
+                result.value5(),result.value6(),this,bruh,new ClanMember(result.value3()));
+
+        return Optional.of(returned);
+
+    }
+
 
     /**
      * Gets a clan from cache or returns empty if not present.
@@ -55,45 +82,46 @@ public class ClanManager implements DataManager {
         return Optional.ofNullable(clans.getIfPresent(id));
     }
 
+
     /**
-     * Gets a clan from memory cache or from table if not present.
-     * @param transaction the tx
-     * @param id ID of clan requested
-     * @return the clan you asked for idiot
-     * @throws IllegalStateException if the clan isn't present in table
+     * Gets a clan by it's identifier
+     *
+     * This fetches from the cache.
+     * @param transaction the transaction
+     * @param id the clan's id
+     * @return the clan if present, empty if not.
      */
-    public Clan getClan(Transaction transaction, int id) {
-        return clans.get(id, i -> {
+    public Optional<Clan> getClanById(Transaction transaction, int id) {
+        return getClan(transaction, transaction.getProperty(DSLContext.class).fetchOne(CLANS_CLAN_INFO,CLANS_CLAN_INFO.CLAN_ID.eq(id)));
+    }
 
-            var jooq = transaction.getProperty(DSLContext.class);
+    /**
+     * Gets a clan by the name of the clan.
+     *
+     * IMPORTANT: This does not fetch from the cache.
+     * @param transaction the transaction
+     * @param name name of the clan
+     * @return an empty optional if the clan is not present, a clan if it is.
+     */
+    public Optional<Clan> getClanByName(Transaction transaction, String name) {
+        return getClan(transaction,transaction.getProperty(DSLContext.class).fetchOne(CLANS_CLAN_INFO,CLANS_CLAN_INFO.CLAN_NAME.eq(name)));
+    }
 
-            ClansClanInfoRecord rec = jooq.fetchOne(CLANS_CLAN_INFO,CLANS_CLAN_INFO.CLAN_ID.eq(i));
+    Optional<Clan> getClan(Transaction transaction, ClansClanInfoRecord record) {
+        var jooq = transaction.getProperty(DSLContext.class);
 
-            if (rec == null) {
-                throw new IllegalStateException("No such clan exists!");
-            }
+        if (record == null) {
+            return Optional.empty();
+        }
 
-            Set<ClanMember> bruh = jooq
-                    .select(CLANS_CLAN_MEMBERSHIP.USER_ID).from(CLANS_CLAN_MEMBERSHIP)
-                    .where(CLANS_CLAN_MEMBERSHIP.CLAN_ID.eq(id)).fetchSet((rec1) -> new ClanMember(rec1.value1()));
+        Set<ClanMember> bruh = jooq
+                .select(CLANS_CLAN_MEMBERSHIP.USER_ID).from(CLANS_CLAN_MEMBERSHIP)
+                .where(CLANS_CLAN_MEMBERSHIP.CLAN_ID.eq(record.getClanId())).fetchSet((rec1) -> new ClanMember(rec1.value1()));
 
-            ConcurrentHashMap.KeySetView<ClanMember,Boolean> view = ConcurrentHashMap.newKeySet();
-            view.addAll(bruh);
+        Clan returned = new Clan(record.getClanId(), record.getClanName(),record.getClanKills(),
+                record.getClanDeaths(),record.getClanAssists(),this,bruh,new ClanMember(record.getClanLeader()));
 
-            ClansClanAlliancesRecord recAlly = jooq.fetchOne(CLANS_CLAN_ALLIANCES,CLANS_CLAN_ALLIANCES.CLAN_ID.eq(id));
-
-            ClanMember owner = new ClanMember(rec.getClanLeader());
-
-            Clan returned = new Clan(rec.getClanId(), rec.getClanName(),rec.getClanKills(),
-                    rec.getClanDeaths(),rec.getClanAssists(),this,view,owner);
-
-            if (recAlly != null) {
-                this.insertAllianceCache(recAlly.getClanId(),recAlly.getAllyId());
-            }
-
-            return returned;
-
-        });
+        return Optional.of(returned);
     }
 
     Optional<Integer> getAllyFromCache(Integer clanId) {
@@ -124,14 +152,16 @@ public class ClanManager implements DataManager {
 
     /**
      * Creates a new clan with given name.
-     * @param name Name of the Clan to add
+     * @param name Name of the Clan to add (must be unique)
      * @param transaction the tx
      * @param leader the player to be owner of the clan
+     * @throws IllegalStateException if name is not unique
      * @return created clan.
      */
     public Clan createClan(Transaction transaction, String name, SolarPlayer leader) {
         DSLContext context = transaction.getProperty(DSLContext.class);
         ClanDataObject owner = leader.getData(ClansKey.INSTANCE);
+
         Record1<Integer> rec = transaction.getProperty(DSLContext.class)
                 .insertInto(CLANS_CLAN_INFO)
                 .columns(CLANS_CLAN_INFO.CLAN_NAME, CLANS_CLAN_INFO.CLAN_LEADER, CLANS_CLAN_INFO.CLAN_KILLS, CLANS_CLAN_INFO.CLAN_DEATHS, CLANS_CLAN_INFO.CLAN_ASSISTS)
@@ -139,7 +169,7 @@ public class ClanManager implements DataManager {
                 .returningResult(CLANS_CLAN_INFO.CLAN_ID)
                 .fetchOne();
 
-        if (rec == null) throw new IllegalStateException("Failed to insert new gg.solarmc.loader.clans.Clan by name " + name);
+        if (rec == null) throw new IllegalStateException("Failed to insert new gg.solarmc.loader.clans.Clan by name " + name + "! Either ID was not correctly incremented or name provided was not unique!");
 
         int clanId = rec.value1();
 
@@ -148,7 +178,9 @@ public class ClanManager implements DataManager {
                 .columns(CLANS_CLAN_MEMBERSHIP.CLAN_ID, CLANS_CLAN_MEMBERSHIP.USER_ID)
                 .values(clanId, owner.getUserId())
                 .execute();
+
         assert updateCount == 1;
+
         ClanMember ownerAsMember = owner.asClanMember(transaction);
 
         ConcurrentHashMap.KeySetView<ClanMember,Boolean> view = ConcurrentHashMap.newKeySet();
@@ -160,6 +192,8 @@ public class ClanManager implements DataManager {
 
         return returned;
     }
+
+
 
     /**
      * Deletes a clan from the cache and table, and deletes alliances
@@ -184,6 +218,77 @@ public class ClanManager implements DataManager {
         });
 
         clans.invalidate(clan.getClanId());
+    }
+
+    public record TopClanResult(int clanId, int statisticValue, String clanName) {}
+
+    /**
+     * Gets x amount of the highest ranked clans by kills
+     * Ordered by highest to lowest.
+     * @param amount the amount of clans to fetch
+     * @return an ordered list (highest first, lowest last) of
+     * clans ranked by stat type.
+     */
+    public List<TopClanResult> getTopClanKills(Transaction transaction, int amount) {
+        Result<Record3<Integer,Integer,String>> result = transaction.getProperty(DSLContext.class).select(CLANS_CLAN_INFO.CLAN_ID, CLANS_CLAN_INFO.CLAN_KILLS, CLANS_CLAN_INFO.CLAN_NAME)
+                .from(CLANS_CLAN_INFO)
+                .orderBy(CLANS_CLAN_INFO.CLAN_KILLS.desc())
+                .limit(amount)
+                .fetch();
+
+        List<TopClanResult> results = new ArrayList<>();
+
+        result.forEach(rec -> {
+            results.add(new TopClanResult(rec.value1(), rec.value2(), rec.value3()));
+        });
+
+        return results;
+    }
+
+    /**
+     * Gets x amount of the highest ranked clans by deaths
+     * Ordered by highest to lowest.
+     * @param amount the amount of clans to fetch
+     * @return an ordered list (highest first, lowest last) of
+     * clans ranked by stat type.
+     */
+    public List<TopClanResult> getTopClanDeaths(Transaction transaction, int amount) {
+        Result<Record3<Integer,Integer,String>> result = transaction.getProperty(DSLContext.class).select(CLANS_CLAN_INFO.CLAN_ID, CLANS_CLAN_INFO.CLAN_DEATHS, CLANS_CLAN_INFO.CLAN_NAME)
+                .from(CLANS_CLAN_INFO)
+                .orderBy(CLANS_CLAN_INFO.CLAN_DEATHS.desc())
+                .limit(amount)
+                .fetch();
+
+        List<TopClanResult> results = new ArrayList<>();
+
+        result.forEach(rec -> {
+            results.add(new TopClanResult(rec.value1(), rec.value2(), rec.value3()));
+        });
+
+        return results;
+    }
+
+    /**
+     * Gets x amount of the highest ranked clans by assists
+     * Ordered by highest to lowest.
+     * @param amount the amount of clans to fetch
+     * @return an ordered list (highest first, lowest last) of
+     * clans ranked by stat type.
+     */
+    public List<TopClanResult> getTopClanAssists(Transaction transaction, int amount) {
+        Result<Record3<Integer,Integer,String>> result = transaction.getProperty(DSLContext.class).select(CLANS_CLAN_INFO.CLAN_ID, CLANS_CLAN_INFO.CLAN_ASSISTS, CLANS_CLAN_INFO.CLAN_NAME)
+                .from(CLANS_CLAN_INFO)
+                .orderBy(CLANS_CLAN_INFO.CLAN_ASSISTS.desc())
+                .limit(amount)
+                .fetch();
+
+        List<TopClanResult> results = new ArrayList<>();
+
+        result.forEach(rec -> {
+            results.add(new TopClanResult(rec.value1(), rec.value2(), rec.value3()));
+        });
+
+        return results;
     }
 
 

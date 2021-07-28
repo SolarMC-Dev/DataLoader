@@ -25,6 +25,8 @@ import gg.solarmc.loader.data.DataLoader;
 import gg.solarmc.loader.schema.tables.records.ClansClanMembershipRecord;
 import org.jooq.DSLContext;
 
+import java.util.Optional;
+
 import static gg.solarmc.loader.schema.tables.ClansClanMembership.CLANS_CLAN_MEMBERSHIP;
 import static gg.solarmc.loader.schema.tables.ClansClanAlliances.CLANS_CLAN_ALLIANCES;
 import static gg.solarmc.loader.schema.tables.ClansClanEnemies.CLANS_CLAN_ENEMIES;
@@ -41,11 +43,9 @@ public class ClanLoader implements DataLoader<OnlineClanDataObject,ClanDataObjec
     @Override
     public OnlineClanDataObject loadData(Transaction transaction, int userId) {
 
-        ClansClanMembershipRecord rec = transaction.getProperty(DSLContext.class).fetchOne(CLANS_CLAN_MEMBERSHIP,CLANS_CLAN_MEMBERSHIP.USER_ID.eq(userId));
+        Optional<Clan> clan = manager.getClanByUser(transaction,userId);
 
-        if (rec == null) return new OnlineClanDataObject(userId,manager,null);
-
-        return new OnlineClanDataObject(userId,manager,manager.getClan(transaction,userId));
+        return new OnlineClanDataObject(userId, manager, clan.orElse(null));
     }
 
     @Override

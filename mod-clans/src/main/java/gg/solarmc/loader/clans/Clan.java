@@ -171,6 +171,8 @@ public class Clan {
 
         if (returned == null) throw new IllegalStateException("Clan name not present in database! Data violation!");
 
+        this.clanName = returned.value1();
+
         return returned.value1();
     }
 
@@ -508,12 +510,6 @@ public class Clan {
 
         var context = transaction.getProperty(DSLContext.class);
 
-        context
-                .update(CLANS_CLAN_INFO)
-                .set(CLANS_CLAN_INFO.CLAN_LEADER, user.getUserId())
-                .where(CLANS_CLAN_INFO.CLAN_ID.eq(this.clanId))
-                .execute();
-
         var alreadyMember = context.select(CLANS_CLAN_MEMBERSHIP.CLAN_ID)
                 .from(CLANS_CLAN_MEMBERSHIP)
                 .where(CLANS_CLAN_MEMBERSHIP.USER_ID.eq(user.getUserId()))
@@ -521,6 +517,14 @@ public class Clan {
 
         if (alreadyMember == null) throw new IllegalStateException("User is not a member of any clan!");
         if (!alreadyMember.value1().equals(this.clanId)) throw new IllegalStateException("User is not member of this clan!");
+
+        context
+                .update(CLANS_CLAN_INFO)
+                .set(CLANS_CLAN_INFO.CLAN_LEADER, user.getUserId())
+                .where(CLANS_CLAN_INFO.CLAN_ID.eq(this.clanId))
+                .execute();
+
+
 
         this.leader = new ClanMember(user.getUserId());
 

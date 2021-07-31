@@ -47,9 +47,9 @@ CREATE TABLE kitpvp_kits_contents (
 CREATE TABLE kitpvp_bounty_logs (
   bounty_claim INT AUTO_INCREMENT PRIMARY KEY,
   killer_id INT NOT NULL,
-  killed_id INT NOT NULL,
+  victim_id INT NOT NULL,
   FOREIGN KEY (killer_id) REFERENCES user_ids (id) ON DELETE CASCADE,
-  FOREIGN KEY (killed_id) REFERENCES user_ids (id) ON DELETE CASCADE
+  FOREIGN KEY (victim_id) REFERENCES user_ids (id) ON DELETE CASCADE
 );
 
 CREATE FUNCTION kitpvp_create_kit

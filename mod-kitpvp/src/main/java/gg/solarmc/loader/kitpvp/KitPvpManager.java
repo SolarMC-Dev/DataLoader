@@ -222,12 +222,12 @@ public class KitPvpManager implements DataManager {
 	 * Logs the bounty to ~~ariel's private reserve~~ for tracking
 	 * @param transaction transaction
 	 * @param killer the killer
-	 * @param killed the killed
+	 * @param victim the victim
 	 */
-	public void logBounty(Transaction transaction, SolarPlayer killer, SolarPlayer killed) {
+	public void logBounty(Transaction transaction, SolarPlayer killer, SolarPlayer victim) {
 		transaction.getProperty(DSLContext.class)
-				.insertInto(KITPVP_BOUNTY_LOGS, KITPVP_BOUNTY_LOGS.KILLER_ID, KITPVP_BOUNTY_LOGS.KILLED_ID)
-				.values(killer.getUserId(), killed.getUserId())
+				.insertInto(KITPVP_BOUNTY_LOGS, KITPVP_BOUNTY_LOGS.KILLER_ID, KITPVP_BOUNTY_LOGS.VICTIM_ID)
+				.values(killer.getUserId(), victim.getUserId())
 				.execute();
 	}
 

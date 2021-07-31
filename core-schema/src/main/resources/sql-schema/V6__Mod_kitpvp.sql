@@ -44,6 +44,14 @@ CREATE TABLE kitpvp_kits_contents (
   CONSTRAINT nonnegative_slot CHECK (slot >= 0)
 );
 
+CREATE TABLE kitpvp_bounty_logs (
+  bounty_claim INT AUTO_INCREMENT PRIMARY KEY,
+  killer_id INT NOT NULL,
+  killed_id INT NOT NULL,
+  FOREIGN KEY (killer_id) REFERENCES user_ids (id) ON DELETE CASCADE,
+  FOREIGN KEY (killed_id) REFERENCES user_ids (id) ON DELETE CASCADE
+);
+
 CREATE FUNCTION kitpvp_create_kit
   (kit_displayname VARCHAR(32))
   RETURNS INT
@@ -142,6 +150,7 @@ CREATE FUNCTION kitpvp_reset_bounty
   MODIFIES SQL DATA
   BEGIN
     DECLARE previous_bounty INT;
+
     SELECT bounty INTO previous_bounty FROM kitpvp_statistics WHERE user_id = user_identifier;
     UPDATE kitpvp_statistics SET bounty = 0 WHERE user_id = user_identifier;
     RETURN previous_bounty;

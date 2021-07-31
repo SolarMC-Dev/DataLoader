@@ -21,6 +21,7 @@ package gg.solarmc.loader.kitpvp;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import gg.solarmc.loader.SolarPlayer;
 import gg.solarmc.loader.Transaction;
 import gg.solarmc.loader.data.DataManager;
 import org.jooq.BatchBindStep;
@@ -35,6 +36,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import static gg.solarmc.loader.schema.Routines.kitpvpCreateKit;
+import static gg.solarmc.loader.schema.Tables.KITPVP_BOUNTY_LOGS;
 import static gg.solarmc.loader.schema.Tables.KITPVP_KITS_IDS;
 import static gg.solarmc.loader.schema.tables.KitpvpKitsContents.KITPVP_KITS_CONTENTS;
 
@@ -214,6 +216,19 @@ public class KitPvpManager implements DataManager {
 		}
 		invalidateKit(kitIdRecord.value1(), kitName);
 		return true;
+	}
+
+	/**
+	 * Logs the bounty to ~~ariel's private reserve~~ for tracking
+	 * @param transaction transaction
+	 * @param killer the killer
+	 * @param killed the killed
+	 */
+	public void logBounty(Transaction transaction, SolarPlayer killer, SolarPlayer killed) {
+		transaction.getProperty(DSLContext.class)
+				.insertInto(KITPVP_BOUNTY_LOGS, KITPVP_BOUNTY_LOGS.KILLER_ID, KITPVP_BOUNTY_LOGS.KILLED_ID)
+				.values(killer.getUserId(), killed.getUserId())
+				.execute();
 	}
 
 	/**

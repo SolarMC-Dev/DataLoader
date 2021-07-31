@@ -1,5 +1,6 @@
 package gg.solarmc.loader.kitpvp.test;
 
+import gg.solarmc.loader.OnlineSolarPlayer;
 import gg.solarmc.loader.impl.SolarDataConfig;
 import gg.solarmc.loader.impl.test.extension.DataCenterInfo;
 import gg.solarmc.loader.impl.test.extension.DataGenerator;
@@ -204,4 +205,5 @@ public class KitPvpIT {
         manager.clearCaches();
         assertKitNotExists(kit);
     }
+
 }

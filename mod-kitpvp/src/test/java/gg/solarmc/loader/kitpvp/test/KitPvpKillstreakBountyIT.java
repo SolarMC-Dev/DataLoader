@@ -195,5 +195,4 @@ public class KitPvpKillstreakBountyIT {
         assertBounty(bounty);
     }
 
-
 }

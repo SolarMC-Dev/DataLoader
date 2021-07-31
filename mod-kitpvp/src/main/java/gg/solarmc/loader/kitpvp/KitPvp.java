@@ -19,7 +19,6 @@
 
 package gg.solarmc.loader.kitpvp;
 
-import gg.solarmc.loader.SolarPlayer;
 import gg.solarmc.loader.Transaction;
 import gg.solarmc.loader.data.DataObject;
 import gg.solarmc.loader.schema.routines.KitpvpAddKillstreak;
@@ -37,7 +36,6 @@ import static gg.solarmc.loader.schema.Routines.kitpvpAddExperience;
 import static gg.solarmc.loader.schema.Routines.kitpvpAddKills;
 import static gg.solarmc.loader.schema.Routines.kitpvpResetBounty;
 import static gg.solarmc.loader.schema.Routines.kitpvpResetCurrentKillstreak;
-import static gg.solarmc.loader.schema.Tables.KITPVP_BOUNTY_LOGS;
 import static gg.solarmc.loader.schema.tables.KitpvpKitsOwnership.KITPVP_KITS_OWNERSHIP;
 import static gg.solarmc.loader.schema.tables.KitpvpStatistics.KITPVP_STATISTICS;
 
@@ -228,8 +226,6 @@ public abstract class KitPvp implements DataObject {
         this.updateBounty(0);
         return previousBounty;
     }
-
-
 
     /**
 

@@ -52,6 +52,13 @@ public interface SolarPlayer {
 	UUID getMcUuid();
 
 	/**
+	 * Gets the minecraft username of this player.
+	 *
+	 * @return the player's username
+	 */
+	String getMcUsername();
+
+	/**
 	 * Determines whether the underlying player is online in the running server instance. <br>
 	 * <br>
 	 * It is possible for this method to return {@code false} if the user is online

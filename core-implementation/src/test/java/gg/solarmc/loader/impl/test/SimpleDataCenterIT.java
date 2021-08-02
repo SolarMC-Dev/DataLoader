@@ -109,6 +109,18 @@ public class SimpleDataCenterIT {
     }
 
     @Test
+    public void lookupPlayerByNameStoredDifferentCase() {
+        UserDetails userDetails = new UserDetails(UUID.randomUUID(), "UsernameCase", DataGenerator.randomAddress());
+        int userId = loginUser(userDetails);
+        when(playerTracker.getOnlinePlayerForName(any())).thenReturn(Optional.empty());
+        SolarPlayer player = assertDoesNotThrow(() -> dataCenter().lookupPlayer("UsernameCASE").join().orElseThrow());
+        assertMatches(player, userDetails, userId);
+        SolarPlayer samePlayer = assertDoesNotThrow(() -> dataCenterInfo.transact(
+                (tx) -> dataCenter().lookupPlayerUsing(tx, "UsernameCASE").orElseThrow()));
+        assertMatches(samePlayer, userDetails, userId);
+    }
+
+    @Test
     public void lookupPlayerByUUIDStored() {
         UserDetails userDetails = DataGenerator.newRandomUser();
         int userId = loginUser(userDetails);

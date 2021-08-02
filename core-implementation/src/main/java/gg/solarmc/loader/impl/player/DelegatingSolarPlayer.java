@@ -51,6 +51,11 @@ public final class DelegatingSolarPlayer implements SolarPlayer {
 	}
 
 	@Override
+	public String getMcUsername() {
+		return id.mcUsername();
+	}
+
+	@Override
 	public boolean isLive() {
 		return toLivePlayer().isPresent();
 	}

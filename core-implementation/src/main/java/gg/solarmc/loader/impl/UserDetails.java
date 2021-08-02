@@ -29,24 +29,24 @@ import java.util.UUID;
 public final class UserDetails {
 
     private final UUID mcUuid;
-    private final String username;
+    private final String mcUsername;
     private final byte[] address;
 
-    private UserDetails(UUID mcUuid, String username, byte[] address, Void signature) {
-        this.mcUuid = Objects.requireNonNull(mcUuid);
-        this.username = Objects.requireNonNull(username);
+    private UserDetails(UUID mcUuid, String mcUsername, byte[] address, Void signature) {
+        this.mcUuid = Objects.requireNonNull(mcUuid, "mcUuid");
+        this.mcUsername = Objects.requireNonNull(mcUsername, "mcUsername");
         this.address = address;
     }
 
-    public UserDetails(UUID mcUuid, String username, byte[] address) {
-        this(mcUuid, username, address.clone(), null);
+    public UserDetails(UUID mcUuid, String mcUsername, byte[] address) {
+        this(mcUuid, mcUsername, address.clone(), null);
         if (address.length != 4 && address.length != 16) {
             throw new IllegalArgumentException("Address is of illegal length");
         }
     }
 
-    public UserDetails(UUID mcUuid, String username, InetAddress address) {
-        this(mcUuid, username, address.getAddress(), null);
+    public UserDetails(UUID mcUuid, String mcUsername, InetAddress address) {
+        this(mcUuid, mcUsername, address.getAddress(), null);
     }
 
     public UUID mcUuid() {
@@ -57,8 +57,19 @@ public final class UserDetails {
         return UUIDUtil.toByteArray(mcUuid);
     }
 
+    public String mcUsername() {
+        return mcUsername;
+    }
+
+    /**
+     * Previous version of {@link #mcUsername()}
+     *
+     * @return the username
+     * @deprecated Use {@link #mcUsername()} for consistency with {@code mcUuid}
+     */
+    @Deprecated
     public String username() {
-        return username;
+        return mcUsername;
     }
 
     public byte[] address() {
@@ -79,13 +90,13 @@ public final class UserDetails {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         UserDetails that = (UserDetails) o;
-        return mcUuid.equals(that.mcUuid) && username.equals(that.username) && Arrays.equals(address, that.address);
+        return mcUuid.equals(that.mcUuid) && mcUsername.equals(that.mcUsername) && Arrays.equals(address, that.address);
     }
 
     @Override
     public int hashCode() {
         int result = mcUuid.hashCode();
-        result = 31 * result + username.hashCode();
+        result = 31 * result + mcUsername.hashCode();
         result = 31 * result + Arrays.hashCode(address);
         return result;
     }
@@ -94,7 +105,7 @@ public final class UserDetails {
     public String toString() {
         return "UserDetails{" +
                 "mcUuid=" + mcUuid +
-                ", username='" + username + '\'' +
+                ", username='" + mcUsername + '\'' +
                 ", address=" + Arrays.toString(address) +
                 '}';
     }

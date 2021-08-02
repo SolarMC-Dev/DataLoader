@@ -24,11 +24,11 @@ import gg.solarmc.loader.authentication.internal.UUIDOperations;
 import java.util.Objects;
 import java.util.UUID;
 
-public record User(UUID mcUuid, String username) {
+public record User(UUID mcUuid, String mcUsername) {
 
     public User {
         Objects.requireNonNull(mcUuid, "mcUuid");
-        Objects.requireNonNull(username, "username");
+        Objects.requireNonNull(mcUsername, "mcUsername");
     }
 
     /**
@@ -38,6 +38,17 @@ public record User(UUID mcUuid, String username) {
      */
     public boolean isPremium() {
         return UUIDOperations.isPremium(mcUuid());
+    }
+
+    /**
+     * Previous version of {@link #mcUsername()}
+     *
+     * @return the mcUsername
+     * @deprecated Use {@link #mcUsername()}. Deprecated for inconsistency with {@code mcUuid}
+     */
+    @Deprecated
+    public String username() {
+        return mcUsername();
     }
 
 }

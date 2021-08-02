@@ -92,8 +92,9 @@ public class SimpleDataCenterIT {
     }
 
     private static void assertMatches(SolarPlayer player, UserDetails userDetails, int userId) {
-        assertEquals(userDetails.mcUuid(), player.getMcUuid());
         assertEquals(userId, player.getUserId());
+        assertEquals(userDetails.mcUuid(), player.getMcUuid());
+        assertEquals(userDetails.mcUsername(), player.getMcUsername());
     }
 
     @Test
@@ -101,10 +102,10 @@ public class SimpleDataCenterIT {
         UserDetails userDetails = DataGenerator.newRandomUser();
         int userId = loginUser(userDetails);
         when(playerTracker.getOnlinePlayerForName(any())).thenReturn(Optional.empty());
-        SolarPlayer player = assertDoesNotThrow(() -> dataCenter().lookupPlayer(userDetails.username()).join().orElseThrow());
+        SolarPlayer player = assertDoesNotThrow(() -> dataCenter().lookupPlayer(userDetails.mcUsername()).join().orElseThrow());
         assertMatches(player, userDetails, userId);
         SolarPlayer samePlayer = assertDoesNotThrow(() -> dataCenterInfo.transact(
-                (tx) -> dataCenter().lookupPlayerUsing(tx, userDetails.username()).orElseThrow()));
+                (tx) -> dataCenter().lookupPlayerUsing(tx, userDetails.mcUsername()).orElseThrow()));
         assertMatches(samePlayer, userDetails, userId);
     }
 

@@ -32,7 +32,18 @@ public interface UserWithDataNotYetLoaded {
 
 	UUID mcUuid();
 
-	String username();
+	String mcUsername();
+
+	/**
+	 * Previous version of {@link #mcUsername()}
+	 *
+	 * @return the username
+	 * @deprecated Use {@link #mcUsername()} for consistency with {@code mcUuid}
+	 */
+	@Deprecated
+	default String username() {
+		return mcUsername();
+	}
 
 	default boolean isPremium() {
 		return UUIDOperations.isPremium(mcUuid());

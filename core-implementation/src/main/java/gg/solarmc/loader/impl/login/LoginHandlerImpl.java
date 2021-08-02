@@ -71,7 +71,7 @@ final class LoginHandlerImpl implements LoginHandler {
         nameAddressHistoryUpdate.update(transaction, userDetails);
         SolarPlayerData data = loadDataWith(userId, (loader, id) -> loader.loadData(transaction, id));
         return new OnlineSolarPlayerImpl(
-                new SolarPlayerId(userId, userDetails.mcUuid(), userDetails.username()),
+                new SolarPlayerId(userId, userDetails.mcUuid(), userDetails.mcUsername()),
                 data);
     }
 

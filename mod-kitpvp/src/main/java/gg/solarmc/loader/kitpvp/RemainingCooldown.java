@@ -21,6 +21,12 @@ package gg.solarmc.loader.kitpvp;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Objects;
 
 public record RemainingCooldown(Duration timeRemaining, Instant expirationDate) {
+
+    public RemainingCooldown {
+        Objects.requireNonNull(timeRemaining, "timeRemaining");
+        Objects.requireNonNull(expirationDate, "expirationDate");
+    }
 }

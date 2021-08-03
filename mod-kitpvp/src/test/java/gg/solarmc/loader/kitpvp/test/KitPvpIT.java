@@ -230,7 +230,7 @@ public class KitPvpIT {
 
     @Test
     public void attemptToUseKit() {
-        Instant oneAugust = Instant.parse("2021-08-01T04:55:05+00:00");
+        Instant oneAugust = Instant.parse("2021-08-01T05:00:00+00:00");
         Instant twoAugust = oneAugust.plus(Duration.ofDays(1L));
         Instant threeAugust = twoAugust.plus(Duration.ofDays(1L));
         KitPvp data = dataCenterInfo.loginNewRandomUser().getData(KitPvpKey.INSTANCE);
@@ -239,20 +239,20 @@ public class KitPvpIT {
 
         when(clock.instant())
                 .thenReturn(oneAugust)
-                .thenReturn(oneAugust.plusSeconds(60L))
+                .thenReturn(oneAugust.plusSeconds(3600L))
                 .thenReturn(twoAugust)
-                .thenReturn(twoAugust.plusSeconds(120L));
+                .thenReturn(twoAugust.plusSeconds(7200L));
         // Time is 1 August and cooldown unset
         assertEquals(Optional.empty(), dataCenterInfo.transact((tx) -> data.attemptToUseKit(tx, kit)));
-        // Time is 1 August + 60 seconds; cooldown not yet elapsed
+        // Time is 1 August + 1 hour; cooldown not yet elapsed
         assertEquals(
-                Optional.of(new RemainingCooldown(Duration.ofSeconds(60L), twoAugust)),
+                Optional.of(new RemainingCooldown(Duration.ofSeconds(3600L), twoAugust)),
                 dataCenterInfo.transact((tx) -> data.attemptToUseKit(tx, kit)));
         // Time is 2 August and cooldown has elapsed
         assertEquals(Optional.empty(), dataCenterInfo.transact((tx) -> data.attemptToUseKit(tx, kit)));
-        // Time is 2 August + 120 seconds and cooldown has not yet elapsed
+        // Time is 2 August + 2 hours and cooldown has not yet elapsed
         assertEquals(
-                Optional.of(new RemainingCooldown(Duration.ofSeconds(120L), threeAugust)),
+                Optional.of(new RemainingCooldown(Duration.ofSeconds(7200L), threeAugust)),
                 dataCenterInfo.transact((tx) -> data.attemptToUseKit(tx, kit)));
     }
 }

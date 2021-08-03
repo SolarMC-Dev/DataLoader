@@ -322,7 +322,7 @@ public abstract class KitPvp implements DataObject {
         if (lastUsed != null) {
             Duration timeSinceLastUsed = Duration.between(Instant.ofEpochSecond(lastUsed), now);
             Duration remainingCooldown = cooldown.minus(timeSinceLastUsed);
-            if (remainingCooldown.compareTo(Duration.ZERO) >= 0) {
+            if (remainingCooldown.compareTo(Duration.ZERO) > 0) {
                 return Optional.of(new RemainingCooldown(remainingCooldown, now.plus(remainingCooldown)));
             }
             context.update(KITPVP_KITS_COOLDOWNS)

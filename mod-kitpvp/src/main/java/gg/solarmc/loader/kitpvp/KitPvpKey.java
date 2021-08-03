@@ -22,7 +22,9 @@ package gg.solarmc.loader.kitpvp;
 import gg.solarmc.loader.data.DataKey;
 import gg.solarmc.loader.data.DataKeyInitializationContext;
 import gg.solarmc.loader.data.DataLoader;
+import space.arim.omnibus.registry.Registry;
 
+import java.time.Clock;
 import java.util.ServiceLoader;
 
 public class KitPvpKey implements DataKey<OnlineKitPvp, KitPvp, KitPvpManager> {
@@ -38,8 +40,10 @@ public class KitPvpKey implements DataKey<OnlineKitPvp, KitPvp, KitPvpManager> {
 
     @Override
     public KitPvpManager createDataManager(DataKeyInitializationContext context) {
-        return new KitPvpManager(context.omnibus().getRegistry().getProvider(ItemSerializer.class)
-                .orElseGet(this::serviceLoadItemSerializer));
+        Registry registry = context.omnibus().getRegistry();
+        return new KitPvpManager(
+                registry.getProvider(ItemSerializer.class).orElseGet(this::serviceLoadItemSerializer),
+                registry.getProvider(Clock.class).orElseGet(Clock::systemUTC));
     }
 
     private ItemSerializer serviceLoadItemSerializer() {

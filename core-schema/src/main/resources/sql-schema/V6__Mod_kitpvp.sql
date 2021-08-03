@@ -24,12 +24,24 @@ CREATE TABLE kitpvp_statistics (
 CREATE TABLE kitpvp_kits_ids (
   kit_id INT AUTO_INCREMENT PRIMARY KEY,
   kit_name VARCHAR(32) NOT NULL,
+  -- Seconds
+  kit_cooldown INT NOT NULL,
   UNIQUE INDEX kit_name_uniqueness (kit_name)
 );
 
 CREATE TABLE kitpvp_kits_ownership (
   user_id INT NOT NULL,
   kit_id INT NOT NULL,
+  FOREIGN KEY (user_id) REFERENCES user_ids (id) ON DELETE CASCADE,
+  FOREIGN KEY (kit_id) REFERENCES kitpvp_kits_ids (kit_id) ON DELETE CASCADE,
+  PRIMARY KEY (user_id, kit_id)
+);
+
+CREATE TABLE kitpvp_kits_cooldowns (
+  user_id INT NOT NULL,
+  kit_id INT NOT NULL,
+  -- Unix seconds
+  last_used BIGINT NOT NULL,
   FOREIGN KEY (user_id) REFERENCES user_ids (id) ON DELETE CASCADE,
   FOREIGN KEY (kit_id) REFERENCES kitpvp_kits_ids (kit_id) ON DELETE CASCADE,
   PRIMARY KEY (user_id, kit_id)
@@ -53,7 +65,8 @@ CREATE TABLE kitpvp_bounty_logs (
 );
 
 CREATE FUNCTION kitpvp_create_kit
-  (kit_displayname VARCHAR(32))
+  (kit_displayname VARCHAR(32),
+  kit_cooldownseconds INT)
   RETURNS INT
   MODIFIES SQL DATA
   BEGIN
@@ -62,7 +75,7 @@ CREATE FUNCTION kitpvp_create_kit
     BEGIN
       RETURN -1;
     END;
-    INSERT INTO kitpvp_kits_ids (kit_name) VALUES (kit_displayname);
+    INSERT INTO kitpvp_kits_ids (kit_name, kit_cooldown) VALUES (kit_displayname, kit_cooldownseconds);
     RETURN LAST_INSERT_ID();
   END;
 

@@ -7,11 +7,13 @@ import gg.solarmc.loader.impl.test.extension.DatabaseExtension;
 import gg.solarmc.loader.kitpvp.ItemInSlot;
 import gg.solarmc.loader.kitpvp.ItemSerializer;
 import gg.solarmc.loader.kitpvp.Kit;
+import gg.solarmc.loader.kitpvp.KitBuilder;
 import gg.solarmc.loader.kitpvp.KitItem;
 import gg.solarmc.loader.kitpvp.KitOwnership;
 import gg.solarmc.loader.kitpvp.KitPvp;
 import gg.solarmc.loader.kitpvp.KitPvpKey;
 import gg.solarmc.loader.kitpvp.KitPvpManager;
+import gg.solarmc.loader.kitpvp.RemainingCooldown;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,6 +26,9 @@ import space.arim.omnibus.Omnibus;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Path;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.Set;
 
@@ -42,23 +47,30 @@ import static org.mockito.Mockito.when;
 public class KitPvpIT {
 
     private final ItemSerializer itemSerializer;
+    private final Clock clock;
     private DataCenterInfo dataCenterInfo;
     private KitPvpManager manager;
 
-    public KitPvpIT(@Mock ItemSerializer itemSerializer) {
+    public KitPvpIT(@Mock ItemSerializer itemSerializer, @Mock Clock clock) {
         this.itemSerializer = itemSerializer;
+        this.clock = clock;
     }
 
     @BeforeEach
     public void setDataCenter(@TempDir Path folder, SolarDataConfig.DatabaseCredentials credentials) {
         Omnibus omnibus = new DefaultOmnibus();
         omnibus.getRegistry().register(ItemSerializer.class, (byte) 0, itemSerializer, "Serializer");
+        omnibus.getRegistry().register(Clock.class, (byte) 0, clock, "Clock");
         dataCenterInfo = DataCenterInfo.builder(folder, credentials).omnibus(omnibus).build();
         manager = dataCenterInfo.dataCenter().getDataManager(KitPvpKey.INSTANCE);
     }
 
     private Kit newKit(String name, Set<ItemInSlot> items) {
-       return dataCenterInfo.transact((tx) -> manager.createKit(tx, name, items).orElseThrow());
+        return newKit(new KitBuilder().name(name).contents(items).build());
+    }
+
+    private Kit newKit(KitBuilder.Built kitBuilder) {
+        return dataCenterInfo.transact((tx) -> manager.createKit(tx, kitBuilder).orElseThrow());
     }
 
     private void addKitAssumeSuccess(KitPvp data, Kit kit) {
@@ -72,7 +84,8 @@ public class KitPvpIT {
     public void createKitAlreadyExists() {
         String name = "MyExistingKit";
         newKit(name, Set.of());
-        assertEquals(Optional.empty(), dataCenterInfo.transact((tx) -> manager.createKit(tx, name, Set.of())));
+        assertEquals(Optional.empty(), dataCenterInfo.transact((tx) -> manager.createKit(tx,
+                new KitBuilder().name(name).contents(Set.of()).build())));
     }
 
     @Test
@@ -173,6 +186,16 @@ public class KitPvpIT {
     }
 
     @Test
+    public void getKitByNameDifferentCase() {
+        newKit("MyKitCase", Set.of());
+
+        manager.clearCaches();
+        assertEquals(
+                Optional.of("MyKitCase"),
+                dataCenterInfo.transact((tx) -> manager.getKitByName(tx, "MyKitCASE")).map(Kit::getName));
+    }
+
+    @Test
     public void deleteKit() {
         Kit kit = newKit("MyKitById", Set.of());
 
@@ -203,5 +226,33 @@ public class KitPvpIT {
         assertKitNotExists(kit);
         manager.clearCaches();
         assertKitNotExists(kit);
+    }
+
+    @Test
+    public void attemptToUseKit() {
+        Instant oneAugust = Instant.parse("2021-08-01T05:00:00+00:00");
+        Instant twoAugust = oneAugust.plus(Duration.ofDays(1L));
+        Instant threeAugust = twoAugust.plus(Duration.ofDays(1L));
+        KitPvp data = dataCenterInfo.loginNewRandomUser().getData(KitPvpKey.INSTANCE);
+        Kit kit = newKit(new KitBuilder()
+                .name("KitWithCooldown").contents(Set.of()).cooldown(Duration.ofDays(1L)).build());
+
+        when(clock.instant())
+                .thenReturn(oneAugust)
+                .thenReturn(oneAugust.plusSeconds(3600L))
+                .thenReturn(twoAugust)
+                .thenReturn(twoAugust.plusSeconds(7200L));
+        // Time is 1 August and cooldown unset
+        assertEquals(Optional.empty(), dataCenterInfo.transact((tx) -> data.attemptToUseKit(tx, kit)));
+        // Time is 1 August + 1 hour; cooldown not yet elapsed
+        assertEquals(
+                Optional.of(new RemainingCooldown(Duration.ofHours(23L), twoAugust)),
+                dataCenterInfo.transact((tx) -> data.attemptToUseKit(tx, kit)));
+        // Time is 2 August and cooldown has elapsed
+        assertEquals(Optional.empty(), dataCenterInfo.transact((tx) -> data.attemptToUseKit(tx, kit)));
+        // Time is 2 August + 2 hours and cooldown has not yet elapsed
+        assertEquals(
+                Optional.of(new RemainingCooldown(Duration.ofHours(22L), threeAugust)),
+                dataCenterInfo.transact((tx) -> data.attemptToUseKit(tx, kit)));
     }
 }

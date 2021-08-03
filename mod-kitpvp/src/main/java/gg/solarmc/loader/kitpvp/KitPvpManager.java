@@ -29,8 +29,11 @@ import org.jooq.DSLContext;
 import org.jooq.DataType;
 import org.jooq.Field;
 import org.jooq.Record1;
+import org.jooq.Record2;
+import org.jooq.Record3;
 import org.jooq.impl.DSL;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.Set;
@@ -44,9 +47,15 @@ public class KitPvpManager implements DataManager {
 
 	private final Cache<KitCacheKey, Kit> existingKits = Caffeine.newBuilder().expireAfterAccess(Duration.ofMinutes(15)).build();
 	private final ItemSerializer serializer;
+	private final Clock clock;
 
-	KitPvpManager(ItemSerializer serializer) {
+	KitPvpManager(ItemSerializer serializer, Clock clock) {
 		this.serializer = serializer;
+		this.clock = clock;
+	}
+
+	Clock clock() {
+		return clock;
 	}
 
 	private DataType<KitItem> kitItemDataType() {
@@ -67,15 +76,16 @@ public class KitPvpManager implements DataManager {
 		return Optional.ofNullable(existingKits.get(new KitKeyId(id), num -> {
 			var jooq = transaction.getProperty(DSLContext.class);
 
-			String kitName = jooq
-					.select(KITPVP_KITS_IDS.KIT_NAME).from(KITPVP_KITS_IDS)
-					.where(KITPVP_KITS_IDS.KIT_ID.eq(id)).fetchOne(KITPVP_KITS_IDS.KIT_NAME);
+			Record2<String, Integer> kitRecord = jooq
+					.select(KITPVP_KITS_IDS.KIT_NAME, KITPVP_KITS_IDS.KIT_COOLDOWN)
+					.from(KITPVP_KITS_IDS)
+					.where(KITPVP_KITS_IDS.KIT_ID.eq(id))
+					.fetchOne();
 
-			if (kitName == null) {
+			if (kitRecord == null) {
 				return null;
 			}
-
-			return getKit(transaction, id, kitName);
+			return getKit(transaction, id, kitRecord.value1(), kitRecord.value2());
 		}));
 	}
 
@@ -92,19 +102,21 @@ public class KitPvpManager implements DataManager {
 		return Optional.ofNullable(existingKits.get(new KitKeyName(name), num -> {
 			var jooq = transaction.getProperty(DSLContext.class);
 
-			Integer kitId = jooq
-					.select(KITPVP_KITS_IDS.KIT_ID).from(KITPVP_KITS_IDS)
-					.where(KITPVP_KITS_IDS.KIT_NAME.eq(name)).fetchOne(KITPVP_KITS_IDS.KIT_ID);
+			// Fetch name using correct case
+			Record3<Integer, String, Integer> kitRecord = jooq
+					.select(KITPVP_KITS_IDS.KIT_ID, KITPVP_KITS_IDS.KIT_NAME, KITPVP_KITS_IDS.KIT_COOLDOWN)
+					.from(KITPVP_KITS_IDS)
+					.where(KITPVP_KITS_IDS.KIT_NAME.eq(name))
+					.fetchOne();
 
-			if (kitId == null) {
+			if (kitRecord == null) {
 				return null;
 			}
-
-			return getKit(transaction, kitId, name);
+			return getKit(transaction, kitRecord.value1(), kitRecord.value2(), kitRecord.value3());
 		}));
 	}
 
-	Kit getKit(Transaction transaction, int id, String name){
+	Kit getKit(Transaction transaction, int id, String name, int cooldown) {
 		var jooq = transaction.getProperty(DSLContext.class);
 
 		DataType<KitItem> itemType = kitItemDataType();
@@ -117,7 +129,7 @@ public class KitPvpManager implements DataManager {
 					return new ItemInSlot(
 						itemInSlotRecord.value1(), itemInSlotRecord.value2());
 				});
-		return new Kit(id, name, Set.copyOf(contents));
+		return new Kit(id, name, Set.copyOf(contents), Duration.ofSeconds(cooldown));
 	}
 
 	/**
@@ -126,16 +138,33 @@ public class KitPvpManager implements DataManager {
 	 * @param name name of the kit, should be unique in order for this method to succeed
 	 * @param contents of the kit
 	 * @return the kit if it was created, an empty optional if a kit by such name already exists
+	 * @deprecated Use {@link #createKit(Transaction, KitBuilder.Built)} which allows for setting
+	 * additional options such as the kit cooldown
 	 */
+	@Deprecated
 	public Optional<Kit> createKit(Transaction transaction, String name, Set<ItemInSlot> contents) {
+		return createKit(transaction, new KitBuilder().name(name).contents(contents).build());
+	}
+
+	/**
+	 * Creates a kit from the given builder. Use {@link KitBuilder#KitBuilder()}
+	 * to obtain a kit builder
+	 *
+	 * @param transaction the transaction
+	 * @param kitBuilder the details of the kit, contained in the builder
+	 * @return the kit if it was created, an empty optional if a kit by the desired name already exists
+	 */
+	public Optional<Kit> createKit(Transaction transaction, KitBuilder.Built kitBuilder) {
 		DSLContext context = transaction.getProperty(DSLContext.class);
 
-		int kitId = context.select(kitpvpCreateKit(name))
+		String name = kitBuilder.name();
+		int kitId = context.select(kitpvpCreateKit(name, (int) kitBuilder.cooldown().toSeconds()))
 				.fetchSingle().value1();
 		if (kitId == -1) { // Special return value
 			return Optional.empty();
 		}
 
+		Set<ItemInSlot> contents = kitBuilder.contents();
 		if (!contents.isEmpty()) {
 			DataType<KitItem> itemType = kitItemDataType();
 			Field<KitItem> itemColumn = DSL.field(KITPVP_KITS_CONTENTS.ITEM.getQualifiedName(), itemType);
@@ -149,7 +178,7 @@ public class KitPvpManager implements DataManager {
 			batch.execute();
 		}
 
-		Kit kit = new Kit(kitId, name, contents);
+		Kit kit = new Kit(kitId, name, contents, kitBuilder.cooldown());
 		existingKits.put(new KitKeyName(name), kit);
 		existingKits.put(new KitKeyId(kitId), kit);
 		return Optional.of(kit);

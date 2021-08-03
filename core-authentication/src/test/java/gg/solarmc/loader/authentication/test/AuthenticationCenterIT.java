@@ -79,10 +79,11 @@ public class AuthenticationCenterIT {
         } catch (UnknownHostException ex) {
             throw new RuntimeException(ex);
         }
-        UserDetails userDetails = new UserDetails(player.mcUuid(), player.username(), address);
+        UserDetails userDetails = new UserDetails(player.mcUuid(), player.mcUsername(), address);
         OnlineSolarPlayer solarPlayer = dataCenterInfo.loginHandler().loginUser(userDetails).join();
         assertNotNull(solarPlayer);
         assertEquals(solarPlayer.getMcUuid(), player.mcUuid());
+        assertEquals(solarPlayer.getMcUsername(), player.mcUsername());
         return solarPlayer.getUserId();
     }
 

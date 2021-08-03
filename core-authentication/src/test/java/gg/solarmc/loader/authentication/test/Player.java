@@ -64,8 +64,8 @@ public final class Player implements UserWithDataNotYetLoaded {
     }
 
     @Override
-    public String username() {
-        return user.username();
+    public String mcUsername() {
+        return user.mcUsername();
     }
 
     @Override

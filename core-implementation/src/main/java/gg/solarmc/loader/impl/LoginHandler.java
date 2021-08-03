@@ -61,9 +61,10 @@ public interface LoginHandler {
      *
      * @param userId the user ID
      * @param mcUuid the user's MC UUID
+     * @param mcUsername the user's MC username
      * @return the offline solar player
      */
-    SolarPlayer createOfflineUser(int userId, UUID mcUuid);
+    SolarPlayer createOfflineUser(int userId, UUID mcUuid, String mcUsername);
 
     /**
      * Builder of login handlers. All options on this builder are disabled by default.

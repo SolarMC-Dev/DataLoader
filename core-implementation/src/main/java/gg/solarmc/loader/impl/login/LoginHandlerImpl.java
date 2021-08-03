@@ -71,15 +71,15 @@ final class LoginHandlerImpl implements LoginHandler {
         nameAddressHistoryUpdate.update(transaction, userDetails);
         SolarPlayerData data = loadDataWith(userId, (loader, id) -> loader.loadData(transaction, id));
         return new OnlineSolarPlayerImpl(
-                new SolarPlayerId(userId, userDetails.mcUuid()),
+                new SolarPlayerId(userId, userDetails.mcUuid(), userDetails.mcUsername()),
                 data);
     }
 
     @Override
-    public SolarPlayer createOfflineUser(int userId, UUID mcUuid) {
+    public SolarPlayer createOfflineUser(int userId, UUID mcUuid, String mcUsername) {
         SolarPlayerData data = loadDataWith(userId, DataLoader::createOfflineData);
         return new DelegatingSolarPlayer(
-                new SolarPlayerId(userId, mcUuid),
+                new SolarPlayerId(userId, mcUuid, mcUsername),
                 data,
                 playerTracker);
     }

@@ -47,7 +47,7 @@ interface NameAddressHistoryUpdate {
             byte[] uuid = userDetails.mcUuidAsBytes();
             context.insertInto(LIBERTYBANS_NAMES)
                     .columns(LIBERTYBANS_NAMES.UUID, LIBERTYBANS_NAMES.NAME, LIBERTYBANS_NAMES.UPDATED)
-                    .values(uuid, userDetails.username(), currentTime)
+                    .values(uuid, userDetails.mcUsername(), currentTime)
                     .onDuplicateKeyUpdate()
                     .set(LIBERTYBANS_NAMES.UPDATED, currentTime)
                     .execute();

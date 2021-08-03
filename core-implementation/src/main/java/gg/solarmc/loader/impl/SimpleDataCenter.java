@@ -27,6 +27,7 @@ import gg.solarmc.loader.data.DataKey;
 import gg.solarmc.loader.data.DataManager;
 import org.jooq.DSLContext;
 import org.jooq.Record2;
+import org.jooq.Record3;
 import space.arim.omnibus.util.UUIDUtil;
 import space.arim.omnibus.util.concurrent.CentralisedFuture;
 import space.arim.omnibus.util.concurrent.FactoryOfTheFuture;
@@ -35,7 +36,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static gg.solarmc.loader.schema.tables.LatestNames.LATEST_NAMES;
-import static gg.solarmc.loader.schema.tables.UserIds.USER_IDS;
 
 /**
  * Data center implementation
@@ -98,17 +98,19 @@ public final class SimpleDataCenter implements DataCenter {
 	}
 
 	private Optional<SolarPlayer> lookupPlayerByNameNow(Transaction transaction, String name) {
-		Record2<Integer, byte[]> latestNamesRecord = transaction.getProperty(DSLContext.class)
-				.select(LATEST_NAMES.USER_ID, LATEST_NAMES.UUID)
+		// Re-fetch the username to obtain correct case
+		Record3<Integer, byte[], String> userRecord = transaction.getProperty(DSLContext.class)
+				.select(LATEST_NAMES.USER_ID, LATEST_NAMES.UUID, LATEST_NAMES.USERNAME)
 				.from(LATEST_NAMES)
 				.where(LATEST_NAMES.USERNAME.eq(name))
 				.fetchOne();
-		if (latestNamesRecord == null) {
+		if (userRecord == null) {
 			return Optional.empty();
 		}
-		int userId = latestNamesRecord.value1();
-		UUID mcUuid = UUIDUtil.fromByteArray(latestNamesRecord.value2());
-		return Optional.of(loginHandler.createOfflineUser(userId, mcUuid));
+		int userId = userRecord.value1();
+		UUID mcUuid = UUIDUtil.fromByteArray(userRecord.value2());
+		String mcUsername = userRecord.value3();
+		return Optional.of(loginHandler.createOfflineUser(userId, mcUuid, mcUsername));
 	}
 
 	@Override
@@ -130,15 +132,17 @@ public final class SimpleDataCenter implements DataCenter {
 	}
 
 	private Optional<SolarPlayer> lookupPlayerByUuidNow(Transaction transaction, UUID uuid) {
-		Integer userId = transaction.getProperty(DSLContext.class)
-				.select(USER_IDS.ID)
-				.from(USER_IDS)
-				.where(USER_IDS.UUID.eq(UUIDUtil.toByteArray(uuid)))
-				.fetchOne(USER_IDS.ID);
-		if (userId == null) {
+		Record2<Integer, String> userRecord = transaction.getProperty(DSLContext.class)
+				.select(LATEST_NAMES.USER_ID, LATEST_NAMES.USERNAME)
+				.from(LATEST_NAMES)
+				.where(LATEST_NAMES.UUID.eq(UUIDUtil.toByteArray(uuid)))
+				.fetchOne();
+		if (userRecord == null) {
 			return Optional.empty();
 		}
-		return Optional.of(loginHandler.createOfflineUser(userId, uuid));
+		int userId = userRecord.value1();
+		String mcUsername = userRecord.value2();
+		return Optional.of(loginHandler.createOfflineUser(userId, uuid, mcUsername));
 	}
 
 	@Override
@@ -160,15 +164,17 @@ public final class SimpleDataCenter implements DataCenter {
 	}
 
 	private Optional<SolarPlayer> lookupPlayerByIdNow(Transaction transaction, int userId) {
-		byte[] uuid = transaction.getProperty(DSLContext.class)
-				.select(USER_IDS.UUID)
-				.from(USER_IDS)
-				.where(USER_IDS.ID.eq(userId))
-				.fetchOne(USER_IDS.UUID);
-		if (uuid == null) {
+		Record2<byte[], String> userRecord = transaction.getProperty(DSLContext.class)
+				.select(LATEST_NAMES.UUID, LATEST_NAMES.USERNAME)
+				.from(LATEST_NAMES)
+				.where(LATEST_NAMES.USER_ID.eq(userId))
+				.fetchOne();
+		if (userRecord == null) {
 			return Optional.empty();
 		}
-		return Optional.of(loginHandler.createOfflineUser(userId, UUIDUtil.fromByteArray(uuid)));
+		UUID mcUuid = UUIDUtil.fromByteArray(userRecord.value1());
+		String mcUsername = userRecord.value2();
+		return Optional.of(loginHandler.createOfflineUser(userId, mcUuid, mcUsername));
 	}
 
 	@SuppressWarnings({"OptionalUsedAsFieldOrParameterType", "unchecked"})

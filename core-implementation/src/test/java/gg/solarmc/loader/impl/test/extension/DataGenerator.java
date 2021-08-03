@@ -24,7 +24,12 @@ public final class DataGenerator {
         return String.valueOf(nameChars);
     }
 
-    private static InetAddress randomAddress() {
+    /**
+     * Generates an IPv4 or IPv6 address
+     *
+     * @return a random address
+     */
+    public static InetAddress randomAddress() {
         var tlr = ThreadLocalRandom.current();
         byte[] addressBytes = new byte[(tlr.nextBoolean() ? 4 : 16)];
         tlr.nextBytes(addressBytes);

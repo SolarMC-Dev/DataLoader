@@ -46,6 +46,11 @@ public final class OnlineSolarPlayerImpl implements OnlineSolarPlayer {
 	}
 
 	@Override
+	public String getMcUsername() {
+		return id.mcUsername();
+	}
+
+	@Override
 	public <D extends O, O extends DataObject> D getData(DataKey<D, O, ?> key) {
 		return onlineData.getDataOnline(key);
 	}

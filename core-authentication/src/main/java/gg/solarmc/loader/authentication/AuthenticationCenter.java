@@ -130,7 +130,7 @@ public final class AuthenticationCenter {
 			assert accountRecord.get(AUTH_PASSWORDS.ITERATIONS) == 0 : "premium accounts use iterations=0";
 			return AutoLoginResult.forExistingPremiumUser(user);
 		}
-		if (!user.username().equals(username)) {
+		if (!user.mcUsername().equals(username)) {
 			return AutoLoginResult.deniedCaseSensitivityOfName();
 		}
 		return AutoLoginResult.forExistingCrackedUser(
@@ -165,7 +165,7 @@ public final class AuthenticationCenter {
 						AUTH_PASSWORDS.ITERATIONS, AUTH_PASSWORDS.MEMORY,
 						AUTH_PASSWORDS.PASSWORD_HASH, AUTH_PASSWORDS.PASSWORD_SALT)
 				.from(AUTH_PASSWORDS)
-				.where(AUTH_PASSWORDS.USERNAME.eq(user.username()))
+				.where(AUTH_PASSWORDS.USERNAME.eq(user.mcUsername()))
 				.fetchOne();
 		if (passwordRecord == null) {
 			if (user.isPremium()) {
@@ -179,7 +179,7 @@ public final class AuthenticationCenter {
 		LOGGER.info(
 				"An incredible race condition occurred (or this is a bug). User {} logged in " +
 				"while no one owned their username. Now, however, someone has taken their username.",
-				user.username());
+				user.mcUsername());
 		int iterations = passwordRecord.get(AUTH_PASSWORDS.ITERATIONS);
 		if (iterations == 0) { // 0 indicates a premium account
 			/*
@@ -202,7 +202,7 @@ public final class AuthenticationCenter {
 			return LoginAttempt.premiumPermitted();
 		}
 		// Existing cracked account
-		if (!user.username().equals(passwordRecord.get(AUTH_PASSWORDS.USERNAME))) {
+		if (!user.mcUsername().equals(passwordRecord.get(AUTH_PASSWORDS.USERNAME))) {
 			return LoginAttempt.deniedCaseSensitivityOfName();
 		}
 		VerifiablePassword existingPassword = new VerifiablePassword(
@@ -237,7 +237,7 @@ public final class AuthenticationCenter {
 	private void insertAutomaticAccount(Transaction transaction, UserWithDataNotYetLoaded user) {
 		DSLContext context = transaction.getProperty(DSLContext.class);
 		byte[] uuidBytes = UUIDUtil.toByteArray(user.mcUuid());
-		String username = user.username();
+		String username = user.mcUsername();
 		int userId = context
 				.select(insertAutomaticAccountAndGetUserId(uuidBytes, username))
 				.fetchSingle().value1();
@@ -259,7 +259,7 @@ public final class AuthenticationCenter {
 		HashingInstructions instructions = password.instructions();
 
 		Record1<Integer> userIdRecord = context.select(insertCrackedAccountAndGetUserId(
-				user.username(), UUIDUtil.toByteArray(user.mcUuid()),
+				user.mcUsername(), UUIDUtil.toByteArray(user.mcUuid()),
 				(byte) instructions.iterations(), instructions.memory(),
 				PasswordHashImpl.hashUncloned(password.passwordHash()),
 				PasswordSaltImpl.saltUncloned(password.passwordSalt())))
@@ -293,7 +293,7 @@ public final class AuthenticationCenter {
 		DSLContext context = transaction.getProperty(DSLContext.class);
 		if (user.isPremium()) {
 			// Migrate previous cracked account to premium
-			String username = user.username();
+			String username = user.mcUsername();
 			UUID offlineUuid = computeOfflineUuid(username);
 			byte[] offlineUuidBytes = UUIDUtil.toByteArray(offlineUuid);
 			byte[] onlineUuidBytes = UUIDUtil.toByteArray(user.mcUuid());
@@ -306,7 +306,7 @@ public final class AuthenticationCenter {
 			user.loadData(transaction, userId);
 			return CompleteLoginResult.MIGRATED_TO_PREMIUM;
 		}
-		assert user.mcUuid().equals(computeOfflineUuid(user.username()))
+		assert user.mcUuid().equals(computeOfflineUuid(user.mcUsername()))
 				: "user is cracked";
 
 		Integer userId = fetchNullableIdFromUuid(context, user);
@@ -331,7 +331,7 @@ public final class AuthenticationCenter {
 		transaction.getProperty(DSLContext.class)
 				.update(AUTH_PASSWORDS)
 				.set(AUTH_PASSWORDS.WANTS_MIGRATION, true)
-				.where(AUTH_PASSWORDS.USERNAME.eq(user.username()))
+				.where(AUTH_PASSWORDS.USERNAME.eq(user.mcUsername()))
 				.execute();
 	}
 

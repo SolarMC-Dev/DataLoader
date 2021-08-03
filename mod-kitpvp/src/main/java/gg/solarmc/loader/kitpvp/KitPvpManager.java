@@ -153,6 +153,7 @@ public class KitPvpManager implements DataManager {
 	 * @return the kit if it was created, an empty optional if a kit by the desired name already exists
 	 */
 	public Optional<Kit> createKit(Transaction transaction, KitBuilder.Built kitBuilder) {
+		System.out.println("Creating kit " + kitBuilder);
 		DSLContext context = transaction.getProperty(DSLContext.class);
 
 		String name = kitBuilder.name();

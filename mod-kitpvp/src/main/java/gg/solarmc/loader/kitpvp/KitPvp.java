@@ -309,6 +309,7 @@ public abstract class KitPvp implements DataObject {
     public Optional<RemainingCooldown> attemptToUseKit(Transaction transaction, Kit kit) {
         Duration cooldown = kit.getCooldown();
         if (cooldown.isZero()) {
+            System.out.println("Kit has no cooldown");
             return Optional.empty();
         }
         DSLContext context = transaction.getProperty(DSLContext.class);
@@ -322,10 +323,15 @@ public abstract class KitPvp implements DataObject {
         if (lastUsed != null) {
             Duration timeSinceLastUsed = Duration.between(Instant.ofEpochSecond(lastUsed), now);
             Duration remainingCooldown = cooldown.minus(timeSinceLastUsed);
-            if (remainingCooldown.compareTo(Duration.ZERO) >= 0) {
+            int comparison = remainingCooldown.compareTo(Duration.ZERO);
+            System.out.println("Values are " + java.util.Map.of(
+                    "timeSinceLastUsed", timeSinceLastUsed, "remainingCooldown", remainingCooldown,
+                    "now", now, "comparison", comparison));
+            if (comparison >= 0) {
                 return Optional.of(new RemainingCooldown(remainingCooldown, now.plus(remainingCooldown)));
             }
         }
+        System.out.println("Updating cooldown");
         context.update(KITPVP_KITS_COOLDOWNS)
                 .set(KITPVP_KITS_COOLDOWNS.LAST_USED, now.getEpochSecond())
                 .where(KITPVP_KITS_COOLDOWNS.USER_ID.eq(userId))

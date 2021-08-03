@@ -100,5 +100,30 @@ public final class KitBuilder {
         public Duration cooldown() {
             return cooldown;
         }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Built built = (Built) o;
+            return name.equals(built.name) && contents.equals(built.contents) && cooldown.equals(built.cooldown);
+        }
+
+        @Override
+        public int hashCode() {
+            int result = name.hashCode();
+            result = 31 * result + contents.hashCode();
+            result = 31 * result + cooldown.hashCode();
+            return result;
+        }
+
+        @Override
+        public String toString() {
+            return "Built{" +
+                    "name='" + name + '\'' +
+                    ", contents=" + contents +
+                    ", cooldown=" + cooldown +
+                    '}';
+        }
     }
 }

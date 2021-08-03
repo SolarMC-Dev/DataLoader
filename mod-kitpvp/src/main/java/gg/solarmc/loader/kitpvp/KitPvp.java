@@ -24,6 +24,9 @@ import gg.solarmc.loader.data.DataObject;
 import gg.solarmc.loader.schema.routines.KitpvpAddKillstreak;
 import org.jooq.DSLContext;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Optional;
 import java.util.Set;
 
 import static gg.solarmc.loader.kitpvp.KitOwnership.ADDED_KIT;
@@ -36,6 +39,7 @@ import static gg.solarmc.loader.schema.Routines.kitpvpAddExperience;
 import static gg.solarmc.loader.schema.Routines.kitpvpAddKills;
 import static gg.solarmc.loader.schema.Routines.kitpvpResetBounty;
 import static gg.solarmc.loader.schema.Routines.kitpvpResetCurrentKillstreak;
+import static gg.solarmc.loader.schema.tables.KitpvpKitsCooldowns.KITPVP_KITS_COOLDOWNS;
 import static gg.solarmc.loader.schema.tables.KitpvpKitsOwnership.KITPVP_KITS_OWNERSHIP;
 import static gg.solarmc.loader.schema.tables.KitpvpStatistics.KITPVP_STATISTICS;
 
@@ -288,6 +292,46 @@ public abstract class KitPvp implements DataObject {
                 context.select(KITPVP_KITS_OWNERSHIP.KIT_ID).from(KITPVP_KITS_OWNERSHIP)
                 .where(KITPVP_KITS_OWNERSHIP.USER_ID.eq(this.userId))
                 .and(KITPVP_KITS_OWNERSHIP.KIT_ID.eq(kit.getId())));
+    }
+
+    /**
+     * Attempts to renew the kit cooldown on this kit. If the cooldown time on the kit
+     * has passed since the kit was last used, updates the time the kit was last used
+     * and returns an empty optional. Otherwise, returns the remaining cooldown. <br>
+     * <br>
+     * <b>Does not check kit ownership.</b> Use {@link #ownsKit(Transaction, Kit)} to do that
+     *
+     * @param transaction the transaction
+     * @param kit the kit in question
+     * @return an empty optional if the kit could be successfully used and the last used timestamp was updated,
+     * or the remaining cooldown if the user must wait more time before they are able to use the kit
+     */
+    public Optional<RemainingCooldown> attemptToUseKit(Transaction transaction, Kit kit) {
+        Duration cooldown = kit.getCooldown();
+        if (cooldown.isZero()) {
+            return Optional.empty();
+        }
+        DSLContext context = transaction.getProperty(DSLContext.class);
+        Long lastUsed = context
+                .select(KITPVP_KITS_COOLDOWNS.LAST_USED)
+                .from(KITPVP_KITS_COOLDOWNS)
+                .where(KITPVP_KITS_COOLDOWNS.USER_ID.eq(userId))
+                .and(KITPVP_KITS_COOLDOWNS.KIT_ID.eq(kit.getId()))
+                .fetchOne(KITPVP_KITS_COOLDOWNS.LAST_USED);
+        Instant now = manager.clock().instant();
+        if (lastUsed != null) {
+            Duration timeSinceLastUsed = Duration.between(Instant.ofEpochSecond(lastUsed), now);
+            Duration remainingCooldown = cooldown.minus(timeSinceLastUsed);
+            if (remainingCooldown.compareTo(Duration.ZERO) >= 0) {
+                return Optional.of(new RemainingCooldown(remainingCooldown, now.plus(remainingCooldown)));
+            }
+        }
+        context.update(KITPVP_KITS_COOLDOWNS)
+                .set(KITPVP_KITS_COOLDOWNS.LAST_USED, now.getEpochSecond())
+                .where(KITPVP_KITS_COOLDOWNS.USER_ID.eq(userId))
+                .and(KITPVP_KITS_COOLDOWNS.KIT_ID.eq(kit.getId()))
+                .execute();
+        return Optional.empty();
     }
 
 }

@@ -21,10 +21,11 @@
 
 package gg.solarmc.loader.kitpvp;
 
+import java.time.Duration;
 import java.util.Set;
 
 /**
- * Represents a kit and it's contents
+ * Represents a kit and its contents
  *
  */
 public class Kit {
@@ -32,11 +33,13 @@ public class Kit {
     private final int id;
     private final String name;
     private final Set<ItemInSlot> contents;
+    private final Duration cooldown;
 
-    Kit(int id, String name, Set<ItemInSlot> contents) {
+    Kit(int id, String name, Set<ItemInSlot> contents, Duration cooldown) {
         this.id = id;
         this.name = name;
         this.contents = contents;
+        this.cooldown = cooldown;
     }
 
     public int getId() {
@@ -49,6 +52,10 @@ public class Kit {
 
     public Set<ItemInSlot> getContents() {
         return this.contents;
+    }
+
+    public Duration getCooldown() {
+        return cooldown;
     }
 
     /**

@@ -246,13 +246,13 @@ public class KitPvpIT {
         assertEquals(Optional.empty(), dataCenterInfo.transact((tx) -> data.attemptToUseKit(tx, kit)));
         // Time is 1 August + 1 hour; cooldown not yet elapsed
         assertEquals(
-                Optional.of(new RemainingCooldown(Duration.ofSeconds(3600L), twoAugust)),
+                Optional.of(new RemainingCooldown(Duration.ofHours(23L), twoAugust)),
                 dataCenterInfo.transact((tx) -> data.attemptToUseKit(tx, kit)));
         // Time is 2 August and cooldown has elapsed
         assertEquals(Optional.empty(), dataCenterInfo.transact((tx) -> data.attemptToUseKit(tx, kit)));
         // Time is 2 August + 2 hours and cooldown has not yet elapsed
         assertEquals(
-                Optional.of(new RemainingCooldown(Duration.ofSeconds(7200L), threeAugust)),
+                Optional.of(new RemainingCooldown(Duration.ofHours(22L), threeAugust)),
                 dataCenterInfo.transact((tx) -> data.attemptToUseKit(tx, kit)));
     }
 }

@@ -188,6 +188,8 @@ public class ClanManager implements DataManager {
 
         Clan returned = new Clan(clanId, name, 0, 0, 0, this, view, ownerAsMember);
 
+        owner.updateCachedClan(returned);
+
         clans.put(returned.getClanId(),returned);
 
         return returned;

@@ -18,6 +18,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -39,6 +40,7 @@ public class ClanIT {
     private void addMemberAssertSuccess(Clan clan, OnlineSolarPlayer member) {
         boolean addedMember = dataCenterInfo.transact((tx) -> clan.addClanMember(tx, member));
         assertTrue(addedMember, "New member");
+        assertEquals(Optional.of(clan), member.getData(ClansKey.INSTANCE).currentClan(), "New member's cached membership");
     }
 
     private Clan createClan(OnlineSolarPlayer leader, String name) {
@@ -46,6 +48,7 @@ public class ClanIT {
         assertEquals(1, dataCenterInfo.transact(clan::getClanSize), "Clan size starts at 1");
         assertEquals(Set.of(clanMember(leader)), dataCenterInfo.transact(clan::getClanMembers),
                 "New clan's members should be only the leader");
+        assertEquals(Optional.of(clan), leader.getData(ClansKey.INSTANCE).currentClan(), "Leader's cached membership'");
         return clan;
     }
 
@@ -61,8 +64,12 @@ public class ClanIT {
         return new ClanMember(member.getUserId());
     }
 
-    private void assertMembers(Set<ClanMember> members, Clan clan) {
-        assertEquals(members.size(), dataCenterInfo.transact(clan::getClanSize), "Clan size");
+    private void assertMembers(Set<OnlineSolarPlayer> playerMembers, Clan clan) {
+        for (OnlineSolarPlayer member : playerMembers) {
+            assertEquals(Optional.of(clan), member.getData(ClansKey.INSTANCE).currentClan());
+        }
+        assertEquals(playerMembers.size(), dataCenterInfo.transact(clan::getClanSize), "Clan size");
+        Set<ClanMember> members = playerMembers.stream().map(this::clanMember).collect(Collectors.toUnmodifiableSet());
         assertEquals(members, clan.currentMembers());
         assertEquals(members, dataCenterInfo.transact(clan::getClanMembers), "Re-retrieved members");
         assertEquals(members, clan.currentMembers(), "Cached members updated incorrectly");
@@ -118,7 +125,7 @@ public class ClanIT {
         Clan clan = createClan(leader);
 
         addMemberAssertSuccess(clan, member);
-        assertMembers(Set.of(clanMember(leader), clanMember(member)), clan);
+        assertMembers(Set.of(leader, member), clan);
     }
 
     @Test
@@ -139,7 +146,7 @@ public class ClanIT {
 
         boolean addedLeader = dataCenterInfo.transact((tx) -> clan.addClanMember(tx, leader));
         assertFalse(addedLeader, "Leader is already a member");
-        assertMembers(Set.of(clanMember(leader)), clan);
+        assertMembers(Set.of(leader), clan);
     }
 
     @Test
@@ -153,7 +160,7 @@ public class ClanIT {
             return clan.removeClanMember(tx, member);
         });
         assertTrue(removedMember, "Should be able to remove member");
-        assertMembers(Set.of(clanMember(leader)), clan);
+        assertMembers(Set.of(leader), clan);
     }
 
     @Test

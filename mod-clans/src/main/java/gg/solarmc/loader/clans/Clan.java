@@ -59,6 +59,8 @@ public class Clan {
     private volatile int clanDeaths;
     private volatile int clanAssists;
 
+    private volatile boolean invalid;
+
     Clan(int clanId, String clanName, int clanKills, int clanDeaths, int clanAssists,
          ClanManager manager, Set<ClanMember> members, ClanMember leader) {
 
@@ -70,6 +72,19 @@ public class Clan {
         this.members = new AtomicReference<>(members);
         this.manager = manager;
         this.leader = leader;
+    }
+
+    /**
+     * If a clan is deleted, it can become invalid
+     *
+     * @return true if invalid
+     */
+    boolean isInvalid() {
+        return invalid;
+    }
+
+    void markInvalid() {
+        invalid = true;
     }
 
     /**
@@ -331,14 +346,14 @@ public class Clan {
         boolean added = transaction.getProperty(DSLContext.class)
                 .select(clansAddMember(clanId, receiver.getUserId()))
                 .fetchSingle().value1();
-        ClanMember memberAdded = new ClanMember(receiver.getUserId());
-        this.members.getAndUpdate((members) -> {
-            Set<ClanMember> newMembers = new HashSet<>(members);
-            newMembers.add(memberAdded);
-            return newMembers;
-        });
 
         if (added) {
+            ClanMember memberAdded = new ClanMember(receiver.getUserId());
+            this.members.getAndUpdate((members) -> {
+                Set<ClanMember> newMembers = new HashSet<>(members);
+                newMembers.add(memberAdded);
+                return newMembers;
+            });
             receiver.updateCachedClan(this);
         }
         return added;
@@ -357,25 +372,23 @@ public class Clan {
             throw new IllegalArgumentException("Tried to remove leader of clan!");
         }
 
-        int res = transaction.getProperty(DSLContext.class)
+        int updateCount = transaction.getProperty(DSLContext.class)
                 .deleteFrom(CLANS_CLAN_MEMBERSHIP)
                 .where(CLANS_CLAN_MEMBERSHIP.CLAN_ID.eq(this.clanId))
                 .and(CLANS_CLAN_MEMBERSHIP.USER_ID.eq(receiver.getUserId()))
                 .execute();
 
+        if (updateCount != 1)  {
+            return false;
+        }
         ClanMember memberRemoved = new ClanMember(receiver.getUserId());
         this.members.getAndUpdate((members) -> {
             Set<ClanMember> newMembers = new HashSet<>(members);
             newMembers.remove(memberRemoved);
             return newMembers;
         });
-
-        if (res != 1)  {
-            return false;
-        } else {
-            receiver.updateCachedClan(null);
-            return true;
-        }
+        receiver.updateCachedClan(null);
+        return true;
     }
 
     /**
@@ -558,8 +571,6 @@ public class Clan {
     public int hashCode() {
         return clanId;
     }
-
-
 }
 
 

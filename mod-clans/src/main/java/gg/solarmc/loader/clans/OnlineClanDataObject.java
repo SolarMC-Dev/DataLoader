@@ -26,10 +26,10 @@ import java.util.Optional;
 public class OnlineClanDataObject extends ClanDataObject {
 
     private volatile Clan cachedClan;
-    public OnlineClanDataObject(int userId, ClanManager manager, Clan cached) {
+
+    OnlineClanDataObject(int userId, ClanManager manager, Clan cached) {
         super(userId, manager);
         this.cachedClan = cached;
-
     }
 
     /**
@@ -37,6 +37,9 @@ public class OnlineClanDataObject extends ClanDataObject {
      * @return Optional containing cached value
      */
     public Optional<Clan> currentClan() {
+        if (cachedClan.isInvalid()) {
+            cachedClan = null;
+        }
         return Optional.ofNullable(cachedClan);
     }
 

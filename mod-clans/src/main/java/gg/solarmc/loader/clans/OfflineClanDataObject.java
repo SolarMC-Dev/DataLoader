@@ -23,7 +23,7 @@ package gg.solarmc.loader.clans;
 
 public class OfflineClanDataObject extends ClanDataObject {
 
-    public OfflineClanDataObject(int userId, ClanManager manager) {
+    OfflineClanDataObject(int userId, ClanManager manager) {
         super(userId, manager);
     }
 

@@ -26,15 +26,18 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import gg.solarmc.loader.SolarPlayer;
 import gg.solarmc.loader.Transaction;
 import gg.solarmc.loader.data.DataManager;
-import gg.solarmc.loader.schema.tables.records.ClansClanAlliancesRecord;
 import gg.solarmc.loader.schema.tables.records.ClansClanInfoRecord;
-import org.jooq.*;
+import org.jooq.DSLContext;
+import org.jooq.Record1;
+import org.jooq.Record3;
+import org.jooq.Result;
 
 import java.time.Duration;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
-import static gg.solarmc.loader.schema.tables.ClansClanAlliances.CLANS_CLAN_ALLIANCES;
 import static gg.solarmc.loader.schema.tables.ClansClanInfo.CLANS_CLAN_INFO;
 import static gg.solarmc.loader.schema.tables.ClansClanMembership.CLANS_CLAN_MEMBERSHIP;
 
@@ -178,21 +181,15 @@ public class ClanManager implements DataManager {
                 .columns(CLANS_CLAN_MEMBERSHIP.CLAN_ID, CLANS_CLAN_MEMBERSHIP.USER_ID)
                 .values(clanId, owner.getUserId())
                 .execute();
-
         assert updateCount == 1;
 
         ClanMember ownerAsMember = owner.asClanMember(transaction);
+        Clan created = new Clan(clanId, name, 0, 0, 0, this, Set.of(ownerAsMember), ownerAsMember);
 
-        ConcurrentHashMap.KeySetView<ClanMember,Boolean> view = ConcurrentHashMap.newKeySet();
-        view.add(ownerAsMember);
+        owner.updateCachedClan(created);
+        clans.put(created.getClanId(), created);
 
-        Clan returned = new Clan(clanId, name, 0, 0, 0, this, view, ownerAsMember);
-
-        owner.updateCachedClan(returned);
-
-        clans.put(returned.getClanId(),returned);
-
-        return returned;
+        return created;
     }
 
 
@@ -220,6 +217,7 @@ public class ClanManager implements DataManager {
         });
 
         clans.invalidate(clan.getClanId());
+        clan.markInvalid();
     }
 
     public record TopClanResult(int clanId, int statisticValue, String clanName) {}

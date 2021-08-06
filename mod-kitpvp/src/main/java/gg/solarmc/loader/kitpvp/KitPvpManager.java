@@ -31,16 +31,21 @@ import org.jooq.Field;
 import org.jooq.Record1;
 import org.jooq.Record2;
 import org.jooq.Record3;
+import org.jooq.RecordMapper;
 import org.jooq.impl.DSL;
 
+import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 import static gg.solarmc.loader.schema.Routines.kitpvpCreateKit;
 import static gg.solarmc.loader.schema.Tables.KITPVP_BOUNTY_LOGS;
 import static gg.solarmc.loader.schema.Tables.KITPVP_KITS_IDS;
+import static gg.solarmc.loader.schema.Tables.KITPVP_STATISTICS;
+import static gg.solarmc.loader.schema.Tables.LATEST_NAMES;
 import static gg.solarmc.loader.schema.tables.KitpvpKitsContents.KITPVP_KITS_CONTENTS;
 
 public class KitPvpManager implements DataManager {
@@ -245,6 +250,54 @@ public class KitPvpManager implements DataManager {
 		}
 		invalidateKit(kitIdRecord.value1(), kitName);
 		return true;
+	}
+
+	/**
+	 * Begins listing bounties. Gives the first page, from which it is possible
+	 * to navigate to further pages
+	 *
+	 * @param tx the transaction
+	 * @param countPerPage the amount of bounties on each page
+	 * @return the first page of bounties, or an empty optional if there are no pages
+	 * @throws IllegalArgumentException if {@code countPerPage} is not positive
+	 */
+	public Optional<BountyPage> listBounties(Transaction tx, int countPerPage) {
+		if (countPerPage <= 0) {
+			throw new IllegalArgumentException("Count per page must be positive");
+		}
+		return listBounties(tx, countPerPage, null);
+	}
+
+	Optional<BountyPage> listBounties(Transaction tx, int countPerPage, BigDecimal afterAmount) {
+		DSLContext context = tx.getProperty(DSLContext.class);
+		var step = context
+				.select(LATEST_NAMES.USERNAME, KITPVP_STATISTICS.BOUNTY)
+				.from(KITPVP_STATISTICS)
+				.innerJoin(LATEST_NAMES)
+				.on(KITPVP_STATISTICS.USER_ID.eq(LATEST_NAMES.USER_ID));
+		RecordMapper<Record2<String, BigDecimal>, Bounty> mapper =
+				(record) -> new Bounty(record.value1(), record.value2());
+		List<Bounty> bounties;
+		if (afterAmount == null) {
+			bounties = step.orderBy(KITPVP_STATISTICS.BOUNTY.desc()).limit(countPerPage).fetch(mapper);
+		} else {
+			bounties = step.where(KITPVP_STATISTICS.BOUNTY.lessThan(afterAmount))
+					.orderBy(KITPVP_STATISTICS.BOUNTY.desc()).limit(countPerPage).fetch(mapper);
+		}
+		if (bounties.isEmpty()) {
+			return Optional.empty();
+		}
+		return Optional.of(new BountyPage() {
+			@Override
+			public List<Bounty> itemsOnPage() {
+				return bounties;
+			}
+
+			@Override
+			public Optional<BountyPage> nextPage(Transaction tx) {
+				return listBounties(tx, countPerPage, bounties.get(bounties.size() - 1).amount());
+			}
+		});
 	}
 
 	/**

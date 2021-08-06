@@ -12,6 +12,7 @@ CREATE TABLE kitpvp_statistics (
   FOREIGN KEY (user_id) REFERENCES user_ids (id) ON DELETE CASCADE,
   INDEX kills_index (kills),
   INDEX highest_killstreak_index (highest_killstreak),
+  INDEX bounty_index (bounty),
   CONSTRAINT nonnegative_kills CHECK (kills >= 0),
   CONSTRAINT nonnegative_deaths CHECK (deaths >= 0),
   CONSTRAINT nonnegative_assists CHECK (assists >= 0),

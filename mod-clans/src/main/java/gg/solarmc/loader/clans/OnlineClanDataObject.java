@@ -37,7 +37,7 @@ public class OnlineClanDataObject extends ClanDataObject {
      * @return Optional containing cached value
      */
     public Optional<Clan> currentClan() {
-        if (cachedClan.isInvalid()) {
+        if (cachedClan != null && cachedClan.isInvalid()) {
             cachedClan = null;
         }
         return Optional.ofNullable(cachedClan);

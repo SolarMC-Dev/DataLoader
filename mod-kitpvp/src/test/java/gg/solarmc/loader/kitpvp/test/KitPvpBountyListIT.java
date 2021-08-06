@@ -24,6 +24,8 @@ import gg.solarmc.loader.impl.SolarDataConfig;
 import gg.solarmc.loader.impl.test.extension.DataCenterInfo;
 import gg.solarmc.loader.impl.test.extension.DatabaseExtension;
 import gg.solarmc.loader.kitpvp.Bounty;
+import gg.solarmc.loader.kitpvp.BountyAmount;
+import gg.solarmc.loader.kitpvp.BountyCurrency;
 import gg.solarmc.loader.kitpvp.BountyPage;
 import gg.solarmc.loader.kitpvp.ItemSerializer;
 import gg.solarmc.loader.kitpvp.KitPvpKey;
@@ -68,9 +70,15 @@ public class KitPvpBountyListIT {
         assertTrue(expected.compareTo(actual) == 0, "Expected " + expected + " but got " + actual);
     }
 
+    private void assertEqualDecimals(BigDecimal expected, BountyAmount actual) {
+        assertEqualDecimals(expected, actual.value());
+    }
+
     @Test
     public void noPages() {
-        assertEquals(Optional.empty(), dataCenterInfo.transact((tx) -> manager.listBounties(tx, 3)));
+        assertEquals(Optional.empty(), dataCenterInfo.transact((tx) -> {
+            return manager.listBounties(tx, BountyCurrency.CREDITS, 3);
+        }));
     }
 
     private void assertPageValues(BountyPage page, BigDecimal...values) {
@@ -87,12 +95,15 @@ public class KitPvpBountyListIT {
         dataCenterInfo.runTransact((tx) -> {
             for (int n = 0; n < 5; n++) {
                 OnlineSolarPlayer player = dataCenterInfo.loginNewRandomUser();
-                player.getData(KitPvpKey.INSTANCE).addBounty(tx, BigDecimal.TEN.multiply(BigDecimal.valueOf(n + 1)));
+                player.getData(KitPvpKey.INSTANCE).addBounty(tx,
+                        BountyCurrency.CREDITS.createAmount(BigDecimal.TEN.multiply(BigDecimal.valueOf(n + 1))));
             }
         });
         BountyPage pageOne;
         {
-            Optional<BountyPage> optPageOne = dataCenterInfo.transact((tx) -> manager.listBounties(tx, 2));
+            Optional<BountyPage> optPageOne = dataCenterInfo.transact((tx) -> {
+                return manager.listBounties(tx, BountyCurrency.CREDITS, 2);
+            });
             pageOne = assertDoesNotThrow((ThrowingSupplier<BountyPage>) optPageOne::orElseThrow, "Page 1");
             assertPageValues(pageOne, BigDecimal.valueOf(50), BigDecimal.valueOf(40));
         }

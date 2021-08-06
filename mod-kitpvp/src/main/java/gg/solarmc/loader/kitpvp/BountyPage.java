@@ -31,6 +31,14 @@ import java.util.Optional;
 public interface BountyPage {
 
     /**
+     * The bounty currency used by this page. The same currency will be used
+     * by the listed bounties and for all subsequent pages
+     *
+     * @return the bounty currency used by this page
+     */
+    BountyCurrency currency();
+
+    /**
      * Gets the bounties on this page. Will never be empty.
      *
      * @return the items on this page

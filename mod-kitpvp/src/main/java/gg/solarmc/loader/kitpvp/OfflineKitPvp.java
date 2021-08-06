@@ -60,7 +60,7 @@ class OfflineKitPvp extends KitPvp {
     }
 
     @Override
-    void updateBounty(BigDecimal bounty) {
+    void updateBounty(BountyCurrency currency, BigDecimal bounty) {
 
     }
 

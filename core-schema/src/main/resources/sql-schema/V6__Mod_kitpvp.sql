@@ -7,19 +7,16 @@ CREATE TABLE kitpvp_statistics (
   current_killstreak INT NOT NULL DEFAULT 0,
   highest_killstreak INT NOT NULL DEFAULT 0,
   experience INT NOT NULL DEFAULT 0,
-  bounty NUMERIC(15, 3) NOT NULL DEFAULT 0,
 
   FOREIGN KEY (user_id) REFERENCES user_ids (id) ON DELETE CASCADE,
   INDEX kills_index (kills),
   INDEX highest_killstreak_index (highest_killstreak),
-  INDEX bounty_index (bounty),
   CONSTRAINT nonnegative_kills CHECK (kills >= 0),
   CONSTRAINT nonnegative_deaths CHECK (deaths >= 0),
   CONSTRAINT nonnegative_assists CHECK (assists >= 0),
   CONSTRAINT nonnegative_current_killstreak CHECK (current_killstreak >= 0),
   CONSTRAINT nonnegative_highest_killstreak CHECK (highest_killstreak >= 0),
-  CONSTRAINT nonnegative_experience CHECK (experience >= 0),
-  CONSTRAINT nonnegative_bounty CHECK (bounty >= 0)
+  CONSTRAINT nonnegative_experience CHECK (experience >= 0)
 );
 
 CREATE TABLE kitpvp_kits_ids (
@@ -57,10 +54,24 @@ CREATE TABLE kitpvp_kits_contents (
   CONSTRAINT nonnegative_slot CHECK (slot >= 0)
 );
 
+CREATE TABLE kitpvp_bounties (
+  user_id INT NOT NULL,
+  bounty_amount NUMERIC(15, 3) NOT NULL DEFAULT 0,
+  bounty_currency TINYINT NOT NULL DEFAULT 0,
+
+  FOREIGN KEY (user_id) REFERENCES user_ids (id) ON DELETE CASCADE,
+  INDEX bounty_amount_index (bounty_amount),
+  PRIMARY KEY (user_id, bounty_currency),
+  CONSTRAINT nonnegative_bounty_amount CHECK (bounty_amount >= 0)
+);
+
 CREATE TABLE kitpvp_bounty_logs (
-  bounty_claim INT AUTO_INCREMENT PRIMARY KEY,
+  -- Unix seconds
+  time_claimed BIGINT NOT NULL,
   killer_id INT NOT NULL,
   victim_id INT NOT NULL,
+  bounty_amount NUMERIC(15, 3) NOT NULL,
+  bounty_currency TINYINT NOT NULL,
   FOREIGN KEY (killer_id) REFERENCES user_ids (id) ON DELETE CASCADE,
   FOREIGN KEY (victim_id) REFERENCES user_ids (id) ON DELETE CASCADE
 );
@@ -150,22 +161,25 @@ CREATE FUNCTION kitpvp_reset_current_killstreak
 
 CREATE FUNCTION kitpvp_add_bounty
   (user_identifier INT,
-  amount NUMERIC(15, 3))
+  amount NUMERIC(15, 3),
+  currency TINYINT)
   RETURNS NUMERIC(15, 3)
   MODIFIES SQL DATA
   BEGIN
-    UPDATE kitpvp_statistics SET bounty = bounty + amount WHERE user_id = user_identifier;
-    RETURN (SELECT bounty FROM kitpvp_statistics WHERE user_id = user_identifier);
+    INSERT INTO kitpvp_bounties (user_id, bounty_amount, bounty_currency) VALUES (user_identifier, amount, currency)
+      ON DUPLICATE KEY UPDATE bounty_amount = bounty_amount + amount;
+    RETURN (SELECT bounty_amount FROM kitpvp_bounties WHERE user_id = user_identifier AND bounty_currency = currency);
   END;
 
 CREATE FUNCTION kitpvp_reset_bounty
-  (user_identifier INT)
+  (user_identifier INT,
+  currency TINYINT)
   RETURNS NUMERIC(15, 3)
   MODIFIES SQL DATA
   BEGIN
-    DECLARE previous_bounty NUMERIC(15, 3);
+    DECLARE previous_amount NUMERIC(15, 3) DEFAULT 0;
 
-    SELECT bounty INTO previous_bounty FROM kitpvp_statistics WHERE user_id = user_identifier;
-    UPDATE kitpvp_statistics SET bounty = 0 WHERE user_id = user_identifier;
-    RETURN previous_bounty;
+    SELECT bounty_amount INTO previous_amount FROM kitpvp_bounties WHERE user_id = user_identifier AND bounty_currency = currency;
+    DELETE FROM kitpvp_bounties WHERE user_id = user_identifier AND bounty_currency = currency;
+    RETURN previous_amount;
   END;

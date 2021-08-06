@@ -40,9 +40,9 @@ import static gg.solarmc.loader.schema.Routines.kitpvpAddExperience;
 import static gg.solarmc.loader.schema.Routines.kitpvpAddKills;
 import static gg.solarmc.loader.schema.Routines.kitpvpResetBounty;
 import static gg.solarmc.loader.schema.Routines.kitpvpResetCurrentKillstreak;
+import static gg.solarmc.loader.schema.tables.KitpvpBounties.KITPVP_BOUNTIES;
 import static gg.solarmc.loader.schema.tables.KitpvpKitsCooldowns.KITPVP_KITS_COOLDOWNS;
 import static gg.solarmc.loader.schema.tables.KitpvpKitsOwnership.KITPVP_KITS_OWNERSHIP;
-import static gg.solarmc.loader.schema.tables.KitpvpStatistics.KITPVP_STATISTICS;
 
 public abstract class KitPvp implements DataObject {
 
@@ -61,7 +61,7 @@ public abstract class KitPvp implements DataObject {
     abstract void updateHighestKillstreak(int i);
     abstract void updateCurrentKillstreak(int i);
 
-    abstract void updateBounty(BigDecimal bounty);
+    abstract void updateBounty(BountyCurrency currency, BigDecimal bounty);
 
     /**
      * Adds kills to the user account. Infallible.
@@ -181,55 +181,61 @@ public abstract class KitPvp implements DataObject {
     }
 
     /**
-     * Gets the bounty
+     * Gets an existing bounty through the specified currency
+     *
      * @param transaction the transaction
-     * @return the current bounty
+     * @param currency the bounty currency
+     * @return the bounty for the currency
      */
-    public BigDecimal getBounty(Transaction transaction) {
+    public BountyAmount getBounty(Transaction transaction, BountyCurrency currency) {
         BigDecimal existingValue = transaction.getProperty(DSLContext.class)
-                .select(KITPVP_STATISTICS.BOUNTY)
-                .from(KITPVP_STATISTICS)
-                .where(KITPVP_STATISTICS.USER_ID.eq(userId))
+                .select(KITPVP_BOUNTIES.BOUNTY_AMOUNT)
+                .from(KITPVP_BOUNTIES)
+                .where(KITPVP_BOUNTIES.USER_ID.eq(userId))
+                .and(KITPVP_BOUNTIES.BOUNTY_CURRENCY.eq(currency.serialize()))
                 .fetchSingle().value1();
 
-        this.updateBounty(existingValue);
+        this.updateBounty(currency, existingValue);
 
-        return existingValue;
+        return currency.createAmount(existingValue);
     }
 
     /**
-     * Adds bounty currency to the player. Infallible.
+     * Adds a bounty to the player. Infallible.
      *
      * @param transaction the transaction
-     * @param amount amount to add
+     * @param amount amount to add, including the value and currency
      * @throws IllegalArgumentException if the amount is not positive
-     * @return the new bounty on the player
+     * @return the new bounty for the currency
      */
-    public BigDecimal addBounty(Transaction transaction, BigDecimal amount) {
-        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("Amount must be positive");
+    public BountyAmount addBounty(Transaction transaction, BountyAmount amount) {
+        BigDecimal rawValue = amount.value();
+        if (rawValue.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Amount value must be positive");
         }
+        BountyCurrency currency = amount.currency();
         BigDecimal newValue = transaction.getProperty(DSLContext.class)
-                .select(kitpvpAddBounty(userId, amount))
+                .select(kitpvpAddBounty(userId, rawValue, currency.serialize()))
                 .fetchSingle().value1();
 
-        this.updateBounty(newValue);
-        return newValue;
+        this.updateBounty(currency, newValue);
+        return currency.createAmount(newValue);
     }
 
     /**
-     * Resets the bounty. infallible.
+     * Resets the bounty and returns its former value
      *
      * @param transaction the transaction
-     * @return the previous bounty on the player
+     * @param currency the bounty currency
+     * @return the previous bounty on the player for the given currency
      */
-    public BigDecimal resetBounty(Transaction transaction) {
+    public BountyAmount resetBounty(Transaction transaction, BountyCurrency currency) {
         BigDecimal previousBounty = transaction.getProperty(DSLContext.class)
-                .select(kitpvpResetBounty(userId))
+                .select(kitpvpResetBounty(userId, currency.serialize()))
                 .fetchSingle().value1();
 
-        this.updateBounty(BigDecimal.ZERO);
-        return previousBounty;
+        this.updateBounty(currency, BigDecimal.ZERO);
+        return currency.createAmount(previousBounty);
     }
 
     /**
@@ -250,7 +256,7 @@ public abstract class KitPvp implements DataObject {
     }
 
     /**
-     * Remove an existing kit from player's kit list
+     * Remove an existing kit from the player's kit list
      * @param transaction represents the transaction
      * @param kit represents the kit to remove
      * @return whether the action was successful or not

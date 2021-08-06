@@ -31,7 +31,7 @@ import org.jooq.Field;
 import org.jooq.Record1;
 import org.jooq.Record2;
 import org.jooq.Record3;
-import org.jooq.RecordMapper;
+import org.jooq.SelectConditionStep;
 import org.jooq.impl.DSL;
 
 import java.math.BigDecimal;
@@ -42,11 +42,11 @@ import java.util.Optional;
 import java.util.Set;
 
 import static gg.solarmc.loader.schema.Routines.kitpvpCreateKit;
-import static gg.solarmc.loader.schema.Tables.KITPVP_BOUNTY_LOGS;
-import static gg.solarmc.loader.schema.Tables.KITPVP_KITS_IDS;
-import static gg.solarmc.loader.schema.Tables.KITPVP_STATISTICS;
-import static gg.solarmc.loader.schema.Tables.LATEST_NAMES;
+import static gg.solarmc.loader.schema.tables.KitpvpBounties.KITPVP_BOUNTIES;
+import static gg.solarmc.loader.schema.tables.KitpvpBountyLogs.KITPVP_BOUNTY_LOGS;
 import static gg.solarmc.loader.schema.tables.KitpvpKitsContents.KITPVP_KITS_CONTENTS;
+import static gg.solarmc.loader.schema.tables.KitpvpKitsIds.KITPVP_KITS_IDS;
+import static gg.solarmc.loader.schema.tables.LatestNames.LATEST_NAMES;
 
 public class KitPvpManager implements DataManager {
 
@@ -257,45 +257,52 @@ public class KitPvpManager implements DataManager {
 	 * to navigate to further pages
 	 *
 	 * @param tx the transaction
+	 * @param currency the currency in which to list bounties
 	 * @param countPerPage the amount of bounties on each page
 	 * @return the first page of bounties, or an empty optional if there are no pages
 	 * @throws IllegalArgumentException if {@code countPerPage} is not positive
 	 */
-	public Optional<BountyPage> listBounties(Transaction tx, int countPerPage) {
+	public Optional<BountyPage> listBounties(Transaction tx, BountyCurrency currency, int countPerPage) {
 		if (countPerPage <= 0) {
 			throw new IllegalArgumentException("Count per page must be positive");
 		}
-		return listBounties(tx, countPerPage, null);
+		return listBounties(tx, currency, countPerPage, null);
 	}
 
-	Optional<BountyPage> listBounties(Transaction tx, int countPerPage, BigDecimal afterAmount) {
+	Optional<BountyPage> listBounties(Transaction tx, BountyCurrency currency, int countPerPage, BigDecimal afterAmount) {
 		DSLContext context = tx.getProperty(DSLContext.class);
-		var step = context
-				.select(LATEST_NAMES.USERNAME, KITPVP_STATISTICS.BOUNTY)
-				.from(KITPVP_STATISTICS)
+		SelectConditionStep<Record2<String, BigDecimal>> step = context
+				.select(LATEST_NAMES.USERNAME, KITPVP_BOUNTIES.BOUNTY_AMOUNT)
+				.from(KITPVP_BOUNTIES)
 				.innerJoin(LATEST_NAMES)
-				.on(KITPVP_STATISTICS.USER_ID.eq(LATEST_NAMES.USER_ID));
-		RecordMapper<Record2<String, BigDecimal>, Bounty> mapper =
-				(record) -> new Bounty(record.value1(), record.value2());
-		List<Bounty> bounties;
-		if (afterAmount == null) {
-			bounties = step.orderBy(KITPVP_STATISTICS.BOUNTY.desc()).limit(countPerPage).fetch(mapper);
-		} else {
-			bounties = step.where(KITPVP_STATISTICS.BOUNTY.lessThan(afterAmount))
-					.orderBy(KITPVP_STATISTICS.BOUNTY.desc()).limit(countPerPage).fetch(mapper);
+				.on(KITPVP_BOUNTIES.USER_ID.eq(LATEST_NAMES.USER_ID))
+				.where(KITPVP_BOUNTIES.BOUNTY_CURRENCY.eq((byte) currency.ordinal()));
+		if (afterAmount != null) {
+			step = step.and(KITPVP_BOUNTIES.BOUNTY_AMOUNT.lessThan(afterAmount));
 		}
+		List<Bounty> bounties = step.orderBy(KITPVP_BOUNTIES.BOUNTY_AMOUNT.desc()).limit(countPerPage).fetch(
+				(record) -> new Bounty(record.value1(), new BountyAmount(currency, record.value2())));
 		if (bounties.isEmpty()) {
 			return Optional.empty();
 		}
 		return Optional.of(new BountyPage() {
 			@Override
+			public BountyCurrency currency() {
+				return lastAmount().currency();
+			}
+
+			@Override
 			public List<Bounty> itemsOnPage() {
 				return bounties;
 			}
 
+			private BountyAmount lastAmount() {
+				return bounties.get(bounties.size() - 1).amount();
+			}
+
 			@Override
 			public Optional<BountyPage> nextPage(Transaction tx) {
-				return listBounties(tx, countPerPage, bounties.get(bounties.size() - 1).amount());
+				return listBounties(tx, currency(), countPerPage, lastAmount().value());
 			}
 		});
 	}
@@ -305,11 +312,20 @@ public class KitPvpManager implements DataManager {
 	 * @param transaction transaction
 	 * @param killer the killer
 	 * @param victim the victim
+	 * @param amount the bounty amount
+	 * @throws IllegalArgumentException if the bounty amount is not positive
 	 */
-	public void logBounty(Transaction transaction, SolarPlayer killer, SolarPlayer victim) {
+	public void logBounty(Transaction transaction, SolarPlayer killer, SolarPlayer victim, BountyAmount amount) {
+		BigDecimal rawValue = amount.value();
+		if (rawValue.compareTo(BigDecimal.ZERO) <= 0) {
+			throw new IllegalArgumentException("Amount value must be positive");
+		}
 		transaction.getProperty(DSLContext.class)
-				.insertInto(KITPVP_BOUNTY_LOGS, KITPVP_BOUNTY_LOGS.KILLER_ID, KITPVP_BOUNTY_LOGS.VICTIM_ID)
-				.values(killer.getUserId(), victim.getUserId())
+				.insertInto(KITPVP_BOUNTY_LOGS)
+				.columns(KITPVP_BOUNTY_LOGS.TIME_CLAIMED, KITPVP_BOUNTY_LOGS.KILLER_ID, KITPVP_BOUNTY_LOGS.VICTIM_ID,
+						KITPVP_BOUNTY_LOGS.BOUNTY_AMOUNT, KITPVP_BOUNTY_LOGS.BOUNTY_CURRENCY)
+				.values(clock.instant().getEpochSecond(), killer.getUserId(), victim.getUserId(),
+						rawValue, amount.currency().serialize())
 				.execute();
 	}
 

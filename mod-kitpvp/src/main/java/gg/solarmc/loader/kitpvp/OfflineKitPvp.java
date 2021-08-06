@@ -21,6 +21,8 @@
 
 package gg.solarmc.loader.kitpvp;
 
+import java.math.BigDecimal;
+
 class OfflineKitPvp extends KitPvp {
 
     OfflineKitPvp(int userId, KitPvpManager manager) {
@@ -58,7 +60,7 @@ class OfflineKitPvp extends KitPvp {
     }
 
     @Override
-    void updateBounty(int i) {
+    void updateBounty(BigDecimal bounty) {
 
     }
 

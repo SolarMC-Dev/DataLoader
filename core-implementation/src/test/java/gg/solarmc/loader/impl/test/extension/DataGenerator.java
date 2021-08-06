@@ -2,6 +2,7 @@ package gg.solarmc.loader.impl.test.extension;
 
 import gg.solarmc.loader.impl.UserDetails;
 
+import java.math.BigDecimal;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.UUID;
@@ -74,6 +75,16 @@ public final class DataGenerator {
     public static int randomPositiveInteger() {
         // Use less than MAX_VALUE to allow for some further addition
         return ThreadLocalRandom.current().nextInt(0, Integer.MAX_VALUE / 4) + 1;
+    }
+
+    /**
+     * Gets a random big decimal
+     *
+     * @return the random big decimal
+     */
+    public static BigDecimal randomPositiveBigDecimal() {
+        // Use max of 1 million
+        return BigDecimal.valueOf(ThreadLocalRandom.current().nextDouble(0, 1000000) + 1);
     }
 
     /**

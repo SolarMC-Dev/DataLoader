@@ -7,7 +7,7 @@ CREATE TABLE kitpvp_statistics (
   current_killstreak INT NOT NULL DEFAULT 0,
   highest_killstreak INT NOT NULL DEFAULT 0,
   experience INT NOT NULL DEFAULT 0,
-  bounty INT NOT NULL DEFAULT 0,
+  bounty NUMERIC(15, 3) NOT NULL DEFAULT 0,
 
   FOREIGN KEY (user_id) REFERENCES user_ids (id) ON DELETE CASCADE,
   INDEX kills_index (kills),
@@ -149,8 +149,8 @@ CREATE FUNCTION kitpvp_reset_current_killstreak
 
 CREATE FUNCTION kitpvp_add_bounty
   (user_identifier INT,
-  amount INT)
-  RETURNS INT
+  amount NUMERIC(15, 3))
+  RETURNS NUMERIC(15, 3)
   MODIFIES SQL DATA
   BEGIN
     UPDATE kitpvp_statistics SET bounty = bounty + amount WHERE user_id = user_identifier;
@@ -159,10 +159,10 @@ CREATE FUNCTION kitpvp_add_bounty
 
 CREATE FUNCTION kitpvp_reset_bounty
   (user_identifier INT)
-  RETURNS INT
+  RETURNS NUMERIC(15, 3)
   MODIFIES SQL DATA
   BEGIN
-    DECLARE previous_bounty INT;
+    DECLARE previous_bounty NUMERIC(15, 3);
 
     SELECT bounty INTO previous_bounty FROM kitpvp_statistics WHERE user_id = user_identifier;
     UPDATE kitpvp_statistics SET bounty = 0 WHERE user_id = user_identifier;

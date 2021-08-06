@@ -21,6 +21,8 @@
 
 package gg.solarmc.loader.kitpvp;
 
+import java.math.BigDecimal;
+
 public class OnlineKitPvp extends KitPvp {
     private volatile int kills;
     private volatile int deaths;
@@ -28,9 +30,11 @@ public class OnlineKitPvp extends KitPvp {
     private volatile int experience;
     private volatile int currentKillstreaks;
     private volatile int highestKillstreaks;
-    private volatile int bounty;
+    private volatile BigDecimal bounty;
 
-    public OnlineKitPvp(int userID, KitPvpManager manager, int kills, int deaths, int assists, int experience, int currentKillstreaks, int highestKillstreaks, int bounty) {
+    public OnlineKitPvp(int userID, KitPvpManager manager,
+                        int kills, int deaths, int assists, int experience,
+                        int currentKillstreaks, int highestKillstreaks, BigDecimal bounty) {
         super(userID, manager);
         this.kills = kills;
         this.deaths = deaths;
@@ -72,8 +76,8 @@ public class OnlineKitPvp extends KitPvp {
     }
 
     @Override
-    void updateBounty(int i) {
-        this.bounty = i;
+    void updateBounty(BigDecimal bounty) {
+        this.bounty = bounty;
     }
 
     /**
@@ -113,10 +117,11 @@ public class OnlineKitPvp extends KitPvp {
     }
 
     /**
-     * The cached bounty value. Not reliable
+     * The cached bounty value. Should not be relied upon for correctness
+     *
      * @return the bounty
      */
-    public int currentBounty() {
+    public BigDecimal currentBounty() {
         return bounty;
     }
 }

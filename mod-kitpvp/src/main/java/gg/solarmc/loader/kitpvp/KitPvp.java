@@ -24,6 +24,7 @@ import gg.solarmc.loader.data.DataObject;
 import gg.solarmc.loader.schema.routines.KitpvpAddKillstreak;
 import org.jooq.DSLContext;
 
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
@@ -60,7 +61,7 @@ public abstract class KitPvp implements DataObject {
     abstract void updateHighestKillstreak(int i);
     abstract void updateCurrentKillstreak(int i);
 
-    abstract void updateBounty(int i);
+    abstract void updateBounty(BigDecimal bounty);
 
     /**
      * Adds kills to the user account. Infallible.
@@ -184,8 +185,8 @@ public abstract class KitPvp implements DataObject {
      * @param transaction the transaction
      * @return the current bounty
      */
-    public int getBounty(Transaction transaction) {
-        int existingValue = transaction.getProperty(DSLContext.class)
+    public BigDecimal getBounty(Transaction transaction) {
+        BigDecimal existingValue = transaction.getProperty(DSLContext.class)
                 .select(KITPVP_STATISTICS.BOUNTY)
                 .from(KITPVP_STATISTICS)
                 .where(KITPVP_STATISTICS.USER_ID.eq(userId))
@@ -201,14 +202,14 @@ public abstract class KitPvp implements DataObject {
      *
      * @param transaction the transaction
      * @param amount amount to add
-     * @throws IllegalArgumentException if the amount is negative
+     * @throws IllegalArgumentException if the amount is not positive
      * @return the new bounty on the player
      */
-    public int addBounty(Transaction transaction, int amount) {
-        if (amount <= 0) {
-            throw new IllegalArgumentException("Amount cannot be negative!");
+    public BigDecimal addBounty(Transaction transaction, BigDecimal amount) {
+        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Amount must be positive");
         }
-        int newValue = transaction.getProperty(DSLContext.class)
+        BigDecimal newValue = transaction.getProperty(DSLContext.class)
                 .select(kitpvpAddBounty(userId, amount))
                 .fetchSingle().value1();
 
@@ -222,12 +223,12 @@ public abstract class KitPvp implements DataObject {
      * @param transaction the transaction
      * @return the previous bounty on the player
      */
-    public int resetBounty(Transaction transaction) {
-        int previousBounty = transaction.getProperty(DSLContext.class)
+    public BigDecimal resetBounty(Transaction transaction) {
+        BigDecimal previousBounty = transaction.getProperty(DSLContext.class)
                 .select(kitpvpResetBounty(userId))
                 .fetchSingle().value1();
 
-        this.updateBounty(0);
+        this.updateBounty(BigDecimal.ZERO);
         return previousBounty;
     }
 

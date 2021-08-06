@@ -24,6 +24,7 @@ import gg.solarmc.loader.data.DataLoader;
 import gg.solarmc.loader.schema.tables.records.KitpvpStatisticsRecord;
 import org.jooq.DSLContext;
 
+import static gg.solarmc.loader.schema.tables.KitpvpBountyLogs.KITPVP_BOUNTY_LOGS;
 import static gg.solarmc.loader.schema.tables.KitpvpKitsContents.KITPVP_KITS_CONTENTS;
 import static gg.solarmc.loader.schema.tables.KitpvpKitsCooldowns.KITPVP_KITS_COOLDOWNS;
 import static gg.solarmc.loader.schema.tables.KitpvpKitsIds.KITPVP_KITS_IDS;
@@ -71,6 +72,7 @@ class KitPvpLoader implements DataLoader<OnlineKitPvp, KitPvp> {
         context.deleteFrom(KITPVP_KITS_OWNERSHIP).execute();
         context.deleteFrom(KITPVP_KITS_COOLDOWNS).execute();
         context.deleteFrom(KITPVP_KITS_CONTENTS).execute();
+        context.deleteFrom(KITPVP_BOUNTY_LOGS).execute();
     }
 
 }

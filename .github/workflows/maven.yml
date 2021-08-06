@@ -24,7 +24,7 @@ jobs:
       run: mvn clean -B -U verify
   deploy:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/0.5.2-maintenance'
     needs: build
     steps:
     - uses: actions/checkout@v2

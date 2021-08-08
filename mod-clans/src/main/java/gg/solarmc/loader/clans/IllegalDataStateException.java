@@ -17,28 +17,15 @@
  * and navigate to version 3 of the GNU Affero General Public License.
  */
 
-package gg.solarmc.loader.impl.launch;
+package gg.solarmc.loader.clans;
 
-import gg.solarmc.loader.Transaction;
-import gg.solarmc.loader.data.DataKey;
-import gg.solarmc.loader.data.DataLoader;
-import gg.solarmc.loader.data.DataManager;
-import gg.solarmc.loader.data.DataObject;
+final class IllegalDataStateException extends IllegalStateException {
 
-public record DataGroup<D extends O, O extends DataObject, M extends DataManager>(
-		DataKey<D, O, M> key, M manager, DataLoader<D, O> loader) {
+    IllegalDataStateException() {
 
-	public void refreshCacheUsing(Transaction transaction) {
-		manager.refreshCaches(transaction);
-	}
+    }
 
-	@Override
-	public boolean equals(Object obj) {
-		return this == obj;
-	}
-
-	@Override
-	public int hashCode() {
-		return System.identityHashCode(this);
-	}
+    IllegalDataStateException(String message) {
+        super(message);
+    }
 }

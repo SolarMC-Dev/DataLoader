@@ -42,15 +42,14 @@ public class ClanLoader implements DataLoader<OnlineClanDataObject,ClanDataObjec
 
     @Override
     public OnlineClanDataObject loadData(Transaction transaction, int userId) {
-
-        Optional<Clan> clan = manager.getClanByUser(transaction,userId);
+        Optional<Clan> clan = manager.getClanByUser(transaction, userId);
 
         return new OnlineClanDataObject(userId, manager, clan.orElse(null));
     }
 
     @Override
     public OfflineClanDataObject createOfflineData(int userId) {
-        return new OfflineClanDataObject(userId,manager);
+        return new OfflineClanDataObject(userId, manager);
     }
 
     @Override

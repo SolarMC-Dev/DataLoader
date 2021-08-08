@@ -19,15 +19,17 @@
  *
  */
 
-package gg.solarmc.loader.clans;import gg.solarmc.loader.data.DataKey;
+package gg.solarmc.loader.clans;
+
+import gg.solarmc.loader.data.DataKey;
 import gg.solarmc.loader.data.DataKeyInitializationContext;
 import gg.solarmc.loader.data.DataLoader;
 
-public class ClansKey implements DataKey<OnlineClanDataObject,ClanDataObject,ClanManager> {
+public final class ClansKey implements DataKey<OnlineClanDataObject, ClanDataObject, ClanManager> {
 
     public static final ClansKey INSTANCE = new ClansKey();
 
-    ClansKey() {} // private constr
+    private ClansKey() {}
 
     @Override
     public DataLoader<OnlineClanDataObject,ClanDataObject> createLoader(ClanManager dataManager, DataKeyInitializationContext context) {
@@ -36,6 +38,6 @@ public class ClansKey implements DataKey<OnlineClanDataObject,ClanDataObject,Cla
 
     @Override
     public ClanManager createDataManager(DataKeyInitializationContext context) {
-        return new ClanManager();
+        return new ClanManager(new Cache());
     }
 }

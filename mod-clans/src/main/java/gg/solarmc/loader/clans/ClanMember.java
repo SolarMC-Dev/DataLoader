@@ -21,6 +21,13 @@
 
 package gg.solarmc.loader.clans;
 
+import gg.solarmc.loader.Transaction;
+import org.jooq.DSLContext;
+
+import java.util.Set;
+
+import static gg.solarmc.loader.schema.tables.ClansClanMembership.CLANS_CLAN_MEMBERSHIP;
+
 /**
  * Represents something that can be in a clan. Always compare with #equals
  *
@@ -29,7 +36,7 @@ package gg.solarmc.loader.clans;
  *
  * @param userId the user ID of the member
  */
-public record ClanMember(int userId) { //wait since when was this a record :thinking:
+public record ClanMember(int userId) {
 
     /**
      * Gets the user ID of the clan member
@@ -49,6 +56,14 @@ public record ClanMember(int userId) { //wait since when was this a record :thin
      */
     public boolean isSimilar(ClanDataObject object) {
         return object.isSimilar(this);
+    }
+
+    static Set<ClanMember> fetchMembers(Transaction transaction, int clanId) {
+        return Set.copyOf(transaction.getProperty(DSLContext.class)
+                .select(CLANS_CLAN_MEMBERSHIP.USER_ID)
+                .from(CLANS_CLAN_MEMBERSHIP)
+                .where(CLANS_CLAN_MEMBERSHIP.CLAN_ID.eq(clanId))
+                .fetchSet((rec1) -> new ClanMember(rec1.value1())));
     }
 
 }

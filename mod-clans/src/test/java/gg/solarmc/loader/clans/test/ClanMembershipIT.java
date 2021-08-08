@@ -22,6 +22,7 @@ package gg.solarmc.loader.clans.test;
 import gg.solarmc.loader.OnlineSolarPlayer;
 import gg.solarmc.loader.clans.Clan;
 import gg.solarmc.loader.clans.ClanManager;
+import gg.solarmc.loader.clans.ClanMember;
 import gg.solarmc.loader.clans.ClansKey;
 import gg.solarmc.loader.impl.SolarDataConfig;
 import gg.solarmc.loader.impl.test.extension.DataCenterInfo;
@@ -32,12 +33,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Path;
-import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 @ExtendWith(DatabaseExtension.class)
-public class ClanManagerIT {
+public class ClanMembershipIT {
 
     private DataCenterInfo dataCenterInfo;
     private ClanManager clanManager;
@@ -48,28 +50,37 @@ public class ClanManagerIT {
         clanManager = dataCenterInfo.dataCenter().getDataManager(ClansKey.INSTANCE);
     }
 
-    @Test
-    public void deleteClan() {
-        OnlineSolarPlayer leader = dataCenterInfo.loginNewRandomUser();
-        Clan clan = dataCenterInfo.transact((tx) -> clanManager.createClan(tx, "MyClan", leader));
-        assertEquals(Optional.of(clan), leader.getData(ClansKey.INSTANCE).currentClan());
-        dataCenterInfo.runTransact((tx) -> clanManager.deleteClan(tx, clan));
-        assertEquals(Optional.empty(), leader.getData(ClansKey.INSTANCE).currentClan());
+    private ClanMember clanMember(OnlineSolarPlayer user) {
+        return new ClanMember(user.getUserId());
     }
 
     @Test
-    public void deleteClanWithAlly() {
+    public void cachedMembers() {
         OnlineSolarPlayer leader = dataCenterInfo.loginNewRandomUser();
-        OnlineSolarPlayer allyLeader = dataCenterInfo.loginNewRandomUser();
-        Clan ally = dataCenterInfo.transact((tx) -> {
-            Clan createdClan = clanManager.createClan(tx, "MyClan", leader);
-            Clan createdAlly = clanManager.createClan(tx, "AllyClan", allyLeader);
-            clanManager.deleteClan(tx, createdClan);
-            return createdAlly;
+        OnlineSolarPlayer member = dataCenterInfo.loginNewRandomUser();
+        Clan clan = dataCenterInfo.transact((tx) -> clanManager.createClan(tx, "Clan", leader));
+        assertEquals(Set.of(clanMember(leader)), clan.currentMembers());
+        dataCenterInfo.runTransact((tx) -> clan.addClanMember(tx, member));
+        assertEquals(Set.of(clanMember(leader), clanMember(member)), clan.currentMembers());
+        assertSame(clan, leader.getData(ClansKey.INSTANCE).currentClan().orElse(null));
+        assertSame(clan, member.getData(ClansKey.INSTANCE).currentClan().orElse(null));
+    }
+
+    @Test
+    public void reloadClanOnLogin() {
+        OnlineSolarPlayer leader = dataCenterInfo.loginNewRandomUser();
+        OnlineSolarPlayer member = dataCenterInfo.loginNewRandomUser();
+        Clan clan = dataCenterInfo.transact((tx) -> {
+            Clan created = clanManager.createClan(tx, "Clan", leader);
+            created.addClanMember(tx, member);
+            return created;
         });
-        assertEquals(Optional.empty(), ally.currentAllyClan());
-        dataCenterInfo.runTransact(clanManager::refreshCaches);
-        assertEquals(Optional.empty(), ally.currentAllyClan(), "After cache refresh");
-    }
 
+        OnlineSolarPlayer reloggedMember = dataCenterInfo.reloginUser(member);
+        Clan recreatedClan = reloggedMember.getData(ClansKey.INSTANCE).currentClan().orElseThrow(AssertionError::new);
+        OnlineSolarPlayer anotherMember = dataCenterInfo.loginNewRandomUser();
+        dataCenterInfo.runTransact((tx) -> clan.addClanMember(tx, anotherMember));
+
+        assertEquals(clan.currentMembers(), recreatedClan.currentMembers());
+    }
 }

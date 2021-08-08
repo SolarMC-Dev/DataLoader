@@ -19,6 +19,8 @@
 
 package gg.solarmc.loader.data;
 
+import gg.solarmc.loader.Transaction;
+
 /**
  * Marker interface for data managers. A data manager is not associated with any
  * specific player. One such data manager exists for its data key. <br>
@@ -27,6 +29,27 @@ package gg.solarmc.loader.data;
  * data manager might provide a method to find the top balances.
  */
 public interface DataManager extends AutoCloseable {
+
+	/**
+	 * Refreshes cached in-memory data. <br>
+	 * <br>
+	 * The exact behavior of this method depends on the implementing data manager.
+	 * No cached data is guaranteed be refreshed unless specifically documented.
+	 *
+	 * @param transaction a transaction with which to refresh
+	 * @implSpec The default implementation does nothing
+	 */
+	default void refreshCaches(Transaction transaction) { }
+
+	/**
+	 * Clears cached in-memory data. This is primarily intended for testing purposes. <br>
+	 * <br>
+	 * The exact behavior of this method depends on the implementing data manager.
+	 * No cached data is guaranteed be cleared unless specifically documented.
+	 *
+	 * @implSpec The default implementation does nothing
+	 */
+	default void clearCaches() { }
 
 	@Override
 	default void close() throws Exception { }

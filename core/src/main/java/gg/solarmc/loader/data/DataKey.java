@@ -28,8 +28,21 @@ package gg.solarmc.loader.data;
  */
 public interface DataKey<D extends O, O extends DataObject, M extends DataManager> {
 
+	/**
+	 * Creates the data loader for this key
+	 *
+	 * @param dataManager the data meneger
+	 * @param context the initialization context
+	 * @return the data loader for this key
+	 */
 	DataLoader<D, O> createLoader(M dataManager, DataKeyInitializationContext context);
 
+	/**
+	 * Creates the data manager
+	 *
+	 * @param context the initialization context
+	 * @return the data manager
+	 */
 	M createDataManager(DataKeyInitializationContext context);
 
 }

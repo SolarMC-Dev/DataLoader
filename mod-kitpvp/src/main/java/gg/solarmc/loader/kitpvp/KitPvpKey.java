@@ -31,7 +31,7 @@ public class KitPvpKey implements DataKey<OnlineKitPvp, KitPvp, KitPvpManager> {
 
     public static final KitPvpKey INSTANCE = new KitPvpKey();
 
-    KitPvpKey() {}
+    private KitPvpKey() {}
 
     @Override
     public DataLoader<OnlineKitPvp,KitPvp> createLoader(KitPvpManager dataManager, DataKeyInitializationContext context) {

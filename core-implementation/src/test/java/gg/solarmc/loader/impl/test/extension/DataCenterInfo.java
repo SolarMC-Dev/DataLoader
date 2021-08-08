@@ -60,6 +60,16 @@ public record DataCenterInfo(FactoryOfTheFuture futuresFactory, Icarus icarus,
     }
 
     /**
+     * Relogs the given user, simulating a rejoin
+     *
+     * @param user the user
+     * @return the relogged user
+     */
+    public OnlineSolarPlayer reloginUser(OnlineSolarPlayer user) {
+        return loginUser(new UserDetails(user.getMcUuid(), user.getMcUsername(), DataGenerator.randomAddress()));
+    }
+
+    /**
      * Shortcut for {@link DataCenter#transact(DataCenter.TransactionActor)}
      *
      * @param actor the transaction actor

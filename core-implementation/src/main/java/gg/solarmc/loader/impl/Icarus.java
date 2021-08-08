@@ -19,8 +19,12 @@
 
 package gg.solarmc.loader.impl;
 
+import gg.solarmc.loader.Transaction;
+import gg.solarmc.loader.data.DataKey;
+import gg.solarmc.loader.data.DataManager;
 import gg.solarmc.loader.impl.launch.DataGroup;
 import gg.solarmc.loader.impl.login.LoginHandlerBuilderImpl;
+import space.arim.omnibus.util.concurrent.CentralisedFuture;
 
 import java.util.Set;
 
@@ -35,7 +39,7 @@ public class Icarus implements AutoCloseable {
 		   Set<DataGroup<?, ?, ?>> groups, DataCenterLifecycle lifecycle) {
 		this.transactionSource = transactionSource;
 		this.dataManagement = dataManagement;
-		this.groups = groups;
+		this.groups = Set.copyOf(groups);
 		this.lifecycle = lifecycle;
 	}
 
@@ -45,6 +49,19 @@ public class Icarus implements AutoCloseable {
 
 	public DataManagementCenter dataManagement() {
 		return dataManagement;
+	}
+
+	/**
+	 * Refreshes caches per {@link DataManager#refreshCaches(Transaction)}
+	 *
+	 * @return a future completed once cache refresh is finished
+	 */
+	public CentralisedFuture<?> refreshCaches() {
+		return transactionSource().runTransact((tx) -> {
+			for (DataGroup<?, ?, ?> group : groups) {
+				group.refreshCacheUsing(tx);
+			}
+		});
 	}
 
 	/**

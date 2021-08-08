@@ -17,28 +17,22 @@
  * and navigate to version 3 of the GNU Affero General Public License.
  */
 
-package gg.solarmc.loader.impl.launch;
+package gg.solarmc.loader.clans.test;
 
-import gg.solarmc.loader.Transaction;
-import gg.solarmc.loader.data.DataKey;
-import gg.solarmc.loader.data.DataLoader;
-import gg.solarmc.loader.data.DataManager;
-import gg.solarmc.loader.data.DataObject;
+import gg.solarmc.loader.clans.ClansKey;
+import gg.solarmc.loader.data.DataKeyInitializationContext;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-public record DataGroup<D extends O, O extends DataObject, M extends DataManager>(
-		DataKey<D, O, M> key, M manager, DataLoader<D, O> loader) {
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
-	public void refreshCacheUsing(Transaction transaction) {
-		manager.refreshCaches(transaction);
-	}
+@ExtendWith(MockitoExtension.class)
+public class ClanManagerTest {
 
-	@Override
-	public boolean equals(Object obj) {
-		return this == obj;
-	}
-
-	@Override
-	public int hashCode() {
-		return System.identityHashCode(this);
-	}
+    @Test
+    public void initialize(@Mock DataKeyInitializationContext context) {
+        assertDoesNotThrow(() -> ClansKey.INSTANCE.createDataManager(context));
+    }
 }

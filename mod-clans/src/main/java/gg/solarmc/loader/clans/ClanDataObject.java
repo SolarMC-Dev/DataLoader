@@ -24,6 +24,7 @@ package gg.solarmc.loader.clans;
 import gg.solarmc.loader.Transaction;
 import gg.solarmc.loader.data.DataObject;
 import gg.solarmc.loader.schema.tables.records.ClansClanMembershipRecord;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.jooq.DSLContext;
 
 import java.util.Optional;
@@ -43,8 +44,7 @@ public abstract class ClanDataObject implements DataObject {
     private final int userId;
     private final ClanManager manager;
 
-
-    public ClanDataObject(int userId, ClanManager manager) {
+    ClanDataObject(int userId, ClanManager manager) {
         this.userId = userId;
         this.manager = manager;
     }
@@ -53,7 +53,11 @@ public abstract class ClanDataObject implements DataObject {
         return userId;
     }
 
-    abstract void updateCachedClan(Clan clan);
+    ClanManager manager() {
+        return manager;
+    }
+
+    abstract void updateCachedClan(@Nullable Clan clan);
 
     /**
      * Gets current clan the object belongs to accurately
@@ -61,8 +65,6 @@ public abstract class ClanDataObject implements DataObject {
      * @return Optional containing clan player belongs to
      */
     public Optional<Clan> getClan(Transaction transaction) {
-
-
         Optional<Clan> clan = manager.getClanByUser(transaction, userId);
 
         clan.ifPresentOrElse(this::updateCachedClan, () -> updateCachedClan(null));
@@ -71,11 +73,13 @@ public abstract class ClanDataObject implements DataObject {
     }
 
     /**
-     * Gets a gg.solarmc.loader.clans.ClanMember object from this object.
+     * Gets a ClanMember object from this data object. <br>
+     * <br>
      * Note to Aurium from Aurium - Since clanmember should always be accurate to the gg.solarmc.loader.clans.Clan, you cannot get
      * one of these from cached information. Come back to this later if you have more memory loss :)
+     *
      * @param transaction the tx
-     * @return gg.solarmc.loader.clans.ClanMember from table.
+     * @return a clan member
      */
     public ClanMember asClanMember(Transaction transaction) {
         return new ClanMember(userId);

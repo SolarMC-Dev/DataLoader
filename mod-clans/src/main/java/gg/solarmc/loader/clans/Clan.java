@@ -21,12 +21,12 @@
 
 package gg.solarmc.loader.clans;
 
-
 import gg.solarmc.loader.SolarPlayer;
 import gg.solarmc.loader.Transaction;
 import gg.solarmc.loader.schema.tables.records.ClansClanInfoRecord;
 import org.jooq.DSLContext;
 import org.jooq.Record1;
+import org.jooq.Record2;
 import org.jooq.Result;
 
 import java.util.HashSet;
@@ -59,32 +59,21 @@ public class Clan {
     private volatile int clanDeaths;
     private volatile int clanAssists;
 
-    private volatile boolean invalid;
-
-    Clan(int clanId, String clanName, int clanKills, int clanDeaths, int clanAssists,
-         ClanManager manager, Set<ClanMember> members, ClanMember leader) {
+    Clan(ClanManager manager, int clanId,
+         String clanName, ClanMember leader,
+         int clanKills, int clanDeaths, int clanAssists,
+         Set<ClanMember> members) {
 
         this.clanId = clanId;
         this.clanName = clanName;
+        this.leader = leader;
+
         this.clanKills = clanKills;
         this.clanDeaths = clanDeaths;
         this.clanAssists = clanAssists;
+
         this.members = new AtomicReference<>(members);
         this.manager = manager;
-        this.leader = leader;
-    }
-
-    /**
-     * If a clan is deleted, it can become invalid
-     *
-     * @return true if invalid
-     */
-    boolean isInvalid() {
-        return invalid;
-    }
-
-    void markInvalid() {
-        invalid = true;
     }
 
     /**
@@ -153,23 +142,23 @@ public class Clan {
     }
 
     /**
-     * Returns an optional representing allied clan IF it is present in the local cache.
-     * Warning: Does not check the database for clan presensce, only the local cache.
+     * Gets the current allied clan. Should not be relied upon for correctness
+     * purposes.
      *
-     * This operation is not likely to be accurate and as a result it is better to use
-     * method getAlliedClan() for operations requiring accuracy.
-     *
-     * @return Optional containing allied can if present locally. The optional can be empty if the clan
-     * is not present locally, or if the clan present locally has no ally.
+     * @return the alllied clan if there is one
      */
     public Optional<Clan> currentAllyClan() {
-       Optional<Integer> s = manager.getAllyFromCache(this.getClanId());
+        return manager.cache().getCachedAlly(this);
+    }
 
-       if (s.isEmpty()) {
-           return Optional.empty();
-       }
-
-       return manager.getCachedClanOnly(s.orElseThrow());
+    /**
+     * Gets the current enemy clans. Should not be relied upon for correctness
+     * purposes.
+     *
+     * @return the clans which are marked as enemies of this one
+     */
+    public Set<Clan> currentEnemyClans() {
+        return manager.cache().getCachedEnemies(this);
     }
 
     /**
@@ -179,12 +168,15 @@ public class Clan {
      * @throws IllegalStateException if this clan is not present in database
      */
     public String getClanName(Transaction transaction) {
-        var returned =  transaction.getProperty(DSLContext.class).select(CLANS_CLAN_INFO.CLAN_NAME)
+        var returned =  transaction.getProperty(DSLContext.class)
+                .select(CLANS_CLAN_INFO.CLAN_NAME)
                 .from(CLANS_CLAN_INFO)
                 .where(CLANS_CLAN_INFO.CLAN_ID.eq(this.clanId))
                 .fetchOne();
 
-        if (returned == null) throw new IllegalStateException("Clan name not present in database! Data violation!");
+        if (returned == null) {
+            throw new IllegalStateException("Clan name not present in database! Data violation!");
+        }
 
         this.clanName = returned.value1();
 
@@ -196,20 +188,19 @@ public class Clan {
      * @param transaction the tx
      * @return optional holding currently allied clan
      */
-    public Optional<Clan> getAlliedClan(Transaction transaction) {
-        Record1<Integer> rec1 = transaction.getProperty(DSLContext.class)
+    public Optional<Clan> getAllyClan(Transaction transaction) {
+        Record1<Integer> record = transaction.getProperty(DSLContext.class)
                 .select(CLANS_CLAN_ALLIANCES.ALLY_ID)
                 .from(CLANS_CLAN_ALLIANCES)
                 .where(CLANS_CLAN_ALLIANCES.CLAN_ID.eq(this.clanId))
                 .fetchOne();
 
-        if (rec1 == null) {
+        if (record == null) {
             return Optional.empty();
         }
-
-        manager.insertAllianceCache(this.clanId, rec1.value1());
-
-        return manager.getClanById(transaction, rec1.value1());
+        int allyId = record.value1();
+        manager.cache().linkAlliance(this, allyId);
+        return manager.getClanById(transaction, allyId);
     }
 
     /**
@@ -304,11 +295,7 @@ public class Clan {
      */
     public Set<ClanMember> getClanMembers(Transaction transaction) {
         Set<ClanMember> oldMembers = this.members.get();
-        Set<ClanMember> newMembers = Set.copyOf(transaction.getProperty(DSLContext.class)
-                .select(CLANS_CLAN_MEMBERSHIP.USER_ID)
-                .from(CLANS_CLAN_MEMBERSHIP)
-                .where(CLANS_CLAN_MEMBERSHIP.CLAN_ID.eq(this.clanId))
-                .fetchSet((rec) -> new ClanMember(rec.value1())));
+        Set<ClanMember> newMembers = ClanMember.fetchMembers(transaction, clanId);
         // If unsuccessful, the old members are more likely accurate and will be used
         boolean cas = this.members.compareAndSet(oldMembers, newMembers);
         return Set.copyOf((cas) ? newMembers : oldMembers);
@@ -400,67 +387,83 @@ public class Clan {
      * @return true if added, false if clans are already allied or already have separate allies in the table.
      */
     public boolean addClanAsAlly(Transaction transaction, Clan receiver) {
-        if (receiver.getClanId() == this.clanId) throw new IllegalArgumentException("Tried to mark clan ally as this clan!");
+        int allyId = receiver.getClanId();
+        if (allyId == this.clanId) throw new IllegalArgumentException("Tried to mark clan ally as this clan!");
 
         //note to aurium - these are now okay to do becaue we run the checks previous
         byte addStatus = transaction.getProperty(DSLContext.class)
-                .select(clansAddAlly(clanId, receiver.getClanId()))
+                .select(clansAddAlly(clanId, allyId))
                 .fetchSingle().value1();
-        boolean result = switch (addStatus) {
-            case 0 -> true;
+        return switch (addStatus) {
+            case 0 -> {
+                manager.cache().linkAlliance(this, allyId);
+                yield true;
+            }
             case 1 -> false;
             case 2 -> throw new IllegalArgumentException("Tried to add enemy clan as ally");
             default -> throw new IllegalStateException("Unknown status");
         };
-        manager.insertAllianceCache(this.getClanId(), receiver.getClanId());
-        return result;
     }
 
     /**
      * Revokes ally. Can be called from either clan. Revokes alliance for both.
-     * @param transaction the tx
-     * @return true if revoked, false if one of the clans or both of the clans has no ally
+     *
+     * @param transaction the transaction
+     * @return true if revoked, false if the clans are not allied
      */
     public boolean revokeAlly(Transaction transaction) {
-        Optional<Clan> localClan = this.currentAllyClan();
-
-        if (localClan.isEmpty()) return false;
-
-        //haha, it turns out you were right - we would need to use returningResult here, just
-        //not for what i thought we would @A248
-        Result<Record1<Integer>> res = transaction.getProperty(DSLContext.class)
+        Result<Record2<Integer, Integer>> deletions = transaction.getProperty(DSLContext.class)
                 .deleteFrom(CLANS_CLAN_ALLIANCES)
                 .where(CLANS_CLAN_ALLIANCES.CLAN_ID.eq(this.clanId))
                 .or(CLANS_CLAN_ALLIANCES.ALLY_ID.eq(this.clanId))
-                .returningResult(CLANS_CLAN_ALLIANCES.CLAN_ID).fetch();
-
-        if (res.size() != 2) {
+                .returningResult(CLANS_CLAN_ALLIANCES.CLAN_ID, CLANS_CLAN_ALLIANCES.ALLY_ID)
+                .fetch();
+        if (deletions.size() == 0) {
             return false;
-        } else {
-
-            manager.invalidateAllianceCache(this.clanId);
-
-            return true;
         }
+        // Determine the ally ID from the RETURNING result set
+        Integer otherClanId = null;
+        for (Record2<Integer, Integer> deletedRow : deletions) {
+            int clanId = deletedRow.value1();
+            if (clanId != this.clanId) {
+                otherClanId = clanId;
+                break;
+            }
+            int allyId = deletedRow.value2();
+            if (allyId != this.clanId) {
+                otherClanId = allyId;
+                break;
+            }
+        }
+        if (otherClanId == null) {
+            throw new IllegalStateException("Could not determine ID of removed ally");
+        }
+        manager.cache().revokeAlliance(this, otherClanId);
+        return true;
     }
 
     /**
      * Marks clan as an enemy of this one
      *
      * @param transaction the transaction
-     * @param receiver the clan to mark as an enemy.
+     * @param enemy the clan to mark as an enemy.
      * @return true if the enemy was added, false if the given clan is already an enemy of this one
      * @throws IllegalArgumentException if the specified clan is an ally of this clan
      */
-    public boolean addClanAsEnemy(Transaction transaction, Clan receiver) {
-        if (receiver.getClanId() == this.clanId) throw new IllegalArgumentException("Tried to mark clan enemy as same clan!");
+    public boolean addClanAsEnemy(Transaction transaction, Clan enemy) {
+        if (enemy.getClanId() == this.clanId) {
+            throw new IllegalArgumentException("Tried to mark clan enemy as same clan!");
+        }
 
         byte addStatus = transaction.getProperty(DSLContext.class)
-                .select(clansAddEnemy(clanId, receiver.getClanId()))
+                .select(clansAddEnemy(clanId, enemy.getClanId()))
                 .fetchSingle().value1();
 
         return switch (addStatus) {
-        case 0 -> true;
+        case 0 -> {
+            manager.cache().createEnemy(this, enemy);
+            yield true;
+        }
         case 1 -> false;
         case 2 -> throw new IllegalArgumentException("Tried to add allied clan as enemy");
         default -> throw new IllegalStateException("Unknown status");
@@ -471,44 +474,46 @@ public class Clan {
      * Marks clan enemy as no longer an enemy
      *
      * @param transaction the tx
-     * @param clan clan provided
+     * @param enemy the enemy clan
      * @throws IllegalArgumentException if passed self
      * @return true if removed, false if the given clan is not an enemy of this one
      */
-    public boolean removeClanAsEnemy(Transaction transaction, Clan clan) {
-        if (clan.getClanId() == this.clanId) throw new IllegalArgumentException("Tried to unmark self as enemy??");
+    public boolean removeClanAsEnemy(Transaction transaction, Clan enemy) {
+        if (enemy.getClanId() == this.clanId) {
+            throw new IllegalArgumentException("Tried to unmark self as enemy??");
+        }
 
         int updateCount = transaction.getProperty(DSLContext.class)
                 .deleteFrom(CLANS_CLAN_ENEMIES)
                 .where(CLANS_CLAN_ENEMIES.CLAN_ID.eq(this.clanId))
-                .and(CLANS_CLAN_ENEMIES.ENEMY_ID.eq(clan.getClanId()))
+                .and(CLANS_CLAN_ENEMIES.ENEMY_ID.eq(enemy.getClanId()))
                 .execute();
-        return updateCount == 1;
+        boolean removed = updateCount == 1;
+        if (removed) {
+            manager.cache().removeEnemy(this, enemy);
+        }
+        return removed;
     }
 
     /**
-     * Gets all clans enemies with this current clan
+     * Gets all the enemies of this clan
+     *
      * @param transaction the tx
      * @return All clans this clan has currently marked as enemies
      */
     public Set<Clan> getEnemyClans(Transaction transaction) {
-        var result = transaction.getProperty(DSLContext.class)
+        Set<Integer> enemyIds = Set.copyOf(transaction.getProperty(DSLContext.class)
                 .select(CLANS_CLAN_ENEMIES.ENEMY_ID)
                 .from(CLANS_CLAN_ENEMIES)
                 .where(CLANS_CLAN_ENEMIES.CLAN_ID.eq(this.clanId))
-                .fetch();
-
-        Set<Clan> clans = new HashSet<>();
-
-        result.forEach(res -> {
-            Optional<Clan> op = manager.getClanById(transaction, res.get(CLANS_CLAN_ENEMIES.ENEMY_ID));
-
-            op.ifPresent(clans::add);
-        });
-
-        return clans;
+                .fetchSet(Record1::value1));
+        Set<Clan> enemies = new HashSet<>(enemyIds.size());
+        for (int enemyId : enemyIds) {
+            enemies.add(manager.getClanById(transaction, enemyId).orElseThrow(IllegalDataStateException::new));
+        }
+        manager.cache().linkAllEnemies(this, enemyIds);
+        return enemies;
     }
-
 
     /**
      * Sets the owner of the clan to the user provided
@@ -528,16 +533,18 @@ public class Clan {
                 .where(CLANS_CLAN_MEMBERSHIP.USER_ID.eq(user.getUserId()))
                 .fetchOne();
 
-        if (alreadyMember == null) throw new IllegalStateException("User is not a member of any clan!");
-        if (!alreadyMember.value1().equals(this.clanId)) throw new IllegalStateException("User is not member of this clan!");
+        if (alreadyMember == null) {
+            throw new IllegalStateException("User is not a member of any clan!");
+        }
+        if (!alreadyMember.value1().equals(this.clanId)) {
+            throw new IllegalStateException("User is not member of this clan!");
+        }
 
         context
                 .update(CLANS_CLAN_INFO)
                 .set(CLANS_CLAN_INFO.CLAN_LEADER, user.getUserId())
                 .where(CLANS_CLAN_INFO.CLAN_ID.eq(this.clanId))
                 .execute();
-
-
 
         this.leader = new ClanMember(user.getUserId());
 

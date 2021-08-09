@@ -19,7 +19,6 @@
 
 package gg.solarmc.loader.kitpvp;
 
-import java.math.BigDecimal;
 import java.util.Objects;
 
 /**
@@ -29,9 +28,9 @@ import java.util.Objects;
 public class Bounty {
 
     private final String target;
-    private final BigDecimal amount;
+    private final BountyAmount amount;
 
-    Bounty(String target, BigDecimal amount) {
+    Bounty(String target, BountyAmount amount) {
         this.target = Objects.requireNonNull(target, "target");
         this.amount = Objects.requireNonNull(amount, "amount");
     }
@@ -50,7 +49,7 @@ public class Bounty {
      *
      * @return the total bounty on the target user
      */
-    public BigDecimal amount() {
+    public BountyAmount amount() {
         return amount;
     }
 
@@ -59,7 +58,7 @@ public class Bounty {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Bounty bounty = (Bounty) o;
-        return target.equals(bounty.target) && amount.equals(bounty.amount());
+        return target.equals(bounty.target) && amount.equals(bounty.amount);
     }
 
     @Override

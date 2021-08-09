@@ -30,11 +30,13 @@ public class OnlineKitPvp extends KitPvp {
     private volatile int experience;
     private volatile int currentKillstreaks;
     private volatile int highestKillstreaks;
-    private volatile BigDecimal bounty;
+    private volatile BigDecimal creditsBounty;
+    private volatile BigDecimal plainEcoBounty;
 
     public OnlineKitPvp(int userID, KitPvpManager manager,
                         int kills, int deaths, int assists, int experience,
-                        int currentKillstreaks, int highestKillstreaks, BigDecimal bounty) {
+                        int currentKillstreaks, int highestKillstreaks,
+                        BigDecimal creditsBounty, BigDecimal plainEcoBounty) {
         super(userID, manager);
         this.kills = kills;
         this.deaths = deaths;
@@ -42,7 +44,8 @@ public class OnlineKitPvp extends KitPvp {
         this.experience = experience;
         this.currentKillstreaks = currentKillstreaks;
         this.highestKillstreaks = highestKillstreaks;
-        this.bounty = bounty;
+        this.creditsBounty = creditsBounty;
+        this.plainEcoBounty = plainEcoBounty;
     }
 
     @Override
@@ -76,8 +79,11 @@ public class OnlineKitPvp extends KitPvp {
     }
 
     @Override
-    void updateBounty(BigDecimal bounty) {
-        this.bounty = bounty;
+    void updateBounty(BountyCurrency currency, BigDecimal bounty) {
+        switch (currency) {
+        case CREDITS -> creditsBounty = bounty;
+        case PLAIN_ECO -> plainEcoBounty = bounty;
+        }
     }
 
     /**
@@ -119,9 +125,13 @@ public class OnlineKitPvp extends KitPvp {
     /**
      * The cached bounty value. Should not be relied upon for correctness
      *
+     * @param currency the bounty currency
      * @return the bounty
      */
-    public BigDecimal currentBounty() {
-        return bounty;
+    public BigDecimal currentBounty(BountyCurrency currency) {
+        return switch (currency) {
+            case CREDITS -> creditsBounty;
+            case PLAIN_ECO -> plainEcoBounty;
+        };
     }
 }

@@ -4,6 +4,8 @@ import gg.solarmc.loader.OnlineSolarPlayer;
 import gg.solarmc.loader.impl.SolarDataConfig;
 import gg.solarmc.loader.impl.test.extension.DataCenterInfo;
 import gg.solarmc.loader.impl.test.extension.DatabaseExtension;
+import gg.solarmc.loader.kitpvp.BountyAmount;
+import gg.solarmc.loader.kitpvp.BountyCurrency;
 import gg.solarmc.loader.kitpvp.ItemSerializer;
 import gg.solarmc.loader.kitpvp.KitPvpKey;
 import gg.solarmc.loader.kitpvp.OnlineKitPvp;
@@ -13,6 +15,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import space.arim.omnibus.DefaultOmnibus;
@@ -66,11 +70,6 @@ public class KitPvpKillstreakBountyIT {
         assertEquals(current, actualCurrentKillstreak);
         assertEquals(highest, data.currentHighestKillstreaks());
         assertEquals(highest, actualHighestKillstreak);
-    }
-
-    private void assertEqualDecimals(BigDecimal expected, BigDecimal actual) {
-        assertTrue(expected.subtract(actual).compareTo(BigDecimal.ONE) < 0,
-                "Expected " + expected + " but got " + actual);
     }
 
     @Test
@@ -136,71 +135,6 @@ public class KitPvpKillstreakBountyIT {
         });
         int newTotal = nextAmount + furtherAmount;
         assertKillstreaks(newTotal, newTotal);
-    }
-
-    private void assertBounty(BigDecimal bounty) {
-        BigDecimal actualBounty = dataCenterInfo.transact((tx) -> {
-            return tx.getProperty(DSLContext.class)
-                    .select(KITPVP_STATISTICS.BOUNTY)
-                    .from(KITPVP_STATISTICS)
-                    .where(KITPVP_STATISTICS.USER_ID.eq(userId))
-                    .fetchSingle().value1();
-        });
-        assertEqualDecimals(bounty, data.currentBounty());
-        assertEqualDecimals(bounty, actualBounty);
-    }
-
-    @Test
-    public void addBounty() {
-        assertBounty(BigDecimal.ZERO);
-
-        BigDecimal amount = randomPositiveBigDecimal();
-        BigDecimal currentBounty = dataCenterInfo.transact((tx) -> {
-            return data.addBounty(tx, amount);
-        });
-        assertEqualDecimals(amount, currentBounty);
-        assertBounty(currentBounty);
-
-        BigDecimal secondAmount = randomPositiveBigDecimal();
-        currentBounty = dataCenterInfo.transact((tx) -> {
-            return data.addBounty(tx, secondAmount);
-        });
-        assertEqualDecimals(amount.add(secondAmount), currentBounty);
-        assertBounty(currentBounty);
-    }
-
-    @Test
-    public void resetBounty() {
-        assertBounty(BigDecimal.ZERO);
-
-        BigDecimal amount = randomPositiveBigDecimal();
-        BigDecimal currentBounty = dataCenterInfo.transact((tx) -> {
-            return data.addBounty(tx, amount);
-        });
-        assertEqualDecimals(amount, currentBounty);
-        assertBounty(currentBounty);
-
-        BigDecimal previousBounty = dataCenterInfo.transact((tx) -> {
-            return data.resetBounty(tx);
-        });
-        assertEqualDecimals(amount, previousBounty);
-        assertBounty(BigDecimal.ZERO);
-    }
-
-    @Test
-    public void getBounty() {
-        assertBounty(BigDecimal.ZERO);
-
-        BigDecimal bounty = randomPositiveBigDecimal();
-        dataCenterInfo.runTransact((tx) -> {
-            tx.getProperty(DSLContext.class)
-                    .update(KITPVP_STATISTICS)
-                    .set(KITPVP_STATISTICS.BOUNTY, bounty)
-                    .where(KITPVP_STATISTICS.USER_ID.eq(userId))
-                    .execute();
-        });
-        assertEqualDecimals(bounty, dataCenterInfo.transact(data::getBounty));
-        assertBounty(bounty);
     }
 
 }

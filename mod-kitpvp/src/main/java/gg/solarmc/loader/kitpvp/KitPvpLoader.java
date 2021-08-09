@@ -21,11 +21,13 @@ package gg.solarmc.loader.kitpvp;
 
 import gg.solarmc.loader.Transaction;
 import gg.solarmc.loader.data.DataLoader;
-import gg.solarmc.loader.schema.tables.records.KitpvpStatisticsRecord;
 import org.jooq.DSLContext;
+import org.jooq.Record2;
 
 import java.math.BigDecimal;
+import java.util.Map;
 
+import static gg.solarmc.loader.schema.tables.KitpvpBounties.KITPVP_BOUNTIES;
 import static gg.solarmc.loader.schema.tables.KitpvpBountyLogs.KITPVP_BOUNTY_LOGS;
 import static gg.solarmc.loader.schema.tables.KitpvpKitsContents.KITPVP_KITS_CONTENTS;
 import static gg.solarmc.loader.schema.tables.KitpvpKitsCooldowns.KITPVP_KITS_COOLDOWNS;
@@ -44,21 +46,30 @@ class KitPvpLoader implements DataLoader<OnlineKitPvp, KitPvp> {
     @Override
     public OnlineKitPvp loadData(Transaction transaction, int userId) {
         DSLContext context = transaction.getProperty(DSLContext.class);
-        KitpvpStatisticsRecord kitpvpRecord = context
-                .fetchOne(KITPVP_STATISTICS, KITPVP_STATISTICS.USER_ID.eq(userId));
+        var kitpvpRecord = context
+                .select(KITPVP_STATISTICS.KILLS, KITPVP_STATISTICS.DEATHS, KITPVP_STATISTICS.ASSISTS,
+                        KITPVP_STATISTICS.EXPERIENCE, KITPVP_STATISTICS.CURRENT_KILLSTREAK, KITPVP_STATISTICS.HIGHEST_KILLSTREAK)
+                .from(KITPVP_STATISTICS)
+                .where(KITPVP_STATISTICS.USER_ID.eq(userId))
+                .fetchOne();
         if (kitpvpRecord != null) {
+            Map<BountyCurrency, BigDecimal> bounties = context
+                    .select(KITPVP_BOUNTIES.BOUNTY_CURRENCY, KITPVP_BOUNTIES.BOUNTY_AMOUNT)
+                    .from(KITPVP_BOUNTIES)
+                    .where(KITPVP_BOUNTIES.USER_ID.eq(userId))
+                    .fetchMap(record -> BountyCurrency.deserialize(record.value1()), Record2::value2);
             return new OnlineKitPvp(
                     userId, manager,
-                    kitpvpRecord.getKills(), kitpvpRecord.getDeaths(),
-                    kitpvpRecord.getAssists(), kitpvpRecord.getExperience(),
-                    kitpvpRecord.getCurrentKillstreak(), kitpvpRecord.getHighestKillstreak(),
-                    kitpvpRecord.getBounty());
+                    kitpvpRecord.value1(), kitpvpRecord.value2(), kitpvpRecord.value3(),
+                    kitpvpRecord.value4(), kitpvpRecord.value5(), kitpvpRecord.value6(),
+                    bounties.getOrDefault(BountyCurrency.CREDITS, BigDecimal.ZERO),
+                    bounties.getOrDefault(BountyCurrency.PLAIN_ECO, BigDecimal.ZERO));
         }
         context.insertInto(KITPVP_STATISTICS)
                 .columns(KITPVP_STATISTICS.USER_ID)
                 .values(userId)
                 .execute();
-        return new OnlineKitPvp(userId, manager, 0, 0, 0, 0, 0, 0, BigDecimal.ZERO);
+        return new OnlineKitPvp(userId, manager, 0, 0, 0, 0, 0, 0, BigDecimal.ZERO, BigDecimal.ZERO);
     }
 
     @Override
@@ -74,6 +85,7 @@ class KitPvpLoader implements DataLoader<OnlineKitPvp, KitPvp> {
         context.deleteFrom(KITPVP_KITS_OWNERSHIP).execute();
         context.deleteFrom(KITPVP_KITS_COOLDOWNS).execute();
         context.deleteFrom(KITPVP_KITS_CONTENTS).execute();
+        context.deleteFrom(KITPVP_BOUNTIES).execute();
         context.deleteFrom(KITPVP_BOUNTY_LOGS).execute();
     }
 

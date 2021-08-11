@@ -34,4 +34,32 @@ public record BountyAmount(BountyCurrency currency, BigDecimal value) {
         Objects.requireNonNull(currency, "currency");
         Objects.requireNonNull(value, "value");
     }
+
+    /**
+     * Adds the given amount to this one
+     *
+     * @param augend the amount to add
+     * @return the new bounty amount
+     * @throws IllegalArgumentException if the currencies do not match
+     */
+    public BountyAmount add(BountyAmount augend) {
+        if (currency != augend.currency) {
+            throw new IllegalArgumentException("Currency mismatch");
+        }
+        return currency.createAmount(value.add(augend.value));
+    }
+
+    /**
+     * Subtracts the given amount from this one
+     *
+     * @param subtrahend the amount to subtract
+     * @return the new bounty amount
+     * @throws IllegalArgumentException if the currencies do not match
+     */
+    public BountyAmount subtract(BountyAmount subtrahend) {
+        if (currency != subtrahend.currency) {
+            throw new IllegalArgumentException("Currency mismatch");
+        }
+        return currency.createAmount(value.subtract(subtrahend.value));
+    }
 }

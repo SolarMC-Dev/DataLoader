@@ -333,6 +333,7 @@ public class KitPvpManager implements DataManager {
 	 * Clears all caches which may be in use. Primarily intended for testing purposes
 	 *
 	 */
+	@Override
 	public void clearCaches() {
 		existingKits.invalidateAll();
 	}

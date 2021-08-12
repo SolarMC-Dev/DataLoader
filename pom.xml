@@ -149,6 +149,11 @@
 				<version>${caffeine.version}</version>
 			</dependency>
 			<dependency>
+				<groupId>gg.solarmc.streamer</groupId>
+				<artifactId>streamer</artifactId>
+				<version>0.1.2</version>
+			</dependency>
+			<dependency>
 				<groupId>org.checkerframework</groupId>
 				<artifactId>checker-qual</artifactId>
 				<version>${checker-qual.version}</version>

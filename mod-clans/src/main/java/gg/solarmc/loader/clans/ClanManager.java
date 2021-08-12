@@ -21,8 +21,6 @@
 
 package gg.solarmc.loader.clans;
 
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
 import gg.solarmc.loader.SolarPlayer;
 import gg.solarmc.loader.Transaction;
 import gg.solarmc.loader.data.DataManager;
@@ -30,9 +28,9 @@ import gg.solarmc.loader.schema.tables.records.ClansClanInfoRecord;
 import org.jooq.DSLContext;
 import org.jooq.Record1;
 import org.jooq.Record3;
+import org.jooq.Record6;
 import org.jooq.Result;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -41,116 +39,90 @@ import java.util.Set;
 import static gg.solarmc.loader.schema.tables.ClansClanInfo.CLANS_CLAN_INFO;
 import static gg.solarmc.loader.schema.tables.ClansClanMembership.CLANS_CLAN_MEMBERSHIP;
 
-
 public class ClanManager implements DataManager {
 
-    private final Cache<Integer,Clan> clans = Caffeine.newBuilder().expireAfterAccess(Duration.ofMinutes(10)).build();
-    private final Cache<Integer,Integer> allianceCache = Caffeine.newBuilder().build();
+    private final Cache cache;
 
-    //i know i'm not supposed to prematurely optimize, but why not turn two queries into one and improve my sql knowledge at the same time?
+    ClanManager(Cache cache) {
+        this.cache = cache;
+    }
+
+    Cache cache() {
+        return cache;
+    }
+
     /**
      * Gets a clan by the id number of a user
      * @param transaction the transaction
-     * @param userID the ID of the user
+     * @param userId the ID of the user
      * @return empty if no clan was found, or the clan that the user is present in
      */
-    Optional<Clan> getClanByUser(Transaction transaction, int userID) {
-        var result = transaction.getProperty(DSLContext.class)
-                .select(CLANS_CLAN_MEMBERSHIP.CLAN_ID, CLANS_CLAN_INFO.CLAN_NAME, CLANS_CLAN_INFO.CLAN_LEADER, CLANS_CLAN_INFO.CLAN_KILLS, CLANS_CLAN_INFO.CLAN_DEATHS, CLANS_CLAN_INFO.CLAN_ASSISTS)
-                .from(CLANS_CLAN_MEMBERSHIP)
-                .innerJoin(CLANS_CLAN_INFO).on(CLANS_CLAN_MEMBERSHIP.CLAN_ID.eq(CLANS_CLAN_INFO.CLAN_ID))
-                .where(CLANS_CLAN_MEMBERSHIP.USER_ID.eq(userID))
+    Optional<Clan> getClanByUser(Transaction transaction, int userId) {
+        DSLContext context = transaction.getProperty(DSLContext.class);
+        Record6<Integer, String, Integer, Integer, Integer, Integer> record = context
+                .select(CLANS_CLAN_INFO.CLAN_ID, CLANS_CLAN_INFO.CLAN_NAME, CLANS_CLAN_INFO.CLAN_LEADER,
+                        CLANS_CLAN_INFO.CLAN_KILLS, CLANS_CLAN_INFO.CLAN_DEATHS, CLANS_CLAN_INFO.CLAN_ASSISTS)
+                .from(CLANS_CLAN_INFO)
+                .innerJoin(CLANS_CLAN_MEMBERSHIP)
+                .on(CLANS_CLAN_MEMBERSHIP.CLAN_ID.eq(CLANS_CLAN_INFO.CLAN_ID))
+                .where(CLANS_CLAN_MEMBERSHIP.USER_ID.eq(userId))
                 .fetchOne();
 
-        if (result == null) return Optional.empty();
+        if (record == null) return Optional.empty();
 
-        Set<ClanMember> bruh = transaction.getProperty(DSLContext.class)
-                .select(CLANS_CLAN_MEMBERSHIP.USER_ID).from(CLANS_CLAN_MEMBERSHIP)
-                .where(CLANS_CLAN_MEMBERSHIP.CLAN_ID.eq(result.value1())).fetchSet((rec1) -> new ClanMember(rec1.value1()));
-
-        Clan returned = new Clan(result.value1(), result.value2(), result.value4(),
-                result.value5(),result.value6(),this,bruh,new ClanMember(result.value3()));
-
-        return Optional.of(returned);
-
+        Clan clan = cache.getOrCreateClan(record.value1(), (clanId) -> {
+            return ClanBuilder.fromRecordAndFetchMembers(this, record, transaction);
+        });
+        cache.findAndCacheAssociatedClans(this, clan, transaction);
+        return Optional.of(clan);
     }
 
-
     /**
-     * Gets a clan from cache or returns empty if not present.
-     * @param id id of the clan
-     * @return Optional containing the clan if it was present in the local cache
-     */
-    Optional<Clan> getCachedClanOnly(int id) {
-        return Optional.ofNullable(clans.getIfPresent(id));
-    }
-
-
-    /**
-     * Gets a clan by it's identifier
+     * Gets a clan by its ID
      *
-     * This fetches from the cache.
      * @param transaction the transaction
      * @param id the clan's id
      * @return the clan if present, empty if not.
      */
     public Optional<Clan> getClanById(Transaction transaction, int id) {
-        return getClan(transaction, transaction.getProperty(DSLContext.class).fetchOne(CLANS_CLAN_INFO,CLANS_CLAN_INFO.CLAN_ID.eq(id)));
+        Optional<Clan> optClan = Optional.ofNullable(cache.getOrCreateClan(id, (clanId) -> {
+            ClansClanInfoRecord record = transaction.getProperty(DSLContext.class)
+                    .fetchOne(CLANS_CLAN_INFO, CLANS_CLAN_INFO.CLAN_ID.eq(clanId));
+            if (record == null) {
+                return null;
+            }
+            return getClan(transaction, record);
+        }));
+        optClan.ifPresent((clan) -> cache.findAndCacheAssociatedClans(this, clan, transaction));
+        return optClan;
     }
 
     /**
      * Gets a clan by the name of the clan.
      *
-     * IMPORTANT: This does not fetch from the cache.
      * @param transaction the transaction
      * @param name name of the clan
      * @return an empty optional if the clan is not present, a clan if it is.
      */
     public Optional<Clan> getClanByName(Transaction transaction, String name) {
-        return getClan(transaction,transaction.getProperty(DSLContext.class).fetchOne(CLANS_CLAN_INFO,CLANS_CLAN_INFO.CLAN_NAME.eq(name)));
-    }
-
-    Optional<Clan> getClan(Transaction transaction, ClansClanInfoRecord record) {
-        var jooq = transaction.getProperty(DSLContext.class);
-
+        ClansClanInfoRecord record = transaction.getProperty(DSLContext.class)
+                .fetchOne(CLANS_CLAN_INFO, CLANS_CLAN_INFO.CLAN_NAME.eq(name));
         if (record == null) {
             return Optional.empty();
         }
-
-        Set<ClanMember> bruh = jooq
-                .select(CLANS_CLAN_MEMBERSHIP.USER_ID).from(CLANS_CLAN_MEMBERSHIP)
-                .where(CLANS_CLAN_MEMBERSHIP.CLAN_ID.eq(record.getClanId())).fetchSet((rec1) -> new ClanMember(rec1.value1()));
-
-        Clan returned = new Clan(record.getClanId(), record.getClanName(),record.getClanKills(),
-                record.getClanDeaths(),record.getClanAssists(),this,bruh,new ClanMember(record.getClanLeader()));
-
-        return Optional.of(returned);
+        Clan clan = cache.getOrCreateClan(record.getClanId(), (clanId) -> getClan(transaction, record));
+        cache.findAndCacheAssociatedClans(this, clan, transaction);
+        return Optional.of(clan);
     }
 
-    Optional<Integer> getAllyFromCache(Integer clanId) {
-        return Optional.ofNullable(allianceCache.getIfPresent(clanId));
-    }
-
-    /**
-     * Invalidates an alliance, not order sensitive
-     * Information for api users - this invalidates two rows in the cache.
-     * @param clan1 the first clan id, ally of the second
-     */
-    void invalidateAllianceCache(Integer clan1) {
-        Integer allyId = allianceCache.asMap().remove(clan1);
-        if (allyId != null) {
-            allianceCache.invalidate(allyId);
-        }
-    }
-
-    /**
-     * Inserts 2 rows into the alliance cache, not order sensitive
-     * @param clan1 the first clan, ally of the second
-     * @param clan2 the second clan, ally of the first
-     */
-    void insertAllianceCache(Integer clan1, Integer clan2) {
-        this.allianceCache.put(clan1,clan2);
-        this.allianceCache.put(clan2,clan1);
+    Clan getClan(Transaction transaction, ClansClanInfoRecord record) {
+        int clanId = record.getClanId();
+        return ClanBuilder.usingManager(this)
+                .clanId(clanId)
+                .nameAndLeader(record.getClanName(), new ClanMember(record.getClanLeader()))
+                .killsDeathsAssists(record.getClanKills(), record.getClanDeaths(), record.getClanAssists())
+                .fetchMembers(transaction)
+                .build();
     }
 
     /**
@@ -184,15 +156,18 @@ public class ClanManager implements DataManager {
         assert updateCount == 1;
 
         ClanMember ownerAsMember = owner.asClanMember(transaction);
-        Clan created = new Clan(clanId, name, 0, 0, 0, this, Set.of(ownerAsMember), ownerAsMember);
+        Clan created = ClanBuilder.usingManager(this)
+                .clanId(clanId)
+                .nameAndLeader(name, ownerAsMember)
+                .killsDeathsAssists(0, 0, 0)
+                .members(Set.of(ownerAsMember))
+                .build();
 
         owner.updateCachedClan(created);
-        clans.put(created.getClanId(), created);
+        cache.insertNewClan(created);
 
         return created;
     }
-
-
 
     /**
      * Deletes a clan from the cache and table, and deletes alliances
@@ -203,21 +178,14 @@ public class ClanManager implements DataManager {
      * @throws IllegalStateException if the clan does not exist.
      */
     public void deleteClan(Transaction transaction, Clan clan) {
-        int i = transaction.getProperty(DSLContext.class)
+        int updateCount = transaction.getProperty(DSLContext.class)
                 .delete(CLANS_CLAN_INFO)
                 .where(CLANS_CLAN_INFO.CLAN_ID.eq(clan.getClanId()))
                 .execute();
-
-        if (i == 0) {
+        if (updateCount == 0) {
             throw new IllegalStateException("Clan does not exist in table!");
         }
-
-        clan.currentAllyClan().ifPresent(ally -> {
-            this.invalidateAllianceCache(clan.getClanId());
-        });
-
-        clans.invalidate(clan.getClanId());
-        clan.markInvalid();
+        cache.removeDeletedClan(clan);
     }
 
     public record TopClanResult(int clanId, int statisticValue, String clanName) {}
@@ -291,5 +259,14 @@ public class ClanManager implements DataManager {
         return results;
     }
 
+    @Override
+    public void refreshCaches(Transaction transaction) {
+        cache.cacheRefresh(transaction, this);
+    }
+
+    @Override
+    public void clearCaches() {
+        cache.clearAll();
+    }
 
 }

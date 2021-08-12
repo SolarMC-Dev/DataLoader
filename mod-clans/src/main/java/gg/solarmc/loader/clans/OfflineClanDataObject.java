@@ -21,6 +21,8 @@
 
 package gg.solarmc.loader.clans;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 public class OfflineClanDataObject extends ClanDataObject {
 
     OfflineClanDataObject(int userId, ClanManager manager) {
@@ -28,7 +30,7 @@ public class OfflineClanDataObject extends ClanDataObject {
     }
 
     @Override
-    void updateCachedClan(Clan clan) {
+    void updateCachedClan(@Nullable Clan clan) {
 
     }
 

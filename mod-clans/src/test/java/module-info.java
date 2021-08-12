@@ -3,4 +3,6 @@ open module gg.solarmc.loader.clans.test {
     requires gg.solarmc.loader.impl.test;
     requires org.junit.jupiter.api;
     requires org.junit.jupiter.params;
+    requires org.mockito;
+    requires org.mockito.junit.jupiter;
 }

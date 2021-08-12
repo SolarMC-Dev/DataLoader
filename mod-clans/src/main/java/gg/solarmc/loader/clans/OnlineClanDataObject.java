@@ -21,30 +21,38 @@
 
 package gg.solarmc.loader.clans;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 import java.util.Optional;
 
 public class OnlineClanDataObject extends ClanDataObject {
 
-    private volatile Clan cachedClan;
+    private volatile Integer cachedClan;
 
-    OnlineClanDataObject(int userId, ClanManager manager, Clan cached) {
+    OnlineClanDataObject(int userId, ClanManager manager, @Nullable Clan clan) {
         super(userId, manager);
-        this.cachedClan = cached;
+        this.cachedClan = (clan == null) ? null : clan.getClanId();
     }
 
     /**
-     * Gets current cached clan. Not accurate.
-     * @return Optional containing cached value
+     * Gets current cached clan. Should not be relied upon for correctness
+     *
+     * @return optional containing cached clan
      */
     public Optional<Clan> currentClan() {
-        if (cachedClan != null && cachedClan.isInvalid()) {
-            cachedClan = null;
+        Integer cachedClan = this.cachedClan;
+        if (cachedClan == null) {
+            return Optional.empty();
         }
-        return Optional.ofNullable(cachedClan);
+        Optional<Clan> result = manager().cache().getCachedClan(cachedClan);
+        if (result.isEmpty()) {
+            this.cachedClan = null;
+        }
+        return result;
     }
 
     @Override
-    void updateCachedClan(Clan clan) {
-        this.cachedClan = clan;
+    void updateCachedClan(@Nullable Clan clan) {
+        this.cachedClan = (clan == null) ? null : clan.getClanId();
     }
 }

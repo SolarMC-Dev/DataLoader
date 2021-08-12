@@ -11,6 +11,7 @@ import gg.solarmc.loader.impl.test.extension.DatabaseExtension;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -20,6 +21,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -80,7 +82,7 @@ public class ClanIT {
         OnlineSolarPlayer leader = dataCenterInfo.loginNewRandomUser();
         OnlineSolarPlayer usurper = dataCenterInfo.loginNewRandomUser();
         Clan clan = createClan(leader);
-        addMemberAssertSuccess(clan,usurper);
+        addMemberAssertSuccess(clan, usurper);
 
         dataCenterInfo.runTransact(tx -> clan.setLeader(tx, usurper));
 
@@ -184,20 +186,40 @@ public class ClanIT {
         assertFalse(removedMember, "Not a member of the clan");
     }
 
+    private void assertBeforeAndAfterCacheRefresh(Executable assertion) {
+        assertDoesNotThrow(assertion, "Before cache refresh");
+        dataCenterInfo.runTransact(clanManager::refreshCaches);
+        assertDoesNotThrow(assertion, "After cache refresh");
+    }
+
     private void addAllyAssertSuccess(Clan clan, Clan ally) {
         boolean added = dataCenterInfo.transact((tx) -> clan.addClanAsAlly(tx, ally));
         assertTrue(added, "Clans should be allied");
     }
 
     @Test
+    public void noAllies() {
+        Clan clan = createClan(dataCenterInfo.loginNewRandomUser(), "clanName");
+
+        assertBeforeAndAfterCacheRefresh(() -> {
+            assertEquals(Optional.empty(), clan.currentAllyClan());
+            assertEquals(Optional.empty(), dataCenterInfo.transact(clan::getAllyClan));
+        });
+    }
+
+    @Test
     public void addClanAsAlly() {
-        Clan clanOne = createClan(dataCenterInfo.loginNewRandomUser(), "clanOneName");
-        Clan clanTwo = createClan(dataCenterInfo.loginNewRandomUser(), "clanTwoName");
+        Clan clan = createClan(dataCenterInfo.loginNewRandomUser(), "clanOneName");
+        Clan ally = createClan(dataCenterInfo.loginNewRandomUser(), "clanTwoName");
 
-        addAllyAssertSuccess(clanOne, clanTwo);
+        addAllyAssertSuccess(clan, ally);
 
-        assertEquals(Optional.of(clanTwo), dataCenterInfo.transact(clanOne::getAlliedClan));
-        assertEquals(Optional.of(clanOne), dataCenterInfo.transact(clanTwo::getAlliedClan));
+        assertBeforeAndAfterCacheRefresh(() -> {
+            assertEquals(Optional.of(ally), clan.currentAllyClan(), "Cached ally (clan->ally)");
+            assertEquals(Optional.of(clan), ally.currentAllyClan(), "Cached ally (ally->clan)");
+            assertEquals(Optional.of(ally), dataCenterInfo.transact(clan::getAllyClan));
+            assertEquals(Optional.of(clan), dataCenterInfo.transact(ally::getAllyClan));
+        });
     }
 
     @Test
@@ -211,8 +233,12 @@ public class ClanIT {
         boolean added = dataCenterInfo.transact((tx) -> clanOne.addClanAsAlly(tx, clanTwo));
         assertFalse(added, "Clan one is already allied");
 
-        assertEquals(Optional.of(allyOfClanOne), dataCenterInfo.transact(clanOne::getAlliedClan));
-        assertEquals(Optional.empty(), dataCenterInfo.transact(clanTwo::getAlliedClan));
+        assertBeforeAndAfterCacheRefresh(() -> {
+            assertEquals(Optional.of(allyOfClanOne), clanOne.currentAllyClan());
+            assertEquals(Optional.empty(), clanTwo.currentAllyClan());
+            assertEquals(Optional.of(allyOfClanOne), dataCenterInfo.transact(clanOne::getAllyClan));
+            assertEquals(Optional.empty(), dataCenterInfo.transact(clanTwo::getAllyClan));
+        });
     }
 
     @Test
@@ -226,8 +252,12 @@ public class ClanIT {
         boolean added = dataCenterInfo.transact((tx) -> clanOne.addClanAsAlly(tx, clanTwo));
         assertFalse(added, "Clan two is already allied");
 
-        assertEquals(Optional.empty(), dataCenterInfo.transact(clanOne::getAlliedClan));
-        assertEquals(Optional.of(allyOfClanTwo), dataCenterInfo.transact(clanTwo::getAlliedClan));
+        assertBeforeAndAfterCacheRefresh(() -> {
+            assertEquals(Optional.empty(), clanOne.currentAllyClan());
+            assertEquals(Optional.of(allyOfClanTwo), clanTwo.currentAllyClan());
+            assertEquals(Optional.empty(), dataCenterInfo.transact(clanOne::getAllyClan));
+            assertEquals(Optional.of(allyOfClanTwo), dataCenterInfo.transact(clanTwo::getAllyClan));
+        });
     }
 
     @Test
@@ -245,28 +275,42 @@ public class ClanIT {
         Clan clanOne = createClan(dataCenterInfo.loginNewRandomUser(), "clanOneName");
         Clan clanTwo = createClan(dataCenterInfo.loginNewRandomUser(), "clanTwoName");
 
-        boolean added = dataCenterInfo.transact((tx) -> clanOne.addClanAsAlly(tx, clanTwo));
-        assertTrue(added, "Clans should be allied");
-
-        assertEquals(Optional.of(clanTwo), dataCenterInfo.transact(clanOne::getAlliedClan));
-        assertEquals(Optional.of(clanOne), dataCenterInfo.transact(clanTwo::getAlliedClan));
+        addAllyAssertSuccess(clanOne, clanTwo);
 
         Clan clanToCallRevokeOn = (revokeFromFirst) ? clanOne : clanTwo;
         assertTrue(dataCenterInfo.transact(clanToCallRevokeOn::revokeAlly), "Clans should be removed as allies");
 
-        assertEquals(Optional.empty(), dataCenterInfo.transact(clanOne::getAlliedClan));
-        assertEquals(Optional.empty(), dataCenterInfo.transact(clanTwo::getAlliedClan));
+        assertBeforeAndAfterCacheRefresh(() -> {
+            assertEquals(Optional.empty(), clanOne.currentAllyClan());
+            assertEquals(Optional.empty(), clanTwo.currentAllyClan());
+            assertEquals(Optional.empty(), dataCenterInfo.transact(clanOne::getAllyClan));
+            assertEquals(Optional.empty(), dataCenterInfo.transact(clanTwo::getAllyClan));
+        });
     }
 
     @Test
     public void revokeAllyNotAllied() {
         Clan clan = createClan(dataCenterInfo.loginNewRandomUser());
         assertFalse(dataCenterInfo.transact(clan::revokeAlly));
+        assertBeforeAndAfterCacheRefresh(() -> {
+            assertEquals(Optional.empty(), clan.currentAllyClan());
+            assertEquals(Optional.empty(), dataCenterInfo.transact(clan::getAllyClan));
+        });
     }
 
     private void addEnemyAssertSuccess(Clan clan, Clan enemy) {
         boolean added = dataCenterInfo.transact((tx) -> clan.addClanAsEnemy(tx, enemy));
         assertTrue(added, "Clans should now be enemies");
+    }
+
+    @Test
+    public void noEnemies() {
+        Clan clan = createClan(dataCenterInfo.loginNewRandomUser(), "clanName");
+
+        assertBeforeAndAfterCacheRefresh(() -> {
+            assertEquals(Set.of(), clan.currentEnemyClans());
+            assertEquals(Set.of(), dataCenterInfo.transact(clan::getEnemyClans));
+        });
     }
 
     @Test
@@ -276,9 +320,14 @@ public class ClanIT {
 
         addEnemyAssertSuccess(clanOne, clanTwo);
 
-        assertEquals(Set.of(clanTwo), dataCenterInfo.transact(clanOne::getEnemyClans));
-        assertEquals(Set.of(), dataCenterInfo.transact(clanTwo::getEnemyClans),
-                "Enemies are a one-way relationship and need not be mutual");
+        assertBeforeAndAfterCacheRefresh(() -> {
+            assertEquals(Set.of(clanTwo), clanOne.currentEnemyClans());
+            assertEquals(Set.of(), clanTwo.currentEnemyClans(),
+                    "Enemies are a one-way relationship and need not be mutual");
+            assertEquals(Set.of(clanTwo), dataCenterInfo.transact(clanOne::getEnemyClans));
+            assertEquals(Set.of(), dataCenterInfo.transact(clanTwo::getEnemyClans),
+                    "Enemies are a one-way relationship and need not be mutual");
+        });
 
         boolean addedAgain = dataCenterInfo.transact((tx) -> clanOne.addClanAsEnemy(tx, clanTwo));
         assertFalse(addedAgain, "Clans should already be enemies");
@@ -305,16 +354,37 @@ public class ClanIT {
 
     @Test
     public void removeClanAsEnemy() {
-        Clan clanOne = createClan(dataCenterInfo.loginNewRandomUser(), "clanOneName");
-        Clan clanTwo = createClan(dataCenterInfo.loginNewRandomUser(), "clanTwoName");
-        addEnemyAssertSuccess(clanOne, clanTwo);
+        Clan clan = createClan(dataCenterInfo.loginNewRandomUser(), "clanOneName");
+        Clan enemyOne = createClan(dataCenterInfo.loginNewRandomUser(), "clanTwoName");
+        Clan enemyTwo = createClan(dataCenterInfo.loginNewRandomUser(), "clanThreeName");
+        addEnemyAssertSuccess(clan, enemyOne);
+        addEnemyAssertSuccess(clan, enemyTwo);
 
-        boolean removed = dataCenterInfo.transact((tx) -> {
-            return clanOne.removeClanAsEnemy(tx, clanTwo);
+        {
+            boolean removedOne = dataCenterInfo.transact((tx) -> {
+                return clan.removeClanAsEnemy(tx, enemyOne);
+            });
+            assertTrue(removedOne, "Removed clan as enemy");
+
+            assertBeforeAndAfterCacheRefresh(() -> {
+                assertEquals(Set.of(enemyTwo), clan.currentEnemyClans(),
+                        "Clan should still have one enemy remaining");
+                assertEquals(Set.of(enemyTwo), dataCenterInfo.transact(clan::getEnemyClans),
+                        "Clan should still have one enemy remaining");
+            });
+        }
+
+        boolean removedTwo = dataCenterInfo.transact((tx) -> {
+            return clan.removeClanAsEnemy(tx, enemyTwo);
         });
-        assertTrue(removed, "Removed clan as enemy");
+        assertTrue(removedTwo, "Removed clan as enemy");
 
-        assertEquals(Set.of(), dataCenterInfo.transact(clanOne::getEnemyClans), "Clan should have no more enemies");
+        assertBeforeAndAfterCacheRefresh(() -> {
+            assertEquals(Set.of(), clan.currentEnemyClans(),
+                    "Clan should have no more enemies");
+            assertEquals(Set.of(), dataCenterInfo.transact(clan::getEnemyClans),
+                    "Clan should have no more enemies");
+        });
     }
 
     @Test

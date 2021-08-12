@@ -36,6 +36,24 @@ public record BountyAmount(BountyCurrency currency, BigDecimal value) {
     }
 
     /**
+     * Determines whether this amount is zero
+     *
+     * @return true if zero, false otherwise
+     */
+    public boolean isZero() {
+        return value.compareTo(BigDecimal.ZERO) == 0;
+    }
+
+    /**
+     * Determines whether this amount is not zero
+     *
+     * @return false if zero, true otherwise
+     */
+    public boolean isNonZero() {
+        return !isZero();
+    }
+
+    /**
      * Adds the given amount to this one
      *
      * @param augend the amount to add

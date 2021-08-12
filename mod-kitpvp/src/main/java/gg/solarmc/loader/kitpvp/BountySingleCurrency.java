@@ -19,31 +19,22 @@
 
 package gg.solarmc.loader.kitpvp;
 
-import gg.solarmc.loader.Transaction;
+import java.math.BigDecimal;
+import java.util.Map;
 
-import java.util.List;
-import java.util.Optional;
+record BountySingleCurrency(String target, BountyAmount amount) implements Bounty {
 
-/**
- * A page of bounties
- *
- */
-public interface BountyPage {
+    @Override
+    public BountyAmount amount(BountyCurrency currency) {
+        if (currency != amount.currency()) {
+            throw new IllegalStateException("No bounty available in " + currency);
+        }
+        return amount;
+    }
 
-    /**
-     * Gets the bounties on this page. Will never be empty.
-     *
-     * @return the items on this page
-     */
-    List<? extends Bounty> itemsOnPage();
-
-    /**
-     * Navigates to the next page and yields a bounty page for it.
-     * The next page will not contain any of the bounties in this one.
-     *
-     * @param tx the transaction
-     * @return the next page, or an empty optional if no more pages exist
-     */
-    Optional<BountyPage> nextPage(Transaction tx);
+    @Override
+    public Map<BountyCurrency, BigDecimal> allAmounts() {
+        return Map.of(amount.currency(), amount.value());
+    }
 
 }

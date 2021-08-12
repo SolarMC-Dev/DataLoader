@@ -19,60 +19,37 @@
 
 package gg.solarmc.loader.kitpvp;
 
-import java.util.Objects;
+import java.math.BigDecimal;
+import java.util.Map;
 
 /**
- * The total bounty on a certain user
+ * The bounties on a certain user. An instance of this interface will
+ * include information for some, but not all, {@link BountyCurrency}s.
  *
  */
-public class Bounty {
-
-    private final String target;
-    private final BountyAmount amount;
-
-    Bounty(String target, BountyAmount amount) {
-        this.target = Objects.requireNonNull(target, "target");
-        this.amount = Objects.requireNonNull(amount, "amount");
-    }
+public interface Bounty {
 
     /**
      * The target user's username
      *
      * @return the target username
      */
-    public String target() {
-        return target;
-    }
+    String target();
 
     /**
-     * The total bounty value
+     * The bounty value for a certain currency
      *
-     * @return the total bounty on the target user
+     * @param currency the currency
+     * @return the bounty on the target user in the currency
+     * @throws IllegalStateException if this bounty has no information for the given currency
      */
-    public BountyAmount amount() {
-        return amount;
-    }
+    BountyAmount amount(BountyCurrency currency);
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Bounty bounty = (Bounty) o;
-        return target.equals(bounty.target) && amount.equals(bounty.amount);
-    }
+    /**
+     * Gets all the bounty amounties
+     *
+     * @return all the bounty amounts
+     */
+    Map<BountyCurrency, BigDecimal> allAmounts();
 
-    @Override
-    public int hashCode() {
-        int result = target.hashCode();
-        result = 31 * result + amount.hashCode();
-        return result;
-    }
-
-    @Override
-    public String toString() {
-        return "Bounty{" +
-                "target='" + target + '\'' +
-                ", amount=" + amount +
-                '}';
-    }
 }

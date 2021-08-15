@@ -320,10 +320,10 @@ public class KitPvpManager implements DataManager {
 		{
 			// ORDER BY each currency and use SEEK AFTER for pagination
 			List<OrderField<?>> orderBy = new ArrayList<>(listOrder.includeCurrencies().size());
-			//orderBy.add(LATEST_NAMES.USERNAME);
 			for (BountyCurrency currency : listOrder.includeCurrencies()) {
 				orderBy.add(aliasedBounties(currency).BOUNTY_AMOUNT.desc());
 			}
+			//orderBy.add(LATEST_NAMES.USERNAME);
 			if (seekAfter == null) {
 				step3 = step2.orderBy(orderBy)
 						.limit(listOrder.countPerPage());
@@ -354,26 +354,25 @@ public class KitPvpManager implements DataManager {
 		if (bounties.isEmpty()) {
 			return Optional.empty();
 		}
-		return Optional.of(new BountyPage() {
-
-			@Override
-			public List<? extends Bounty> itemsOnPage() {
-				return bounties;
-			}
+		record BountyPageImpl(KitPvpManager manager,
+							  List<? extends Bounty> itemsOnPage, BountyListOrder.Built listOrder)
+				implements BountyPage {
 
 			@Override
 			public Optional<BountyPage> nextPage(Transaction tx) {
-				Bounty lastBounty = bounties.get(bounties.size() - 1);
+				Bounty lastBounty = itemsOnPage.get(itemsOnPage.size() - 1);
 				List</*String & BigDecimal*/ Object> seekAfter = new ArrayList<>(1 + listOrder.includeCurrencies().size());
-				String target = lastBounty.target();
-				//seekAfter.add(target);
 				for (BountyCurrency currency : listOrder.includeCurrencies()) {
 					BigDecimal afterBountyValue = lastBounty.amount(currency).value();
 					seekAfter.add(afterBountyValue);
 				}
-				return listBounties(tx, listOrder, seekAfter);
+				String target = lastBounty.target();
+				//seekAfter.add(target);
+				System.out.println("Proceeding to next page with seekAfter values: " + seekAfter);
+				return manager.listBounties(tx, listOrder, seekAfter);
 			}
-		});
+		}
+		return Optional.of(new BountyPageImpl(this, bounties, listOrder));
 	}
 
 	/**

@@ -71,7 +71,7 @@ record BountyList(KitPvpManager manager, BountyListOrder.Built listOrder) {
         SelectJoinStep<Record> step1;
         {
             // SELECT user_id, username, and all bounty values
-            List<SelectFieldOrAsterisk> selections = new ArrayList<>(1 + listOrder.includeCurrencies().size());
+            List<SelectFieldOrAsterisk> selections = new ArrayList<>(2 + listOrder.includeCurrencies().size());
             selections.add(LATEST_NAMES.USER_ID);
             selections.add(LATEST_NAMES.USERNAME);
             for (BountyCurrency currency : listOrder.includeCurrencies()) {
@@ -159,6 +159,8 @@ record BountyList(KitPvpManager manager, BountyListOrder.Built listOrder) {
 		(currency1 < afterAmount1) OR
 		(currency1 = afterAmount1 AND currency2 < afterAmount2) OR
 		(currency1 = afterAmount1 AND currency2 = afterAmount2 AND currency3 < afterAmount3)
+
+		OR all currencies are equal and user ID is greater than cursor user ID
         */
         Condition seekCondition = null;
         Condition currenciesSoFarAreEqual = null;
@@ -166,8 +168,8 @@ record BountyList(KitPvpManager manager, BountyListOrder.Built listOrder) {
             KitpvpBounties bounties = aliasedBounties(currency);
             BigDecimal bountyValue = cursor.afterAmounts().get(currency);
 
-            // currencyX <= afterAmountX
-            Condition valueLessThanThisCurrencyValue = nullSafeLessThanOrEqual(bounties.BOUNTY_AMOUNT, bountyValue);
+            // currencyX < afterAmountX
+            Condition valueLessThanThisCurrencyValue = nullSafeLessThan(bounties.BOUNTY_AMOUNT, bountyValue);
             // currencyX = afterAmountX
             Condition valueEqualToThisCurrencyValue = nullSafeEqual(bounties.BOUNTY_AMOUNT, bountyValue);
 
@@ -182,16 +184,18 @@ record BountyList(KitPvpManager manager, BountyListOrder.Built listOrder) {
                 currenciesSoFarAreEqual = currenciesSoFarAreEqual.and(valueEqualToThisCurrencyValue);
             }
         }
-        return seekCondition;
+        assert seekCondition != null : "at least one currency";
+        return seekCondition.or(
+                currenciesSoFarAreEqual.and(LATEST_NAMES.USER_ID.greaterThan(cursor.userId())));
     }
-    
+
     // Helpers for treating NULL values as zero
     // This is the same as NULLS LAST except NULLS LAST is only usable in ORDER BY
 
-    private Condition nullSafeLessThanOrEqual(Field<BigDecimal> column, BigDecimal value) {
-        // If the column value is non-null, it has to pass the lessOrEqual
+    private Condition nullSafeLessThan(Field<BigDecimal> column, BigDecimal value) {
+        // If the column value is non-null, it has to pass the lessThan
         // If the column value is null, it is included
-        return column.lessOrEqual(value).or(column.isNull());
+        return column.lessThan(value).or(column.isNull());
     }
 
     private Condition nullSafeEqual(Field<BigDecimal> field, BigDecimal value) {

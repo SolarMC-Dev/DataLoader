@@ -215,9 +215,7 @@ public class KitPvpBountyListIT {
         }).orElseThrow(AssertionError::new);
         assertPageValues(pageOne, CREDITS, BigDecimal.TEN, BigDecimal.ONE);
 
-        BountyPage pageTwo = dataCenterInfo.transact((tx) -> {
-            return manager.listBounties(tx, BountyListOrder.countPerPage(2).includeCurrencies(BountyCurrency.values()).build());
-        }).orElseThrow(AssertionError::new);
+        BountyPage pageTwo = dataCenterInfo.transact(pageOne::nextPage).orElseThrow(AssertionError::new);
         assertPageValues(pageTwo, CREDITS, BigDecimal.ONE, BigDecimal.ZERO);
     }
 }

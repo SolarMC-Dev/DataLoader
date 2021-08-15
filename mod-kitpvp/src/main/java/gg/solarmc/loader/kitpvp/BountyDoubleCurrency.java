@@ -23,17 +23,18 @@ import java.math.BigDecimal;
 import java.util.Map;
 import java.util.Objects;
 
-record BountyDoubleCurrency(String target, BigDecimal creditsAmount,
-                            BigDecimal plainEcoAmount) implements Bounty {
+record BountyDoubleCurrency(int userId,
+                            String target, BigDecimal creditsAmount,
+                            BigDecimal plainEcoAmount) implements BountyInternal {
 
-    BountyDoubleCurrency(String target, BigDecimal creditsAmount, BigDecimal plainEcoAmount) {
-        this.target = Objects.requireNonNull(target, "target");
-        this.creditsAmount = Objects.requireNonNull(creditsAmount, "creditsAmount");
-        this.plainEcoAmount = Objects.requireNonNull(plainEcoAmount, "plainEcoAmount");
+    BountyDoubleCurrency {
+        Objects.requireNonNull(target, "target");
+        Objects.requireNonNull(creditsAmount, "creditsAmount");
+        Objects.requireNonNull(plainEcoAmount, "plainEcoAmount");
     }
 
-    static <S> Bounty from(String target, S bountyDataSource, AmountFetcher<S> amountFetcher) {
-        return new BountyDoubleCurrency(target,
+    static <S> BountyInternal from(int userId, String target, S bountyDataSource, AmountFetcher<S> amountFetcher) {
+        return new BountyDoubleCurrency(userId, target,
                 amountFetcher.getAmount(bountyDataSource, BountyCurrency.CREDITS),
                 amountFetcher.getAmount(bountyDataSource, BountyCurrency.PLAIN_ECO));
     }

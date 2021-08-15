@@ -19,22 +19,8 @@
 
 package gg.solarmc.loader.kitpvp;
 
-import java.math.BigDecimal;
-import java.util.Map;
+interface BountyInternal extends Bounty {
 
-record BountySingleCurrency(int userId, String target, BountyAmount amount) implements BountyInternal {
-
-    @Override
-    public BountyAmount amount(BountyCurrency currency) {
-        if (currency != amount.currency()) {
-            throw new IllegalStateException("No bounty available in " + currency);
-        }
-        return amount;
-    }
-
-    @Override
-    public Map<BountyCurrency, BigDecimal> allAmounts() {
-        return Map.of(amount.currency(), amount.value());
-    }
+    int userId();
 
 }

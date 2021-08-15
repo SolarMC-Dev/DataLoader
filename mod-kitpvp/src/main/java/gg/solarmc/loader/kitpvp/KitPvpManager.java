@@ -24,41 +24,26 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import gg.solarmc.loader.SolarPlayer;
 import gg.solarmc.loader.Transaction;
 import gg.solarmc.loader.data.DataManager;
-import gg.solarmc.loader.schema.tables.KitpvpBounties;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.jooq.BatchBindStep;
-import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.DataType;
 import org.jooq.Field;
-import org.jooq.OrderField;
-import org.jooq.Record;
 import org.jooq.Record1;
 import org.jooq.Record2;
 import org.jooq.Record3;
-import org.jooq.ResultQuery;
-import org.jooq.SelectConditionStep;
-import org.jooq.SelectFieldOrAsterisk;
-import org.jooq.SelectJoinStep;
 import org.jooq.impl.DSL;
 
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
 import static gg.solarmc.loader.schema.Routines.kitpvpCreateKit;
-import static gg.solarmc.loader.schema.tables.KitpvpBounties.KITPVP_BOUNTIES;
 import static gg.solarmc.loader.schema.tables.KitpvpBountyLogs.KITPVP_BOUNTY_LOGS;
 import static gg.solarmc.loader.schema.tables.KitpvpKitsContents.KITPVP_KITS_CONTENTS;
 import static gg.solarmc.loader.schema.tables.KitpvpKitsIds.KITPVP_KITS_IDS;
-import static gg.solarmc.loader.schema.tables.LatestNames.LATEST_NAMES;
 
 public class KitPvpManager implements DataManager {
 
@@ -274,104 +259,7 @@ public class KitPvpManager implements DataManager {
 	 */
 	public Optional<BountyPage> listBounties(Transaction tx, BountyListOrder.Built listOrder) {
 		Objects.requireNonNull(listOrder, "listOrder");
-		return listBounties(tx, listOrder, null);
-	}
-
-	private KitpvpBounties aliasedBounties(BountyCurrency currency) {
-		return KITPVP_BOUNTIES.as("bounties_" + currency.name().toLowerCase(Locale.ROOT));
-	}
-
-	private Optional<BountyPage> listBounties(Transaction tx,
-											  BountyListOrder.Built listOrder,
-											  @Nullable List<Object> seekAfter) {
-		DSLContext context = tx.getProperty(DSLContext.class);
-		SelectJoinStep<org.jooq.Record> step1;
-		{
-			// Build SELECT columns
-			Set<SelectFieldOrAsterisk> selections = new HashSet<>(1 + listOrder.includeCurrencies().size());
-			selections.add(LATEST_NAMES.USERNAME);
-			for (BountyCurrency currency : listOrder.includeCurrencies()) {
-				selections.add(aliasedBounties(currency).BOUNTY_AMOUNT);
-			}
-			step1 = context.select(selections).from(LATEST_NAMES);
-		}
-		// LEFT JOIN bounties table for each currency
-		for (BountyCurrency currency : listOrder.includeCurrencies()) {
-			KitpvpBounties bounties = aliasedBounties(currency);
-			step1 = step1.leftJoin(bounties)
-					.on(bounties.USER_ID.eq(LATEST_NAMES.USER_ID))
-					.and(bounties.BOUNTY_CURRENCY.eq(currency.serialize()));
-		}
-		SelectConditionStep<? extends Record> step2;
-		{
-			// WHERE at least one currency is non-null
-			Condition anyCurrencyNotNull = null;
-			for (BountyCurrency currency : listOrder.includeCurrencies()) {
-				Condition thisCurrencyNotNull = aliasedBounties(currency).BOUNTY_AMOUNT.isNotNull();
-				if (anyCurrencyNotNull == null) {
-					anyCurrencyNotNull = thisCurrencyNotNull;
-				} else {
-					anyCurrencyNotNull = anyCurrencyNotNull.or(thisCurrencyNotNull);
-				}
-			}
-			step2 = step1.where(anyCurrencyNotNull);
-		}
-		ResultQuery<? extends Record> step3;
-		{
-			// ORDER BY each currency and use SEEK AFTER for pagination
-			List<OrderField<?>> orderBy = new ArrayList<>(listOrder.includeCurrencies().size());
-			for (BountyCurrency currency : listOrder.includeCurrencies()) {
-				orderBy.add(aliasedBounties(currency).BOUNTY_AMOUNT.desc());
-			}
-			//orderBy.add(LATEST_NAMES.USERNAME);
-			if (seekAfter == null) {
-				step3 = step2.orderBy(orderBy)
-						.limit(listOrder.countPerPage());
-			} else {
-				if (orderBy.size() != seekAfter.size()) {
-					throw new IllegalArgumentException("Invalid seekAfter values; internal error");
-				}
-				step3 = step2.orderBy(orderBy).seekAfter(seekAfter.toArray(Object[]::new))
-						.limit(listOrder.countPerPage());
-			}
-		}
-		List<Bounty> bounties = step3.fetch((record) -> {
-			String target = record.get(LATEST_NAMES.USERNAME);
-			List<BountyCurrency> includedCurrencies = listOrder.includeCurrencies();
-			return switch (includedCurrencies.size()) {
-				case 1 -> {
-					BountyCurrency currency = listOrder.includeCurrencies().get(0);
-					BigDecimal bountyValue = record.get(aliasedBounties(currency).BOUNTY_AMOUNT);
-					yield new BountySingleCurrency(target, currency.createAmount(bountyValue));
-				}
-				case 2 -> BountyDoubleCurrency.from(target, record, (rec, currency) -> {
-					BigDecimal bountyAmount = rec.get(aliasedBounties(currency).BOUNTY_AMOUNT);
-					return Objects.requireNonNullElse(bountyAmount, BigDecimal.ZERO);
-				});
-				default -> throw new UnsupportedOperationException("Not implemented for more than 2 currencies");
-			};
-		});
-		if (bounties.isEmpty()) {
-			return Optional.empty();
-		}
-		record BountyPageImpl(KitPvpManager manager,
-							  List<? extends Bounty> itemsOnPage, BountyListOrder.Built listOrder)
-				implements BountyPage {
-
-			@Override
-			public Optional<BountyPage> nextPage(Transaction tx) {
-				Bounty lastBounty = itemsOnPage.get(itemsOnPage.size() - 1);
-				List</*String & BigDecimal*/ Object> seekAfter = new ArrayList<>(1 + listOrder.includeCurrencies().size());
-				for (BountyCurrency currency : listOrder.includeCurrencies()) {
-					BigDecimal afterBountyValue = lastBounty.amount(currency).value();
-					seekAfter.add(afterBountyValue);
-				}
-				String target = lastBounty.target();
-				//seekAfter.add(target);
-				return manager.listBounties(tx, listOrder, seekAfter);
-			}
-		}
-		return Optional.of(new BountyPageImpl(this, bounties, listOrder));
+		return new BountyList(this, listOrder).beginToListBounties(tx);
 	}
 
 	/**

@@ -24,9 +24,9 @@ import java.util.List;
 /**
  * Builder for bounty list orders. Uses a series of steps for compile time safety. <br>
  * <br>
- * A bounty list is ordered by a certain currency, called the primary currency.
- * Additional currencies may be included, which will be available in the {@link Bounty}s
- * on the {@link BountyPage}.
+ * The bounty list is ordered by the bounty value in descending order, primarily by
+ * the value in the first currency, then by that in the second currency, and so on.
+ * During pagination, the first currency is used to track the cursor. <br>
  * <br>
  * Note that preconditions may be checked during {@link AlmostReadyStep#build()}
  *
@@ -59,8 +59,7 @@ public final class BountyListOrder {
          * Sets the currencies to include. Bounties in all of these currencies will be available
          * in {@link Bounty}s listed. <br>
          * <br>
-         * The bounty list will be ordered by the bounty value in descending order, primarily by
-         * the value in the first currency, then by that in the second currency, and so on.
+         * The bounty list will be ordered according to the order of the currencies.
          *
          * @param includeCurrencies all the currencies to include
          * @return the next step
@@ -75,8 +74,7 @@ public final class BountyListOrder {
          * Sets the currencies to include. Bounties in all of these currencies will be available
          * in {@link Bounty}s listed. <br>
          * <br>
-         * The bounty list will be ordered by the bounty value in descending order, primarily by
-         * the value in the first currency, then by that in the second currency, and so on.
+         * The bounty list will be ordered according to the order of the currencies.
          *
          * @param includeCurrencies all the currencies to include
          * @return the next step

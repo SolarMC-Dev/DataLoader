@@ -24,7 +24,7 @@
 
 		<mariadb-connector.version>2.7.3</mariadb-connector.version>
 		<flyway.version>7.9.1</flyway.version>
-		<jooq.version>3.14.4</jooq.version>
+		<jooq.version>3.15.1</jooq.version>
 
 		<dazzleconf.version>1.2.0</dazzleconf.version>
 		<caffeine.version>3.0.1</caffeine.version>

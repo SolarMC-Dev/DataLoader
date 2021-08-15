@@ -368,7 +368,6 @@ public class KitPvpManager implements DataManager {
 				}
 				String target = lastBounty.target();
 				//seekAfter.add(target);
-				System.out.println("Proceeding to next page with seekAfter values: " + seekAfter);
 				return manager.listBounties(tx, listOrder, seekAfter);
 			}
 		}

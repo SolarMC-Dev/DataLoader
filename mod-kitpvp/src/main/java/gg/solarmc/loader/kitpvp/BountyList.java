@@ -31,6 +31,7 @@ import org.jooq.ResultQuery;
 import org.jooq.SelectConditionStep;
 import org.jooq.SelectFieldOrAsterisk;
 import org.jooq.SelectJoinStep;
+import org.jooq.impl.DSL;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -193,6 +194,10 @@ record BountyList(KitPvpManager manager, BountyListOrder.Built listOrder) {
     // This is the same as NULLS LAST except NULLS LAST is only usable in ORDER BY
 
     private Condition nullSafeLessThan(Field<BigDecimal> column, BigDecimal value) {
+        if (value.compareTo(BigDecimal.ZERO) == 0) {
+            // Nothing can be less than zero
+            return DSL.falseCondition();
+        }
         // If the column value is non-null, it has to pass the lessThan
         // If the column value is null, it is included
         return column.lessThan(value).or(column.isNull());

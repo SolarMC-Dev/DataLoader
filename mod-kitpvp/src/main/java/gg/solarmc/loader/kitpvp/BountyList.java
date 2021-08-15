@@ -28,9 +28,8 @@ import org.jooq.Field;
 import org.jooq.OrderField;
 import org.jooq.Record;
 import org.jooq.ResultQuery;
-import org.jooq.SelectConditionStep;
 import org.jooq.SelectFieldOrAsterisk;
-import org.jooq.SelectJoinStep;
+import org.jooq.Table;
 import org.jooq.impl.DSL;
 
 import java.math.BigDecimal;
@@ -69,46 +68,47 @@ record BountyList(KitPvpManager manager, BountyListOrder.Built listOrder) {
     private Optional<BountyPage> listBounties(Transaction tx,
                                               @Nullable PaginationCursor cursor) {
         DSLContext context = tx.getProperty(DSLContext.class);
-        SelectJoinStep<Record> step1;
+        List<SelectFieldOrAsterisk> selections;
         {
             // SELECT user_id, username, and all bounty values
-            List<SelectFieldOrAsterisk> selections = new ArrayList<>(2 + listOrder.includeCurrencies().size());
+            selections = new ArrayList<>(2 + listOrder.includeCurrencies().size());
             selections.add(LATEST_NAMES.USER_ID);
             selections.add(LATEST_NAMES.USERNAME);
             for (BountyCurrency currency : listOrder.includeCurrencies()) {
                 selections.add(aliasedBounties(currency).BOUNTY_AMOUNT);
             }
-            step1 = context.select(selections).from(LATEST_NAMES);
         }
+        Table<?> from = LATEST_NAMES;
         // LEFT JOIN bounties table for each currency
         for (BountyCurrency currency : listOrder.includeCurrencies()) {
             KitpvpBounties bounties = aliasedBounties(currency);
-            step1 = step1.leftJoin(bounties)
+            from = from.leftJoin(bounties)
                     .on(bounties.USER_ID.eq(LATEST_NAMES.USER_ID))
                     .and(bounties.BOUNTY_CURRENCY.eq(currency.serialize()));
         }
         // WHERE any bounty value is non-null
-        SelectConditionStep<? extends Record> step2 = step1
-                .where(anyBountyValueIsNonNull());
-        ResultQuery<? extends Record> step3;
+        Condition where = anyBountyValueIsNonNull();
+        if (cursor != null) {
+            // AND the cursor conditions are met
+            where = where.and(cursorSeekCondition(cursor));
+        }
+        List<OrderField<?>> orderBy;
         {
             // ORDER BY each currency DESC NULLS LAST
-            List<OrderField<?>> orderBy = new ArrayList<>(1 + listOrder.includeCurrencies().size());
+            orderBy = new ArrayList<>(1 + listOrder.includeCurrencies().size());
             for (BountyCurrency currency : listOrder.includeCurrencies()) {
                 orderBy.add(aliasedBounties(currency).BOUNTY_AMOUNT.desc().nullsLast());
             }
             // Break ties with user ID
             orderBy.add(LATEST_NAMES.USER_ID);
-            if (cursor == null) {
-                step3 = step2
-                        .orderBy(orderBy).limit(listOrder.countPerPage());
-            } else {
-                step3 = step2
-                        .and(cursorSeekCondition(cursor))
-                        .orderBy(orderBy).limit(listOrder.countPerPage());
-            }
         }
-        List<BountyInternal> bounties = step3.fetch((record) -> {
+        ResultQuery<Record> query = context
+                .select(selections)
+                .from(from)
+                .where(where)
+                .orderBy(orderBy)
+                .limit(listOrder.countPerPage());
+        List<BountyInternal> bounties = query.fetch((record) -> {
             int userId = record.get(LATEST_NAMES.USER_ID);
             String target = record.get(LATEST_NAMES.USERNAME);
             return switch (listOrder.includeCurrencies().size()) {
@@ -156,12 +156,12 @@ record BountyList(KitPvpManager manager, BountyListOrder.Built listOrder) {
 
     private Condition cursorSeekCondition(PaginationCursor cursor) {
         /*
-		Dynamically build a WHERE clause, e.g.
-		(currency1 < afterAmount1) OR
-		(currency1 = afterAmount1 AND currency2 < afterAmount2) OR
-		(currency1 = afterAmount1 AND currency2 = afterAmount2 AND currency3 < afterAmount3)
+	Dynamically build a predicate, e.g.
+	(currency1 < afterAmount1) OR
+	(currency1 = afterAmount1 AND currency2 < afterAmount2) OR
+	(currency1 = afterAmount1 AND currency2 = afterAmount2 AND currency3 < afterAmount3)
 
-		OR all currencies are equal and user ID is greater than cursor user ID
+	OR all currencies are equal and user ID is greater than cursor user ID
         */
         Condition seekCondition = null;
         Condition currenciesSoFarAreEqual = null;

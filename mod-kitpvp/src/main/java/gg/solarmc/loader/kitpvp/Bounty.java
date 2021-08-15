@@ -48,7 +48,7 @@ public interface Bounty {
     /**
      * Gets all the bounty amounties
      *
-     * @return all the bounty amounts
+     * @return an immutable map of all the bounty amounts
      */
     Map<BountyCurrency, BigDecimal> allAmounts();
 

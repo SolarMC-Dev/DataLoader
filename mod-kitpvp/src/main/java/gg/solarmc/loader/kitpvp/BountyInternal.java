@@ -19,31 +19,8 @@
 
 package gg.solarmc.loader.kitpvp;
 
-import gg.solarmc.loader.Transaction;
+interface BountyInternal extends Bounty {
 
-import java.util.List;
-import java.util.Optional;
-
-/**
- * A page of bounties
- *
- */
-public interface BountyPage {
-
-    /**
-     * Gets the bounties on this page. Will never be empty.
-     *
-     * @return the items on this page
-     */
-    List<? extends Bounty> itemsOnPage();
-
-    /**
-     * Navigates to the next page and yields a bounty page for it.
-     * The next page will not contain any of the bounties in this one.
-     *
-     * @param tx the transaction
-     * @return the next page, or an empty optional if no more pages exist
-     */
-    Optional<BountyPage> nextPage(Transaction tx);
+    int userId();
 
 }

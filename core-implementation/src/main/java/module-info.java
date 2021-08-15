@@ -4,6 +4,7 @@ module gg.solarmc.loader.impl {
 	requires transitive gg.solarmc.loader;
 	requires transitive java.sql;
 	requires org.flywaydb.core;
+	requires org.jooq;
 	requires org.slf4j;
 	requires space.arim.dazzleconf.ext.snakeyaml;
 	requires transitive space.arim.omnibus;

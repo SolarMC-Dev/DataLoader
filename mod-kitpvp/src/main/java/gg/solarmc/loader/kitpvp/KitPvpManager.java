@@ -31,22 +31,19 @@ import org.jooq.Field;
 import org.jooq.Record1;
 import org.jooq.Record2;
 import org.jooq.Record3;
-import org.jooq.SelectConditionStep;
 import org.jooq.impl.DSL;
 
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Duration;
-import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
 import static gg.solarmc.loader.schema.Routines.kitpvpCreateKit;
-import static gg.solarmc.loader.schema.tables.KitpvpBounties.KITPVP_BOUNTIES;
 import static gg.solarmc.loader.schema.tables.KitpvpBountyLogs.KITPVP_BOUNTY_LOGS;
 import static gg.solarmc.loader.schema.tables.KitpvpKitsContents.KITPVP_KITS_CONTENTS;
 import static gg.solarmc.loader.schema.tables.KitpvpKitsIds.KITPVP_KITS_IDS;
-import static gg.solarmc.loader.schema.tables.LatestNames.LATEST_NAMES;
 
 public class KitPvpManager implements DataManager {
 
@@ -253,58 +250,16 @@ public class KitPvpManager implements DataManager {
 	}
 
 	/**
-	 * Begins listing bounties. Gives the first page, from which it is possible
-	 * to navigate to further pages
+	 * Begins listing bounties according to the given order. Gives the first page,
+	 * from which it is possible to navigate to further pages
 	 *
 	 * @param tx the transaction
-	 * @param currency the currency in which to list bounties
-	 * @param countPerPage the amount of bounties on each page
+	 * @param listOrder the bounty list order
 	 * @return the first page of bounties, or an empty optional if there are no pages
-	 * @throws IllegalArgumentException if {@code countPerPage} is not positive
 	 */
-	public Optional<BountyPage> listBounties(Transaction tx, BountyCurrency currency, int countPerPage) {
-		if (countPerPage <= 0) {
-			throw new IllegalArgumentException("Count per page must be positive");
-		}
-		return listBounties(tx, currency, countPerPage, null);
-	}
-
-	Optional<BountyPage> listBounties(Transaction tx, BountyCurrency currency, int countPerPage, BigDecimal afterAmount) {
-		DSLContext context = tx.getProperty(DSLContext.class);
-		SelectConditionStep<Record2<String, BigDecimal>> step = context
-				.select(LATEST_NAMES.USERNAME, KITPVP_BOUNTIES.BOUNTY_AMOUNT)
-				.from(KITPVP_BOUNTIES)
-				.innerJoin(LATEST_NAMES)
-				.on(KITPVP_BOUNTIES.USER_ID.eq(LATEST_NAMES.USER_ID))
-				.where(KITPVP_BOUNTIES.BOUNTY_CURRENCY.eq((byte) currency.ordinal()));
-		if (afterAmount != null) {
-			step = step.and(KITPVP_BOUNTIES.BOUNTY_AMOUNT.lessThan(afterAmount));
-		}
-		List<Bounty> bounties = step.orderBy(KITPVP_BOUNTIES.BOUNTY_AMOUNT.desc()).limit(countPerPage).fetch(
-				(record) -> new Bounty(record.value1(), new BountyAmount(currency, record.value2())));
-		if (bounties.isEmpty()) {
-			return Optional.empty();
-		}
-		return Optional.of(new BountyPage() {
-			@Override
-			public BountyCurrency currency() {
-				return lastAmount().currency();
-			}
-
-			@Override
-			public List<Bounty> itemsOnPage() {
-				return bounties;
-			}
-
-			private BountyAmount lastAmount() {
-				return bounties.get(bounties.size() - 1).amount();
-			}
-
-			@Override
-			public Optional<BountyPage> nextPage(Transaction tx) {
-				return listBounties(tx, currency(), countPerPage, lastAmount().value());
-			}
-		});
+	public Optional<BountyPage> listBounties(Transaction tx, BountyListOrder.Built listOrder) {
+		Objects.requireNonNull(listOrder, "listOrder");
+		return new BountyList(this, listOrder).beginToListBounties(tx);
 	}
 
 	/**

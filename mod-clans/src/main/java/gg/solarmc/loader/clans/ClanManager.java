@@ -27,14 +27,17 @@ import gg.solarmc.loader.data.DataManager;
 import gg.solarmc.loader.schema.tables.records.ClansClanInfoRecord;
 import org.jooq.DSLContext;
 import org.jooq.Record1;
+import org.jooq.Record2;
 import org.jooq.Record3;
 import org.jooq.Record6;
 import org.jooq.Result;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 
 import static gg.solarmc.loader.schema.tables.ClansClanInfo.CLANS_CLAN_INFO;
 import static gg.solarmc.loader.schema.tables.ClansClanMembership.CLANS_CLAN_MEMBERSHIP;
@@ -257,6 +260,22 @@ public class ClanManager implements DataManager {
         });
 
         return results;
+    }
+
+    public List<TopClanResult> getTopClanUsingMembers(Transaction transaction, int amount, Function<Set<ClanMember>, Integer> calculateValue) {
+        Result<Record2<Integer, String>> result = transaction.getProperty(DSLContext.class)
+                .select(CLANS_CLAN_INFO.CLAN_ID, CLANS_CLAN_INFO.CLAN_NAME)
+                .from(CLANS_CLAN_INFO)
+                .fetch();
+        List<TopClanResult> results = new ArrayList<>();
+
+        result.forEach(rec -> {
+            Integer value = calculateValue.apply(ClanMember.fetchMembers(transaction, rec.value1()));
+            results.add(new TopClanResult(rec.value1(), value, rec.value2()));
+        });
+
+        results.sort(Comparator.comparingInt(TopClanResult::statisticValue));
+        return results.subList(0, amount);
     }
 
     @Override

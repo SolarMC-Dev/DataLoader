@@ -9,15 +9,6 @@
 
 	<artifactId>loader-core-schema</artifactId>
 
-	<properties>
-        <!--
-        JDBC connection settings for the temporary database
-        Any changes made here must be likewise updated in jooq.xml -->
-		<jdbc.mariadb-port>50000</jdbc.mariadb-port>
-		<jdbc.dbname>solardata</jdbc.dbname>
-		<jdbc.url>jdbc:mariadb://localhost:50000/solardata</jdbc.url>
-	</properties>
-
 	<build>
 		<plugins>
 			<plugin>
@@ -55,46 +46,42 @@
 			<build>
 				<plugins>
 					<!--
-					These 3 plugins handle the development lifecycle with respect to flyway and jooq.
-					First, mariadb4j-maven-plugin starts a temporary MariaDB instance.
-					Second, flyway applies migrations to this database.
-					Third, jooq reads the schema and generates table and column references based on it.
-					Finally, mariadb4-maven-plugin stops the MariaDB instance.
+					These 4 plugins handle the development lifecycle with respect to flyway and jooq.
+					1. build-helper-maven-plugin determines the random database port
+					2. docker-maven-plugin starts a temporary MariaDB instance.
+					3. flyway applies migrations to this database.
+					4. jooq reads the schema and generates table and column references based on it.
+					5. docker-maven-plugin stops the MariaDB instance.
 
 					Points of interest:
 					* The flyway and jooq plugins are both run in the generate-sources phase. As a result,
 					  the ordering of the plugin declarations is significant.
 					* There are no 'pre-generate-sources' or 'post-generate-sources' phases in Maven,
-					  so 'initialize' and 'generate-resources' are instead used for starting and stopping
-					  the temporary MariaDB instance.
+					  so 'initialize' and 'generate-resources' are instead used.
 					-->
 					<plugin>
-						<groupId>gg.solarmc.mariaDB4j</groupId>
-						<artifactId>mariaDB4j-maven-plugin</artifactId>
-						<version>${mariadb4j.version}</version>
+						<groupId>org.codehaus.mojo</groupId>
+						<artifactId>build-helper-maven-plugin</artifactId>
 						<executions>
 							<execution>
-								<id>setup</id>
-								<!-- Pre generate-sources = initialize -->
+								<id>find-available-ports</id>
 								<phase>initialize</phase>
-								<goals>
-									<goal>start</goal>
-								</goals>
-							</execution>
-							<execution>
-								<id>teardown</id>
-								<!-- Post generate-sources = generate-resources -->
-								<phase>generate-resources</phase>
-								<goals>
-									<goal>stop</goal>
-								</goals>
 							</execution>
 						</executions>
-						<configuration>
-							<dataDir>${project.build.directory}/mariadb4j-temporary-database</dataDir>
-							<port>${jdbc.mariadb-port}</port>
-							<databaseName>${jdbc.dbname}</databaseName>
-						</configuration>
+					</plugin>
+					<plugin>
+						<groupId>io.fabric8</groupId>
+						<artifactId>docker-maven-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>start-database</id>
+								<phase>initialize</phase>
+							</execution>
+							<execution>
+								<id>stop-database</id>
+								<phase>generate-resources</phase>
+							</execution>
+						</executions>
 					</plugin>
 					<plugin>
 						<groupId>org.flywaydb</groupId>
@@ -120,7 +107,7 @@
 							<validateMigrationNaming>true</validateMigrationNaming>
 							<group>true</group>
 
-							<url>${jdbc.url}</url>
+							<url>jdbc:mariadb://127.0.0.1:${dataloader.database.port}/codegen?createDatabaseIfNotExist=true</url>
 							<user>root</user>
 							<locations>
 								<location>filesystem:src/main/resources/sql-schema</location>
@@ -148,7 +135,27 @@
 							</execution>
 						</executions>
 						<configuration>
-							<configurationFile>jooq.xml</configurationFile>
+							<jdbc>
+								<driver>org.mariadb.jdbc.Driver</driver>
+								<url>jdbc:mariadb://127.0.0.1:${dataloader.database.port}/codegen</url>
+								<user>root</user>
+								<password/>
+							</jdbc>
+							<generator>
+								<database>
+									<name>org.jooq.meta.mariadb.MariaDBDatabase</name>
+									<includes>.*</includes>
+									<excludes>flyway_schema_history</excludes>
+									<inputSchema>codegen</inputSchema>
+								</database>
+
+								<generate/>
+
+								<target>
+									<packageName>gg.solarmc.loader.schema</packageName>
+									<directory>src/generated/java</directory>
+								</target>
+							</generator>
 						</configuration>
 					</plugin>
 				</plugins>

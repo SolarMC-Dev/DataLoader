@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>gg.solarmc</groupId>
 		<artifactId>solar-parent</artifactId>
-		<version>0.6.2</version>
+		<version>1.1.1</version>
 	</parent>
 
 	<groupId>gg.solarmc.loader</groupId>
@@ -20,7 +20,6 @@
 		<slf4j.version>1.7.30</slf4j.version>
 		<junit.version>5.7.2</junit.version>
 		<mockito.version>3.11.0</mockito.version>
-		<mariadb4j.version>2.5.0</mariadb4j.version>
 
 		<mariadb-connector.version>2.7.3</mariadb-connector.version>
 		<flyway.version>7.9.1</flyway.version>
@@ -61,6 +60,70 @@
 						</dependency>
 					</dependencies>
 				</plugin>
+				<plugin>
+					<groupId>org.codehaus.mojo</groupId>
+					<artifactId>build-helper-maven-plugin</artifactId>
+					<version>3.2.0</version>
+					<executions>
+						<execution>
+							<id>find-available-ports</id>
+							<!-- Phase must be explicitly specified -->
+							<phase>none</phase>
+							<goals>
+								<goal>reserve-network-port</goal>
+							</goals>
+							<configuration>
+								<portNames>
+									<portName>dataloader.database.port</portName>
+								</portNames>
+							</configuration>
+						</execution>
+					</executions>
+				</plugin>
+				<plugin>
+					<groupId>io.fabric8</groupId>
+					<artifactId>docker-maven-plugin</artifactId>
+					<version>0.37.0</version>
+					<configuration>
+						<showLogs>true</showLogs>
+						<images>
+							<image>
+								<name>mariadb:10.6</name>
+								<alias>mariadb</alias>
+								<run>
+									<env>
+										<MARIADB_ALLOW_EMPTY_ROOT_PASSWORD>true</MARIADB_ALLOW_EMPTY_ROOT_PASSWORD>
+									</env>
+									<ports>
+										<port>${dataloader.database.port}:3306</port>
+									</ports>
+									<wait>
+										<time>60000</time>
+										<log>Server socket created on IP: '::'</log>
+									</wait>
+								</run>
+							</image>
+						</images>
+					</configuration>
+					<executions>
+						<execution>
+							<id>start-database</id>
+							<!-- Phase must be specified -->
+							<phase>none</phase>
+							<goals>
+								<goal>start</goal>
+							</goals>
+						</execution>
+						<execution>
+							<id>stop-database</id>
+							<!-- Phase must be specified -->
+							<phase>none</phase>
+							<goals>
+								<goal>stop</goal>
+							</goals>
+						</execution>
+					</executions>
+				</plugin>
 			</plugins>
 		</pluginManagement>
 		<plugins>
@@ -69,6 +132,9 @@
 				<artifactId>maven-failsafe-plugin</artifactId>
 				<configuration>
 					<argLine>@{jacoco.argLine}</argLine>
+					<systemPropertyVariables>
+						<dataloader.it.database.port>${dataloader.database.port}</dataloader.it.database.port>
+					</systemPropertyVariables>
 				</configuration>
 				<dependencies>
 					<dependency>
@@ -200,23 +266,13 @@
 				<version>${slf4j.version}</version>
 				<scope>test</scope>
 			</dependency>
-			<dependency>
-				<groupId>gg.solarmc.mariaDB4j</groupId>
-				<artifactId>mariaDB4j</artifactId>
-				<version>${mariadb4j.version}</version>
-				<scope>test</scope>
-			</dependency>
 		</dependencies>
 	</dependencyManagement>
 
 	<repositories>
 		<repository>
-			<id>solar-releases</id>
-			<url>https://mvn-repo.solarmc.gg/releases</url>
-		</repository>
-		<repository>
-			<id>arim-mvn-lgpl3</id>
-			<url>https://mvn-repo.arim.space/lesser-gpl3/</url>
+			<id>solar-repo</id>
+			<url>https://repo.solarmc.gg/mvn</url>
 		</repository>
 	</repositories>
 </project>

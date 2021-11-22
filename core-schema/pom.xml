@@ -14,7 +14,6 @@
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>build-helper-maven-plugin</artifactId>
-				<version>3.2.0</version>
 				<executions>
 					<!--
 					jooq-codegen-maven, when it is run, automatically adds src/generated/java

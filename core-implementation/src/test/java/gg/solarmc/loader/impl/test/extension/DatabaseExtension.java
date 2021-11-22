@@ -58,15 +58,13 @@ public final class DatabaseExtension implements ParameterResolver {
     }
 
     SolarDataConfig.DatabaseCredentials computeCredentials(ExtensionContext extensionContext) {
-        // Use the root store for the MariaDB instance
-        // Use the context store for the database credentials
-        var rootStore = extensionContext.getRoot().getStore(NAMESPACE);
-        ClosableMariaDb database = rootStore.getOrComputeIfAbsent(
-                Resource.DB,
-                (k) -> ClosableMariaDb.createDb(),
-                ClosableMariaDb.class);
+        String databaseProperty = System.getProperty("dataloader.it.database.port");
+        if (databaseProperty == null) {
+            throw new IllegalStateException("No database port found. Integration tests cannot run without a database port.");
+        }
+        int databasePort = Integer.parseInt(databaseProperty);
 
-        int databasePort = database.db().getConfiguration().getPort();
+        // Use the context store for the database credentials
         var contextStore = extensionContext.getStore(NAMESPACE);
         return contextStore.getOrComputeIfAbsent(
                 Resource.CREDENTIALS,
@@ -92,14 +90,14 @@ public final class DatabaseExtension implements ParameterResolver {
         when(credentials.database()).thenReturn(databaseName);
         when(credentials.username()).thenReturn(username);
         when(credentials.password()).thenReturn(password);
-        when(credentials.host()).thenReturn("localhost");
+        when(credentials.host()).thenReturn("127.0.0.1");
         when(credentials.port()).thenReturn(port);
         when(credentials.poolSize()).thenReturn(2);
         return credentials;
     }
 
     private void createDatabase(int port, String database) {
-        try (Connection conn = DriverManager.getConnection("jdbc:mariadb://localhost:" + port + '/', "root", "");
+        try (Connection conn = DriverManager.getConnection("jdbc:mariadb://127.0.0.1:" + port + '/', "root", "");
              PreparedStatement createDatabase = conn.prepareStatement("CREATE DATABASE " + database
                      + " CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
              PreparedStatement createTablesOne = conn.prepareStatement("""
